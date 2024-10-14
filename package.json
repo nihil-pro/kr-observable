@@ -1,6 +1,6 @@
 {
-  "name": "observable-class",
-  "version": "1.0.0",
+  "name": "kr-observable",
+  "version": "1.0.1",
   "description": "A proxy-based observable with a hoc for react/preact",
   "module": "./dist/index.js",
   "type": "module",

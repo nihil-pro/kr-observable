@@ -1,12 +1,17 @@
 class ObservableTransactions {
     static #debounce: any
     static #subscribers: Set<Subscriber> = new Set()
-    static #read: Map<ObservableAdministration, Set<string | symbol>> = new Map()
+    static #read: Map<Function, Map<ObservableAdministration, Set<string | symbol>>> = new Map()
+    static #current: any = null
     static report(administration: ObservableAdministration, property: string | symbol) {
-        if (!ObservableTransactions.#read.has(administration)) {
-            ObservableTransactions.#read.set(administration, new Set())
+        if (!ObservableTransactions.#current) { return; }
+        const transaction = ObservableTransactions.#read.get(ObservableTransactions.#current)
+        if (transaction) {
+            if (!transaction.has(administration)) {
+                transaction.set(administration, new Set())
+            }
+            transaction.get(administration)?.add(property)
         }
-        ObservableTransactions.#read.get(administration)?.add(property)
     }
     static notifySubscriber(subscriber: Subscriber) {
         ObservableTransactions.#subscribers.add(subscriber)
@@ -17,9 +22,13 @@ class ObservableTransactions {
         })
     }
     public static transaction = (work: Function): Map<Observable, Set<string | symbol>> => {
-        ObservableTransactions.#read.clear()
+        ObservableTransactions.#read.set(work, new Map())
+        ObservableTransactions.#current = work
         work()
-        return new Map(ObservableTransactions.#read)
+        const read = ObservableTransactions.#read.get(work)
+        ObservableTransactions.#read.delete(work)
+        ObservableTransactions.#current = null
+        return read
     }
 }
 if (!('__ObservableTransactions__' in self)) {
@@ -53,24 +62,25 @@ class ObservableAdministration {
 }
 
 function maybeMakeObservable(property: string | symbol, value: any, adm: ObservableAdministration) {
-    if (!value || value instanceof Observable || typeof value !== 'object') { return value; }
-    if (Reflect.getPrototypeOf(value)?.constructor.name in self) { return value }
+    if (!value || typeof value !== 'object' || value instanceof Observable) { return value; }
     if ([Map, Array, Set, Date].some(Constructor => value instanceof Constructor)) {
         return new Proxy(value, structureProxyHandler(property, adm))
     }
     if (Object.prototype === Object.getPrototypeOf(value)) {
         return new Proxy(value, observableProxyHandler(new ObservableAdministration()))
     }
+    const proto = Reflect.getPrototypeOf(value)?.constructor.name
+    if (proto && proto in self) { return value }
     return new Proxy(value, structureProxyHandler(property, adm)) // a custom class
 }
 
 function observableProxyHandler(adm: ObservableAdministration) {
     return {
         get(target: any, property: string | symbol, receiver: any) {
-            if (Reflect.has(adm, property)) { return Reflect.get(target, property); }
-            const value = Reflect.get(target, property, receiver);
+            if (Reflect.has(adm, property)) { return Reflect.get(adm, property); }
+            const value = target[property] // Reflect.get(target, property, receiver);
             if (typeof value === 'function') {
-                return function (...args: any[]) { return value.apply(target, args); }
+                return function (...args: any[]) { return value.apply(receiver, args); }
             } else {
                 ObservableTransactions.report(adm, property)
             }
@@ -125,7 +135,6 @@ export class Observable {
         return new Proxy(this, observableProxyHandler(adm))
     }
 }
-
 type Subscriber = () => void | Promise<void>
 type Listener = (property: string | symbol, value: any) => void | Promise<void>
 declare global {

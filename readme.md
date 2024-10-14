@@ -5,7 +5,7 @@ A proxy-based observable with a hoc for react/preact.
 Write a class that extends Observable and wrap the component in observer hoc. <br />
 Nothing else is needed.
 ```tsx
-import { Observable, observer } from "observable-class";
+import { Observable, observer } from "kr-observable";
 
 class State extends Observable {
   results: string[] = []
@@ -90,7 +90,7 @@ interface Observable {
 ```
 
 ```typescript
-import { Observable } from "observable-class";
+import { Observable } from "kr-observable";
 
 class Example extends Observable {
   string = '' // observable
