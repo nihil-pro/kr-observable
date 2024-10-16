@@ -1,34 +1,37 @@
 class ObservableTransactions {
-    static #debounce: any
+    static #task: any
     static #subscribers: Set<Subscriber> = new Set()
     static #read: Map<Function, Map<ObservableAdministration, Set<string | symbol>>> = new Map()
     static #current: any = null
     static report(administration: ObservableAdministration, property: string | symbol) {
-        if (!ObservableTransactions.#current) { return; }
-        const transaction = ObservableTransactions.#read.get(ObservableTransactions.#current)
-        if (transaction) {
-            if (!transaction.has(administration)) {
-                transaction.set(administration, new Set())
-            }
-            transaction.get(administration)?.add(property)
+        if (!this.#current) { return; }
+        const track = this.#read.get(this.#current)
+        if (track) {
+            if (!track.has(administration)) { track.set(administration, new Set()); }
+            track.get(administration)?.add(property)
         }
     }
-    static notifySubscriber(subscriber: Subscriber) {
-        ObservableTransactions.#subscribers.add(subscriber)
-        clearTimeout(ObservableTransactions.#debounce)
-        ObservableTransactions.#debounce = setTimeout(() => {
-            ObservableTransactions.#subscribers.forEach(cb => cb())
-            ObservableTransactions.#subscribers.clear()
+    static notify(subscriber: Subscriber) {
+        this.#subscribers.add(subscriber)
+        clearTimeout(this.#task)
+        this.#task = setTimeout(() => {
+            this.#subscribers.forEach(cb => cb())
+            this.#subscribers.clear()
         })
     }
-    public static transaction = (work: Function): Map<Observable, Set<string | symbol>> => {
-        ObservableTransactions.#read.set(work, new Map())
-        ObservableTransactions.#current = work
+    public static transaction = (work: Function) => {
+        this.#read.set(work, new Map())
+        this.#current = work
         work()
-        const read = ObservableTransactions.#read.get(work)
-        ObservableTransactions.#read.delete(work)
-        ObservableTransactions.#current = null
-        return read
+        const read = this.#read.get(work)
+        this.#read.delete(work)
+        this.#current = null
+        return { read, hash: this.#hash(read)}
+    }
+    static #hash(read?: Map<ObservableAdministration, Set<string | symbol>>) {
+        let hash = ''
+        read?.forEach(set => hash = [...set.values()].join('-'))
+        return hash
     }
 }
 if (!('__ObservableTransactions__' in self)) {
@@ -44,6 +47,7 @@ class ObservableAdministration {
     listen = (listener: Listener) => this.#listeners.add(listener)
     unlisten = (listener: Listener) => this.#listeners.delete(listener)
     report = (property: string | symbol, value: any) => {
+        if (this.#subscribers.size === 0 && this.#listeners.size === 0) { return }
         this.#changes.add(property)
         this.#listeners.forEach(cb => cb(property, value))
         this.#notify()
@@ -51,11 +55,15 @@ class ObservableAdministration {
     #notify() {
         clearTimeout(this.#timeout)
         this.#timeout = setTimeout(() => {
-            this.#subscribers.forEach((keys, cb) => {
-                if ([...keys.values()].some(key => this.#changes.has(key))) {
-                    ObservableTransactions.notifySubscriber(cb)
-                }
-
+            const notified: Set<Subscriber> = new Set()
+            this.#changes.forEach(change => {
+                this.#subscribers.forEach((keys, cb) => {
+                    if (keys.has(change) && !notified.has(cb)) {
+                        ObservableTransactions.notify(cb)
+                        notified.add(cb)
+                    }
+                })
+                this.#changes.delete(change)
             })
         })
     }
@@ -69,25 +77,26 @@ function maybeMakeObservable(property: string | symbol, value: any, adm: Observa
     if (Object.prototype === Object.getPrototypeOf(value)) {
         return new Proxy(value, observableProxyHandler(new ObservableAdministration()))
     }
-    const proto = Reflect.getPrototypeOf(value)?.constructor.name
-    if (proto && proto in self) { return value }
-    return new Proxy(value, structureProxyHandler(property, adm)) // a custom class
+    return value
 }
 
 function observableProxyHandler(adm: ObservableAdministration) {
     return {
         get(target: any, property: string | symbol, receiver: any) {
             if (Reflect.has(adm, property)) { return Reflect.get(adm, property); }
-            const value = target[property] // Reflect.get(target, property, receiver);
+            const value = Reflect.get(target, property, receiver); // target[property]
+            if (/^\s*class\s+/.test(value?.toString())) { return value }
             if (typeof value === 'function') {
                 return function (...args: any[]) { return value.apply(receiver, args); }
             } else {
-                ObservableTransactions.report(adm, property)
+                if (typeof property !== 'symbol') {
+                    ObservableTransactions.report(adm, property)
+                }
             }
             return value
         },
         set(target: any, property: string, newValue: any, receiver: any) {
-            // if (Reflect.get(target, property, receiver) === value) { return true }
+            if (Reflect.get(target, property, receiver) === newValue) { return true }
             const value = maybeMakeObservable(property, newValue, adm)
             Reflect.set(target, property, value, receiver);
             adm.report(property, value)
@@ -108,6 +117,7 @@ function structureProxyHandler(property: string | symbol, adm: ObservableAdminis
             const value = target[key];
             if (typeof value === 'function') {
                 return function (...args: any[]) {
+                    // toDo need branch for maps
                     // @ts-ignore
                     const result = value.apply(this === receiver ? target : this, args);
                     if (target instanceof Date && String(key).includes('set') || Mutations.includes(key)) {
@@ -140,7 +150,7 @@ type Listener = (property: string | symbol, value: any) => void | Promise<void>
 declare global {
     interface Window {
         __ObservableTransactions__: {
-            transaction(work: Function): Map<Observable, Set<string | symbol>>
+            transaction(work: Function): { read: Map<Observable, Set<string | symbol>>, hash: string }
         }
     }
 }

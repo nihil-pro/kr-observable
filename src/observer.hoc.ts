@@ -5,16 +5,16 @@ function useObservable<T>(fn: () => T, name: string) {
     const cb = () => render(crypto.randomUUID())
     let renderResult!: T
     let exception: any
-    const read = self.__ObservableTransactions__.transaction(() => {
+    const { read, hash } = self.__ObservableTransactions__.transaction(() => {
         try {
             renderResult = fn()
         } catch (e) { exception = e }
     })
 
     useEffect(() => {
-        read.forEach((keys, observable) => observable.subscribe(cb, keys))
-        return () => read.forEach((_, observable) => observable.unsubscribe(cb))
-    }, []);
+        read?.forEach((keys, observable) => observable.subscribe(cb, keys))
+        return () => read?.forEach((_, observable) => observable.unsubscribe(cb))
+    }, [hash]);
 
     if (exception) { throw exception; }
     return renderResult

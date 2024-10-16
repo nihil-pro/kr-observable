@@ -1,5 +1,27 @@
-# Observable class
-A proxy-based observable with a hoc for react/preact. 
+# Observable
+A proxy-based observer, and  observable-based state-manager for react/preact.
+1. Small size – 2 kB (gzipped, non minified)
+2. Easy to use, see examples below.
+3. Supports subclasses.
+4. No dependencies.
+
+## Interface
+```typescript
+type Subscriber = (property: string | symbol, value: any) => void | Promise<void>
+type Listener = () => void | Promise<void>
+
+interface Observable {
+  // The callback will be triggered on each change
+  listen(cb: Subscriber): void
+  unlisten(cb: Subscriber): void
+  
+  // The callback will be triggered on each "batch" 
+  // i.e. some part of changes made almost at the same time,
+  // for the properties passed as second argument
+  subscribe(cb: Listener, keys: Set<keyof Observable>): void
+  unsubscribe(cb: Listener): void
+}
+```
 
 ## Usage with react or preact
 Write a class that extends Observable and wrap the component in observer hoc. <br />
@@ -74,20 +96,6 @@ const Component = observer(function component() {
 
 ## Opportunities
 
-### Before, let's see the interface
-```typescript
-interface Observable {
-  // The callback will be called every time there is a change in the Observable
-  listen(cb: (property: string | symbol, value: any) => void): void
-  unlisten(cb: (property: string | symbol, value: any) => void): void
-  
-  // The callback will be called when the value of one of the passed keys changes 
-  // The callback does not pass a key whose value has changed, 
-  // because there could be several changes at the same time, but they are batched
-  subscribe(cb: () => void | Promise<void>, keys: Set<string | symbol>): void
-  unsubscribe(cb: () => void | Promise<void>): void
-}
-```
 
 ```typescript
 import { Observable } from "kr-observable";
