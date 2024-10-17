@@ -5,26 +5,8 @@ A proxy-based observer, and  observable-based state-manager for react/preact.
 3. Supports subclasses.
 4. No dependencies.
 
-## Interface
-```typescript
-type Subscriber = (property: string | symbol, value: any) => void | Promise<void>
-type Listener = () => void | Promise<void>
-
-interface Observable {
-  // The callback will be triggered on each change
-  listen(cb: Subscriber): void
-  unlisten(cb: Subscriber): void
-  
-  // The callback will be triggered on each "batch" 
-  // i.e. some part of changes made almost at the same time,
-  // for the properties passed as second argument
-  subscribe(cb: Listener, keys: Set<keyof Observable>): void
-  unsubscribe(cb: Listener): void
-}
-```
-
-## Usage with react or preact
-Write a class that extends Observable and wrap the component in observer hoc. <br />
+## Usage with react or preact/compat
+Write a class that extends Observable, and wrap the component in observer hoc. <br />
 Nothing else is needed.
 ```tsx
 import { Observable, observer } from "kr-observable";
@@ -34,7 +16,8 @@ class State extends Observable {
   text = ''
   loading = false
   
-  // All methods are automatically bounded, so you can safely use them as listeners
+  // All methods are automatically bounded, 
+  // so you can safely use them as listeners
   setText(event: Event) {
     this.text = event.target.value
   }
@@ -84,7 +67,6 @@ const Component = observer(function component() {
         Submit
       </button>
       
-      {/* When click, only <Results /> will re-render, because reset doesn't change text or loading */}
       <button onClick={state.reset}> 
         Reset
       </button>
@@ -94,13 +76,32 @@ const Component = observer(function component() {
 })
 ```
 
-## Opportunities
+## Interface
+```typescript
+type Subscriber = (property: string | symbol, value: any) => void | Promise<void>
+type Listener = () => void | Promise<void>
 
+interface Observable {
+  // The callback will be triggered on each change
+  listen(cb: Subscriber): void
+  // remove listener
+  unlisten(cb: Subscriber): void
+  
+  // The callback will be triggered on each "batch" 
+  // i.e. some part of changes made almost at the same time,
+  // for the properties passed as second argument
+  subscribe(cb: Listener, keys: Set<keyof Observable>): void
+  // remove subscriber
+  unsubscribe(cb: Listener): void
+}
+```
 
+## Features
 ```typescript
 import { Observable } from "kr-observable";
 
 class Example extends Observable {
+  #private = 1 // ignored
   string = '' // observable
   number = 0 // observable
   array = [] // observable 
@@ -108,9 +109,13 @@ class Example extends Observable {
   map = new Map() // observable
   plain = {
     foo: 'baz', // observable
-    nestedArray: []
+    nestedArray: [] // observable
   } // observable
   date = new Date() // observable
+  
+  get something() {
+    return this.number + this.string // computed 
+  }
 }
 
 const example = new Example() 
@@ -119,7 +124,8 @@ const listener = (property: string | symbol, value: any) => {
   console.log(`${property} was changed, new value = `, value)
 }
 
-// will be called only once, because the changes happened (almost) at the same time 
+// will be called only once, 
+// because the changes happened (almost) at the same time 
 const subscriber = () => {
   console.log('subscriber was notified')
 }
