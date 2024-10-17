@@ -1,10 +1,10 @@
-class ObservableTransactions {
+export class ObservableTransactions {
     static #task: any
     static #subscribers: Set<Subscriber> = new Set()
     static #read: Map<Function, Map<ObservableAdministration, Set<string | symbol>>> = new Map()
     static #current: any = null
     static report(administration: ObservableAdministration, property: string | symbol) {
-        if (!this.#current) { return; }
+        if (!this.#current || typeof property === 'symbol') { return; }
         const track = this.#read.get(this.#current)
         if (track) {
             if (!track.has(administration)) { track.set(administration, new Set()); }
@@ -34,9 +34,7 @@ class ObservableTransactions {
         return hash
     }
 }
-if (!('__ObservableTransactions__' in self)) {
-    Reflect.set(self, '__ObservableTransactions__', ObservableTransactions) // need only one instance
-}
+
 class ObservableAdministration {
     #timeout: any
     #subscribers: Map<Subscriber, Set<string | symbol>> = new Map()
@@ -89,9 +87,7 @@ function observableProxyHandler(adm: ObservableAdministration) {
             if (typeof value === 'function') {
                 return function (...args: any[]) { return value.apply(receiver, args); }
             } else {
-                if (typeof property !== 'symbol') {
-                    ObservableTransactions.report(adm, property)
-                }
+                ObservableTransactions.report(adm, property)
             }
             return value
         },
@@ -111,17 +107,33 @@ function observableProxyHandler(adm: ObservableAdministration) {
 
 // Dirty but effective
 const Mutations: Array<string | symbol> = ['add', 'set', 'copyWithin', 'fill', 'pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift']
+const MapRead: Array<string | symbol> = ['get', 'has', 'set', 'delete']
+const MapSet: Array<string | symbol> = ['set', 'delete']
 function structureProxyHandler(property: string | symbol, adm: ObservableAdministration) {
     return {
         get(target: any, key: string | symbol, receiver: any) {
             const value = target[key];
             if (typeof value === 'function') {
                 return function (...args: any[]) {
-                    // toDo need branch for maps
                     // @ts-ignore
                     const result = value.apply(this === receiver ? target : this, args);
+                    if (target instanceof Map) {
+                        if (MapRead.includes(key)) {
+                            const composed = `${property.toString()}.${args[0]}`
+                           if (MapSet.includes(key)) {
+                               adm.report(composed, args[1])
+                           } else {
+                               ObservableTransactions.report(adm, composed)
+                           }
+                        }
+                        if (key === 'clear') { adm.report(property, target); }
+                        return result
+                    }
+
                     if (target instanceof Date && String(key).includes('set') || Mutations.includes(key)) {
                         adm.report(property, args);
+                    } else {
+                        ObservableTransactions.report(adm, property)
                     }
                     return result
                 }

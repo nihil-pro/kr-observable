@@ -1,6 +1,6 @@
 {
   "name": "kr-observable",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "A proxy-based observable with a hoc for react/preact",
   "module": "./dist/index.js",
   "type": "module",
@@ -22,5 +22,9 @@
     "@types/react": "^18.3.11",
     "typescript": "^4.9.5"
   },
-  "sideEffect": false
+  "sideEffect": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nihil-pro/observable-class.git"
+  }
 }
