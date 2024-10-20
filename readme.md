@@ -76,6 +76,8 @@ const Component = observer(function component() {
 })
 ```
 
+More complicated example on [CodeSandbox](https://codesandbox.io/p/sandbox/v7zf47)
+
 ## Interface
 ```typescript
 type Subscriber = (property: string | symbol, value: any) => void | Promise<void>

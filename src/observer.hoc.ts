@@ -8,19 +8,14 @@ import type {
     ForwardRefExoticComponent,
     MemoExoticComponent
 } from 'react'
-import { ObservableTransactions } from "./Observable";
-
-// toDo need only one instance in global
-if (!('__ObservableTransactions__' in self)) {
-    Reflect.set(self, '__ObservableTransactions__', ObservableTransactions)
-}
+import { global } from "./Observable";
 
 function useObservable<T>(fn: () => T, name: string) {
-    const [_, render] = useState('')
-    const cb = () => render(crypto.randomUUID())
+    const { 0: value, 1: render } = useState(0)
+    const cb = () => render(value + 1)
     let renderResult!: T
     let exception: any
-    const { read, hash } = self.__ObservableTransactions__.transaction(() => {
+    const { read, hash } = self[global]?.transaction(() => {
         try {
             renderResult = fn()
         } catch (e) { exception = e }

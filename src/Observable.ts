@@ -7,8 +7,12 @@ export class ObservableTransactions {
         if (!this.#current || typeof property === 'symbol') { return; }
         const track = this.#read.get(this.#current)
         if (track) {
-            if (!track.has(administration)) { track.set(administration, new Set()); }
-            track.get(administration)?.add(property)
+            let reads = track.get(administration)
+            if (!reads) {
+                reads = new Set();
+                track.set(administration, reads);
+            }
+            reads.add(property)
         }
     }
     static notify(subscriber: Subscriber) {
@@ -20,10 +24,10 @@ export class ObservableTransactions {
         })
     }
     public static transaction = (work: Function) => {
-        this.#read.set(work, new Map())
+        const read: Map<ObservableAdministration, Set<string | symbol>> = new Map()
+        this.#read.set(work, read)
         this.#current = work
         work()
-        const read = this.#read.get(work)
         this.#read.delete(work)
         this.#current = null
         return { read, hash: this.#hash(read)}
@@ -34,6 +38,10 @@ export class ObservableTransactions {
         return hash
     }
 }
+
+export const global = Symbol.for('ObservableTransactions')
+if (!(global in self)) { Reflect.set(self, global, ObservableTransactions); }
+const GlobalObservableTransactions = self[global]
 
 class ObservableAdministration {
     #timeout: any
@@ -57,7 +65,7 @@ class ObservableAdministration {
             this.#changes.forEach(change => {
                 this.#subscribers.forEach((keys, cb) => {
                     if (keys.has(change) && !notified.has(cb)) {
-                        ObservableTransactions.notify(cb)
+                        GlobalObservableTransactions.notify(cb)
                         notified.add(cb)
                     }
                 })
@@ -87,7 +95,7 @@ function observableProxyHandler(adm: ObservableAdministration) {
             if (typeof value === 'function') {
                 return function (...args: any[]) { return value.apply(receiver, args); }
             } else {
-                ObservableTransactions.report(adm, property)
+                GlobalObservableTransactions.report(adm, property)
             }
             return value
         },
@@ -123,7 +131,7 @@ function structureProxyHandler(property: string | symbol, adm: ObservableAdminis
                            if (MapSet.includes(key)) {
                                adm.report(composed, args[1])
                            } else {
-                               ObservableTransactions.report(adm, composed)
+                               GlobalObservableTransactions.report(adm, composed)
                            }
                         }
                         if (key === 'clear') { adm.report(property, target); }
@@ -133,7 +141,7 @@ function structureProxyHandler(property: string | symbol, adm: ObservableAdminis
                     if (target instanceof Date && String(key).includes('set') || Mutations.includes(key)) {
                         adm.report(property, args);
                     } else {
-                        ObservableTransactions.report(adm, property)
+                        GlobalObservableTransactions.report(adm, property)
                     }
                     return result
                 }
@@ -161,8 +169,10 @@ type Subscriber = () => void | Promise<void>
 type Listener = (property: string | symbol, value: any) => void | Promise<void>
 declare global {
     interface Window {
-        __ObservableTransactions__: {
+        [global]: {
             transaction(work: Function): { read: Map<Observable, Set<string | symbol>>, hash: string }
+            notify(subscriber: Subscriber): void
+            report(administration: ObservableAdministration, property: string | symbol): void
         }
     }
 }
