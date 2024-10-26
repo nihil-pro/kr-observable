@@ -12,10 +12,10 @@ import { global } from "./Observable";
 
 function useObservable<T>(fn: () => T, name: string) {
     const { 0: value, 1: render } = useState(0)
-    const cb = () => render(value + 1)
+    const cb = () => render((prev) => prev + 1)
     let renderResult!: T
     let exception: any
-    const { read, hash } = self[global]?.transaction(() => {
+    const { read } = self[global]?.transaction(() => {
         try {
             renderResult = fn()
         } catch (e) { exception = e }
@@ -24,7 +24,7 @@ function useObservable<T>(fn: () => T, name: string) {
     useEffect(() => {
         read?.forEach((keys, observable) => observable.subscribe(cb, keys))
         return () => read?.forEach((_, observable) => observable.unsubscribe(cb))
-    }, [hash]);
+    }, [read]);
 
     if (exception) { throw exception; }
     return renderResult

@@ -30,12 +30,7 @@ export class ObservableTransactions {
         work()
         this.#read.delete(work)
         this.#current = null
-        return { read, hash: this.#hash(read)}
-    }
-    static #hash(read?: Map<ObservableAdministration, Set<string | symbol>>) {
-        let hash = ''
-        read?.forEach(set => hash = [...set.values()].join('-'))
-        return hash
+        return { read }
     }
 }
 
@@ -130,6 +125,7 @@ function structureProxyHandler(property: string | symbol, adm: ObservableAdminis
                             const composed = `${property.toString()}.${args[0]}`
                            if (MapSet.includes(key)) {
                                adm.report(composed, args[1])
+                               adm.report(property, target.size)
                            } else {
                                GlobalObservableTransactions.report(adm, composed)
                            }
@@ -170,7 +166,7 @@ type Listener = (property: string | symbol, value: any) => void | Promise<void>
 declare global {
     interface Window {
         [global]: {
-            transaction(work: Function): { read: Map<Observable, Set<string | symbol>>, hash: string }
+            transaction(work: Function): { read: Map<Observable, Set<string | symbol>> }
             notify(subscriber: Subscriber): void
             report(administration: ObservableAdministration, property: string | symbol): void
         }
