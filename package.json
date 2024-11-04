@@ -1,12 +1,13 @@
 {
   "name": "kr-observable",
-  "version": "1.0.6",
+  "version": "1.0.8",
   "description": "A proxy-based observable with a hoc for react/preact",
   "module": "./dist/index.js",
   "type": "module",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "rm -rf dist && tsc"
+    "build": "rm -rf dist && tsc",
+    "test": "node --test --import tsx --experimental-strip-types"
   },
   "keywords": [
     "proxy",
@@ -19,7 +20,9 @@
     "react": "*"
   },
   "devDependencies": {
+    "@types/node": "22.8.6",
     "@types/react": "^18.3.11",
+    "tsx": "^4.19.2",
     "typescript": "^4.9.5"
   },
   "sideEffect": false,

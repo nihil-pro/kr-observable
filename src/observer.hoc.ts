@@ -1,4 +1,4 @@
-import { useEffect, useState, memo } from 'react'
+import { useEffect, useState, memo, useCallback } from 'react'
 import type {
     Ref,
     ForwardRefRenderFunction,
@@ -8,25 +8,30 @@ import type {
     ForwardRefExoticComponent,
     MemoExoticComponent
 } from 'react'
-import { global } from "./Observable";
+import { TransactionExecutor } from "./Observable";
+import { getGlobal } from "./global.this";
+
+const Executor = getGlobal()[TransactionExecutor]
 
 function useObservable<T>(fn: () => T, name: string) {
     const { 0: value, 1: render } = useState(0)
-    const cb = () => render((prev) => prev + 1)
+    const cb = () => render((prev) => 1 - prev)
+    const work = useCallback(fn, [])
     let renderResult!: T
-    let exception: any
-    const { read } = self[global]?.transaction(() => {
-        try {
-            renderResult = fn()
-        } catch (e) { exception = e }
-    })
-
+    const { read, changed, exception, result } = Executor.transaction(work)
+    renderResult = result
     useEffect(() => {
-        read?.forEach((keys, observable) => observable.subscribe(cb, keys))
-        return () => read?.forEach((_, observable) => observable.unsubscribe(cb))
-    }, [read]);
+        read.forEach((keys, observable) => observable.subscribe(cb, keys))
+        return () => {
+            read.forEach((_, observable) => observable.unsubscribe(cb))
+            read.clear()
+        }
+    }, [changed]);
 
-    if (exception) { throw exception; }
+    if (exception) {
+        console.error(`In > ${name}`, exception)
+        throw exception;
+    }
     return renderResult
 }
 
