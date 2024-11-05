@@ -78,6 +78,26 @@ const Component = observer(function component() {
 
 More complicated example on [CodeSandbox](https://codesandbox.io/p/sandbox/v7zf47)
 
+## Debug in react/preact
+```tsx
+import { observer } from "kr-observable";
+
+const Component = observer(
+  function () {
+    return <jsx></jsx>
+  }, 
+  { 
+    debug: true, 
+    name: 'MyComponent' // optional
+  } // 
+)
+
+// will print something like that:
+// "MyComponent rendered 0 times. {list of observables  that component is subscribed to}"
+// "MyComponent will re-render because of changes: {list of observable values that were changed}"
+// ...
+```
+
 ## Interface
 ```typescript
 type Subscriber = (property: string | symbol, value: any) => void | Promise<void>

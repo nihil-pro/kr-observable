@@ -3,65 +3,86 @@ import { getGlobal } from "./global.this";
 class SubscribersNotifier {
     static #task: any
     static #subscribers: Set<Subscriber> = new Set()
-    static notify(subscriber: Subscriber) {
+    static #changes: Map<Subscriber, Set<string | symbol>> = new Map()
+    static notify(subscriber: Subscriber, properties?: Set<string | symbol>) {
         this.#subscribers.add(subscriber)
+        let changes = this.#changes.get(subscriber)
+        if (!changes) {
+            changes = new Set();
+            this.#changes.set(subscriber, changes);
+        }
+        properties.forEach(property => changes.add(property))
         clearTimeout(this.#task)
         this.#task = setTimeout(() => {
-            this.#subscribers.forEach(cb => cb())
+            this.#subscribers.forEach(cb => {
+                cb(changes)
+                this.#changes.delete(subscriber)
+            })
             this.#subscribers.clear()
         })
     }
 }
 
-export class ObservableTransactions {
-    static #read: Map<Function, Map<ObservableAdministration, Set<string | symbol>>> = new Map()
-    static #current: Function = null
 
-    // toDo need a mechanism to check the changes compared to the previous execution of current work
+class WorkStats {
+    count = 0
+    read: Map<ObservableAdministration, Set<string | symbol>> = new Map()
+}
+
+interface TransactionResult {
+    stats: WorkStats,
+    dispose: () => void | Promise<void>,
+    exception: undefined | Error
+    result: any
+}
+
+export class ObservableTransactions {
+    static #current: Function = null
+    static #track: Map<Function, WorkStats> = new Map()
+
     static report(administration: ObservableAdministration, property: string | symbol) {
         if (!this.#current || typeof property === 'symbol') { return; }
-        const track = this.#read.get(this.#current)
-        if (track) {
-            let reads = track.get(administration)
-            if (!reads) {
-                reads = new Set();
-                track.set(administration, reads);
+        const stats = this.#track.get(this.#current)
+        if (stats) {
+            let read = stats.read.get(administration)
+            if (!read) {
+                read = new Set();
+                stats.read.set(administration, read);
             }
-            reads.add(property)
+            read.add(property)
         }
     }
 
-    // toDo hash is expensive, remove it
-    public static transaction = (work: Function) => {
-        let read = this.#read.get(work)
-        if (!read) {
-            read = new Map<ObservableAdministration, Set<string | symbol>>();
-            this.#read.set(work, read);
+    public static transaction = (work: Function, cb: Subscriber) => {
+        let stats = this.#track.get(work)
+        if (!stats) {
+            stats = new WorkStats();
+            this.#track.set(work, stats);
         }
-        const hashBefore = this.#hash(read)
-        this.#current = work
         let result: any
-        let exception: Error
+        let exception!: Error
         try {
+            stats.read.forEach((_, o) => o.unsubscribe(cb))
+            stats.read.clear()
+            this.#current = work
             result = work()
+            stats = this.#track.get(work)
+            stats.count++
+            stats.read.forEach((k,o) => o.subscribe(cb, k))
         } catch (e) {
             exception = e as Error
         }
         this.#current = null
-        const hashAfter = this.#hash(read)
-        const changed = hashBefore !== hashAfter
-        return { read, changed, result, exception }
-    }
-
-    // this sucks, to many work for just checking changes
-    static #hash(read: Map<ObservableAdministration, Set<string | symbol>>) {
-        let hash = ''
-        read.forEach((keys, adm) => {
-            hash += `${adm.id}-`
-            const properties = [...keys.values()].map(key => key.toString()).join('-')
-            hash += properties
-        })
-        return hash
+        return {
+            stats,
+            result,
+            exception,
+            dispose: () => {
+                stats?.read.forEach((_, o) => o.unsubscribe(cb))
+                stats?.read.clear()
+                this.#track.delete(work)
+            }
+        }
     }
 }
 
@@ -75,7 +96,6 @@ if (!(TransactionExecutor in _self)) {
 const GlobalObservableTransactions = _self[TransactionExecutor]
 
 class ObservableAdministration {
-    id = crypto.randomUUID() // used to identify observables
     #timeout: any
     #subscribers: Map<Subscriber, Set<string | symbol>> = new Map()
     #listeners: Set<Listener> = new Set()
@@ -97,7 +117,7 @@ class ObservableAdministration {
             this.#changes.forEach(change => {
                 this.#subscribers.forEach((keys, cb) => {
                     if (keys.has(change) && !notified.has(cb)) {
-                        SubscribersNotifier.notify(cb)
+                        SubscribersNotifier.notify(cb, this.#changes)
                         notified.add(cb)
                     }
                 })
@@ -110,7 +130,7 @@ class ObservableAdministration {
 function maybeMakeObservable(property: string | symbol, value: any, adm: ObservableAdministration) {
     if (!value || typeof value !== 'object' || value instanceof Observable) { return value; }
     if ([Map, Array, Set, Date].some(Constructor => value instanceof Constructor)) {
-        return new Proxy(value, structureProxyHandler(property, adm, value))
+        return new Proxy(value, structureProxyHandler(property, adm))
     }
     if (Object.prototype === Object.getPrototypeOf(value)) {
         return new Proxy(value, observableProxyHandler(new ObservableAdministration()))
@@ -149,7 +169,7 @@ function observableProxyHandler(adm: ObservableAdministration) {
 const Mutations: Array<string | symbol> = ['add', 'set', 'copyWithin', 'fill', 'pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift']
 const MapRead: Array<string | symbol> = ['get', 'has', 'set', 'delete']
 const MapSet: Array<string | symbol> = ['set', 'delete']
-function structureProxyHandler(property: string | symbol, adm: ObservableAdministration, origin: object) {
+function structureProxyHandler(property: string | symbol, adm: ObservableAdministration) {
     return {
         get(target: any, key: string | symbol, receiver: any) {
             const value = target[key];
@@ -198,18 +218,13 @@ export class Observable {
         return new Proxy(this, observableProxyHandler(adm))
     }
 }
-type Subscriber = () => void | Promise<void>
+type Subscriber = (changes?: Set<string | symbol>) => void | Promise<void>
 type Listener = (property: string | symbol, value: any) => void | Promise<void>
 declare global {
     interface Window {
         [TransactionExecutor]: {
-            transaction(work: Function): {
-                read: Map<Observable, Set<string | symbol>>,
-                result: any,
-                exception: undefined | Error,
-                changed: boolean
-            }
-            notify(subscriber: Subscriber): void
+            transaction(work: Function, cb: Subscriber): TransactionResult
+            notify(subscriber: Subscriber, changes?: Set<string | symbol>): void
             report(administration: ObservableAdministration, property: string | symbol): void
         }
     }
