@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test'
 import expect from 'node:assert';
-import { Observable } from '../Observable';
+import { Observable, makeObservable } from '../Observable';
 
 // Observable notify subscribers in setTimeout. It takes some time, that's why we need delay in tests
 const delay = (ms: number) => new Promise((resolve) => setTimeout(() => resolve(true), ms));
@@ -10,6 +10,13 @@ describe('Observable', () => {
     name = ''
     age = 42
     city = 'Moscow'
+    arr = [1,2]
+
+    swap(){
+      const i = this.arr[0]
+      this.arr[0] = this.arr[1]
+      this.arr[1] = i
+    }
 
     setAll() {
       this.city = 'Texas'
@@ -26,6 +33,15 @@ describe('Observable', () => {
     }
   }
   const foo = new Foo()
+
+
+  test('Should notify when swap items in array', async (ctx) => {
+    const subscriber = ctx.mock.fn()
+    foo.subscribe(subscriber, new Set(['arr']))
+    foo.swap()
+    await delay(10)
+    expect.equal(subscriber.mock.callCount(), 1)
+  })
 
   test('Should pass "instanceof" check', async (ctx) => {
     expect.equal(foo instanceof Observable, true)
@@ -171,5 +187,102 @@ describe('Observable Map', () => {
     await delay(10)
     // adding new item to map doesn't trigger subscriber,
     expect.equal(onFirstKeyChange.mock.callCount(), 1)
+  })
+})
+
+describe('Observable plain object', () => {
+  const foo = makeObservable({
+    name: '',
+    age: 42,
+    city: 'Moscow',
+
+    setAll() {
+      this.city = 'Texas'
+      this.age = 52
+      this.name = 'Egor'
+      this.city = 'London'
+    },
+
+    async setAsynchronously() {
+      this.name = 'John'
+      await delay(100)
+      this.city = 'Rome'
+      return true
+    }
+  })
+
+
+  test('subscribe',async (ctx) => {
+    const subscriber = ctx.mock.fn()
+
+    foo.subscribe(subscriber, new Set(['name', 'city', 'surname']))
+    foo.setAll()
+
+    await ctx.test('Should be called once per synchronous transaction', async () => {
+      await delay(10)
+      expect.equal(subscriber.mock.callCount(), 1)
+    })
+
+    await ctx.test('Should not be called when changing a property that we are not subscribed to', async () => {
+      subscriber.mock.resetCalls()
+      foo.age = 62 // We are not subscribed to age
+      expect.equal(subscriber.mock.callCount(), 0)
+    })
+
+    await ctx.test('Should be called twice when transaction was interrupted by Promise', async () => {
+      subscriber.mock.resetCalls()
+      await foo.setAsynchronously()
+      await delay(10)
+      expect.equal(subscriber.mock.callCount(), 2)
+    })
+
+    await ctx.test('Should not be called when properties were changed with same values', async () => {
+      subscriber.mock.resetCalls()
+      await foo.setAsynchronously()
+      await delay(10)
+      expect.equal(subscriber.mock.callCount(), 0)
+    })
+
+    await ctx.test('Should be called for each subscriber', async () => {
+      subscriber.mock.resetCalls()
+
+      const subscriber2 = ctx.mock.fn()
+      foo.subscribe(subscriber2, new Set(['name', 'city']))
+
+      foo.city = 'Seoul'
+      foo.name = 'Choi'
+
+      await delay(10)
+      expect.equal(subscriber.mock.callCount(), 1)
+      expect.equal(subscriber2.mock.callCount(), 1)
+
+      foo.unsubscribe(subscriber2)
+    })
+
+    await ctx.test('Should not be called after unsubscribe', async () => {
+      subscriber.mock.resetCalls()
+      foo.unsubscribe(subscriber)
+      foo.city = 'Beijing'
+      foo.name = 'Chan'
+      await delay(10)
+      expect.equal(subscriber.mock.callCount(), 0)
+    })
+  })
+
+  test('listen',async (ctx) => {
+    const listener = ctx.mock.fn()
+    foo.listen(listener)
+    foo.setAll()
+
+    await ctx.test('Should be called on each change', () => {
+      expect.equal(listener.mock.callCount(), 4)
+    })
+
+    await ctx.test('Should not be called after unlisten', () => {
+      listener.mock.resetCalls()
+      foo.unlisten(listener)
+      foo.setAll()
+      expect.equal(listener.mock.callCount(), 0)
+    })
   })
 })

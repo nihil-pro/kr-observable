@@ -8,10 +8,7 @@ import type {
     ForwardRefExoticComponent,
     MemoExoticComponent
 } from 'react'
-import { TransactionExecutor } from "./Observable";
-import { getGlobal } from "./global.this";
-
-const Executor = getGlobal()[TransactionExecutor]
+import { ObservableTransactions } from './Observable.transaction.js';
 
 interface ObserverOptions {
     debug?: boolean,
@@ -31,10 +28,14 @@ function useObservable<T>(fn: () => T, name: string, options = {} as ObserverOpt
     }, [])
     Object.defineProperty(cb, 'name', { value: debugName })
     let renderResult!: T
-    const { dispose, stats, exception, result } = Executor.transaction(work, cb)
+    const { dispose, stats, exception, result } = ObservableTransactions.transaction(work, cb)
     renderResult = result
     if (debug) {
-        console.info(`${debugName} was rendered ${stats.count} times.`, stats.read)
+        const plainReads = new Map()
+        stats.read.forEach((keys, adm) => {
+            plainReads.set(adm[Symbol.for('whoami')], keys)
+        })
+        console.info(`${debugName} was rendered ${stats.count} times.`, plainReads)
     }
 
     useEffect(() => {

@@ -1,13 +1,11 @@
 # Observable
-A proxy-based observer, and  observable-based state-manager for react/preact.
-1. Small size – 2 kB (gzipped, non minified)
-2. Easy to use, see examples below.
-3. Supports subclasses.
-4. No dependencies.
+Proxy based state-manager 
+1. Easy to use, see examples below
+2. Supports classes and plain objects
+3. Supports subclassing
+4. Tiny, no dependencies
 
-## Usage with react or preact/compat
-Write a class that extends Observable, and wrap the component in observer hoc. <br />
-Nothing else is needed.
+## Getting Started with react
 ```tsx
 import { Observable, observer } from "kr-observable";
 
@@ -75,33 +73,39 @@ const Component = observer(function component() {
   )
 })
 ```
-
 More complicated example on [CodeSandbox](https://codesandbox.io/p/sandbox/v7zf47)
 
-## Debug in react/preact
-```tsx
-import { observer } from "kr-observable";
+## Api reference
 
-const Component = observer(
-  function () {
-    return <jsx></jsx>
-  }, 
-  { 
-    debug: true, 
-    name: 'MyComponent' // optional
-  } // 
-)
-
-// will print something like that:
-// "MyComponent rendered 0 times. {list of observables  that component is subscribed to}"
-// "MyComponent will re-render because of changes: {list of observable values that were changed}"
-// ...
+### observer
+The observer converts a React component into a reactive component, which tracks observables and re-renders the component when one of these changes. 
+Can only be used for function components.<br />
+```typescript
+interface Options {
+  // optional FC debug name
+  name?: string
+  // if true, debug info will be printed to console on each render/re-render
+  // icluding renders count and re-render reasons (i.e changed observables)
+  debug?: boolean 
+}
+type observer<P> = (baseComponent: FunctionComponent<P>, options?: Options) => FunctionComponent<P>
 ```
 
-## Interface
+### Observable class
 ```typescript
-type Subscriber = (property: string | symbol, value: any) => void | Promise<void>
-type Listener = () => void | Promise<void>
+import { Observable } from 'kr-observable'
+class Foo extends Observable { }
+```
+- All properties are observable by default. Arrays and plain objects are deep observable.
+- All getters are computed by default
+- All methods are `bounded` by default
+- Private properties (#prop) are just private properties, you can use them
+- All subclasses are also observable
+- `listen, unlisten, subscribe and unsubscribe` are reserved. They won't work even on accidentally redefine. 
+Their signature below.
+```typescript
+type Subscriber = (property: string | symbol, value: any) => void
+type Listener = () => void
 
 interface Observable {
   // The callback will be triggered on each change
@@ -117,23 +121,22 @@ interface Observable {
   unsubscribe(cb: Listener): void
 }
 ```
-
-## Features
+Example
 ```typescript
 import { Observable } from "kr-observable";
 
 class Example extends Observable {
-  #private = 1 // ignored
-  string = '' // observable
-  number = 0 // observable
-  array = [] // observable 
-  set = new Set() // observable
-  map = new Map() // observable
+  #private = 1 
+  string = ''
+  number = 0 
+  array = [] 
+  set = new Set() 
+  map = new Map()
   plain = {
-    foo: 'baz', // observable
-    nestedArray: [] // observable
-  } // observable
-  date = new Date() // observable
+    foo: 'baz', 
+    nestedArray: [] 
+  } 
+  date = new Date() 
   
   get something() {
     return this.number + this.string // computed 
@@ -164,3 +167,38 @@ example.date.setHour(12) // date was changed, new value = 12
 example.plain.foo = '' // foo was changed, new value = ''
 example.plain.nestedArray.push(42) // nestedArray was changed, new value = 42
 ```
+
+### makeObservable
+Has the same API as Observable, but works only with plain objects
+```typescript
+import { makeObservable } from 'kr-observable';
+
+const observableObject = makeObservable({ 
+  foo: 'bar',
+  count: 0,
+  increaseCount() {
+    this.count++
+  }
+})
+```
+
+### autorun
+The autorun function accepts one function that should run every time anything it observes changes. <br /> 
+It also runs once when you create the autorun itself.
+```typescript
+import { Observable, autorun } from 'kr-observable';
+
+class Example extends Observable {
+  one = 0
+  two = 0
+}
+
+const example = new Example()
+
+autorun(() => console.log('total', example.one + example.two))
+
+setInterval(() => {
+  example.one += 1 // total {number}
+}, 1000)
+```
+
