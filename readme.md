@@ -109,16 +109,16 @@ type Listener = () => void
 
 interface Observable {
   // The callback will be triggered on each change
-  listen(cb: Subscriber): void
+  listen(cb: Listener): void
   // remove listener
-  unlisten(cb: Subscriber): void
+  unlisten(cb: Listener): void
   
   // The callback will be triggered on each "batch" 
   // i.e. some part of changes made almost at the same time,
   // for the properties passed as second argument
-  subscribe(cb: Listener, keys: Set<keyof Observable>): void
+  subscribe(cb: Subscriber, keys: Set<keyof Observable>): void
   // remove subscriber
-  unsubscribe(cb: Listener): void
+  unsubscribe(cb: Subscriber): void
 }
 ```
 Example

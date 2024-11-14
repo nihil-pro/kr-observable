@@ -7,7 +7,6 @@ export class ObservableAdministration {
   #listeners: Set<Listener> = new Set();
   #changes: Set<string | symbol> = new Set();
   #reportable = false
-  get reportable() { return this.#reportable }
   subscribe = (subscriber: Subscriber, keys: Set<string | symbol>) => {
     if (this.#subscribers.size < this.#subscribers.set(subscriber, keys).size) {
       this.#reportable = true
@@ -36,6 +35,7 @@ export class ObservableAdministration {
 
   #notify() {
     clearTimeout(this.#timeout);
+
     this.#timeout = setTimeout(() => {
       const notified: Set<Subscriber> = new Set();
       this.#changes.forEach(change => {
