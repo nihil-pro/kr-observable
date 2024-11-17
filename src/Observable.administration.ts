@@ -2,12 +2,10 @@ import { SubscribersNotifier } from './Subscribers.notifier.js';
 import { Listener, Subscriber } from './types.js';
 
 export class ObservableAdministration {
-  #timeout: any;
   #subscribers: Map<Subscriber, Set<string | symbol>> = new Map();
   #listeners: Set<Listener> = new Set();
   #changes: Set<string | symbol> = new Set();
   #reportable = false
-  get reportable() { return this.#reportable }
   subscribe = (subscriber: Subscriber, keys: Set<string | symbol>) => {
     if (this.#subscribers.size < this.#subscribers.set(subscriber, keys).size) {
       this.#reportable = true
@@ -33,20 +31,16 @@ export class ObservableAdministration {
       this.#notify();
     }
   };
-
   #notify() {
-    clearTimeout(this.#timeout);
-    this.#timeout = setTimeout(() => {
-      const notified: Set<Subscriber> = new Set();
-      this.#changes.forEach(change => {
-        this.#subscribers.forEach((keys, cb) => {
-          if (keys.has(change) && !notified.has(cb)) {
-            SubscribersNotifier.notify(cb, this.#changes);
-            notified.add(cb);
-          }
-        });
-        this.#changes.delete(change);
+    const notified: Set<Subscriber> = new Set();
+    this.#changes.forEach(change => {
+      this.#subscribers.forEach((keys, cb) => {
+        if (keys.has(change) && !notified.has(cb)) {
+          SubscribersNotifier.notify(cb, this.#changes);
+          notified.add(cb);
+        }
       });
+      this.#changes.delete(change);
     });
   }
 }

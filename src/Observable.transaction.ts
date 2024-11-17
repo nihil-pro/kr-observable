@@ -42,8 +42,6 @@ class ObservableTransactionsImpl {
     let result: any;
     let exception!: Error;
     try {
-      stats.read.forEach((_, o) => o.unsubscribe(cb));
-      stats.read.clear();
       this.#current = work;
       result = work();
       stats = this.#track.get(work);

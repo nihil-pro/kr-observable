@@ -34,15 +34,6 @@ describe('Observable', () => {
   }
   const foo = new Foo()
 
-
-  test('Should notify when swap items in array', async (ctx) => {
-    const subscriber = ctx.mock.fn()
-    foo.subscribe(subscriber, new Set(['arr']))
-    foo.swap()
-    await delay(10)
-    expect.equal(subscriber.mock.callCount(), 1)
-  })
-
   test('Should pass "instanceof" check', async (ctx) => {
     expect.equal(foo instanceof Observable, true)
     expect.equal(foo instanceof Foo, true)
@@ -284,5 +275,100 @@ describe('Observable plain object', () => {
       foo.setAll()
       expect.equal(listener.mock.callCount(), 0)
     })
+  })
+})
+
+describe('Observable Array', () => {
+
+  test('Should notify when add item by push', async (ctx) => {
+    class WithArray extends Observable {
+      array = []
+    }
+    const withArray = new WithArray()
+    const onSizeChange = ctx.mock.fn()
+    withArray.subscribe(onSizeChange, new Set(['array']))
+    await delay(10)
+    withArray.array.push(9)
+    withArray.array.push(10)
+    withArray.array.push(11,12,13)
+    await delay(2)
+    expect.equal(onSizeChange.mock.callCount(), 1)
+    withArray.array = []
+  })
+
+  test('Should notify when set item by index', async (ctx) => {
+    class WithArray extends Observable {
+      array: any[] = []
+    }
+    const withArray = new WithArray()
+    const onSizeChange = ctx.mock.fn()
+    withArray.subscribe(onSizeChange, new Set(['array']))
+
+    withArray.array.set(0, { foo: 'bar' })
+    await delay(2)
+
+    expect.equal(onSizeChange.mock.callCount(), 1)
+    onSizeChange.mock.resetCalls()
+    withArray.unsubscribe(onSizeChange)
+    withArray.array = []
+  })
+
+  test('Should notify on splice', async (ctx) => {
+    class WithArray extends Observable {
+      array = []
+    }
+    const withArray = new WithArray()
+    const onSizeChange = ctx.mock.fn()
+    withArray.array = [1,2,3]
+    withArray.subscribe(onSizeChange, new Set(['array']))
+
+    withArray.array.splice(0,2)
+    await delay(10)
+
+    expect.equal(onSizeChange.mock.callCount(), 1)
+    onSizeChange.mock.resetCalls()
+    withArray.unsubscribe(onSizeChange)
+    withArray.array = []
+  })
+
+  test('Should notify on shift and pop', async (ctx) => {
+    class WithArray extends Observable {
+      array = []
+    }
+    const withArray = new WithArray()
+    const onSizeChange = ctx.mock.fn()
+    withArray.array = [1,2,3]
+    withArray.subscribe(onSizeChange, new Set(['array']))
+
+    withArray.array.shift()
+    await delay(10)
+    expect.equal(onSizeChange.mock.callCount(), 1)
+
+    withArray.array.pop()
+    await delay(10)
+    expect.equal(onSizeChange.mock.callCount(), 2)
+    onSizeChange.mock.resetCalls()
+    withArray.unsubscribe(onSizeChange)
+    withArray.array = []
+  })
+
+  test('Should notify on sort and reverse', async (ctx) => {
+    class WithArray extends Observable {
+      array = []
+    }
+    const withArray = new WithArray()
+    const onSizeChange = ctx.mock.fn()
+    withArray.array = [1,2,3]
+    withArray.subscribe(onSizeChange, new Set(['array']))
+
+    withArray.array.sort((a, b) => b - a)
+    await delay(10)
+    expect.equal(onSizeChange.mock.callCount(), 1)
+
+    withArray.array.reverse()
+    await delay(10)
+    expect.equal(onSizeChange.mock.callCount(), 2)
+    withArray.unsubscribe(onSizeChange)
+    withArray.array = []
   })
 })

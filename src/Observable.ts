@@ -1,33 +1,141 @@
 import { ObservableAdministration } from './Observable.administration.js';
 import { ObservableTransactions } from './Observable.transaction.js';
+import { ObservableMap } from './Observable.map.js';
+import { ObservableSet } from './Observable.set.js';
 
 // faster than check instanceof
 const isObservable = Symbol('Observable')
 
-/** Only plain object are allowed
- * @example makeObservable({ foo: 'bar' }) */
-export function makeObservable<T extends object>(value: T): T & Observable {
-  if (!value || typeof value !== 'object' || value[isObservable]) {
-    throw new TypeError('Only plain objects')
+Reflect.set(Array.prototype, 'set', function (i:number, value: unknown) {
+  this[i] = value
+})
+
+class ObservableArray<T> extends Array<T> {
+  #key: string | symbol
+  #adm: ObservableAdministration
+
+  constructor(key: string | symbol, adm: ObservableAdministration, ...items: T[]) {
+    super(...items);
+    this.#adm = adm || { report: () => {} } as unknown as ObservableAdministration
+    this.#key = key || ''
   }
-  if (Object.prototype === Object.getPrototypeOf(value)) {
-    // turn on deep observable for plain objects
-    const plainAdm = new ObservableAdministration()
-    Reflect.set(plainAdm, Symbol.for('whoami'), value)
-    const proxiedValue = new Proxy({ [isObservable]: true }, observableProxyHandler(plainAdm))
-    Object.entries(value).forEach(([key, value]) => Reflect.defineProperty(proxiedValue, key, { value }))
-    return proxiedValue
+
+  push(...items: any[]): number {
+    const observables = items.map(i => maybeMakeObservable(this.#key, i, this.#adm))
+    try {
+      return super.push(...observables)
+    } finally {
+      this.#adm.report(this.#key, items)
+    }
+  }
+
+  unshift(...items: any[]): number {
+    const observables = items.map(i => maybeMakeObservable(this.#key, i, this.#adm))
+    try {
+      return super.unshift(...observables)
+    } finally {
+      this.#adm.report(this.#key, items)
+    }
+  }
+
+  splice(start: number, deleteCount?: number, ...items: T[]): T[] {
+    const observables = items.map(i => maybeMakeObservable(this.#key, i, this.#adm))
+    try {
+      return super.splice(start, deleteCount, ...observables)
+    } finally {
+      this.#adm.report(this.#key, items)
+    }
+  }
+
+  copyWithin(target: number, start: number, end?: number): this {
+    try {
+      return super.copyWithin(target, start, end)
+    } finally {
+      this.#adm.report(this.#key, this)
+    }
+  }
+
+  pop() {
+    try {
+      return super.pop()
+    } finally {
+      this.#adm.report(this.#key, this)
+    }
+  }
+
+  reverse() {
+    try {
+      return super.reverse()
+    } finally {
+      this.#adm.report(this.#key, this)
+    }
+  }
+
+  shift() {
+    try {
+      return super.shift()
+    } finally {
+      this.#adm.report(this.#key, this)
+    }
+  }
+
+  sort(compareFn?: (a: T, b: T) => number) {
+    try {
+      return super.sort(compareFn)
+    } finally {
+      this.#adm.report(this.#key, this)
+    }
+  }
+
+  set(i: number, v: T) {
+    try {
+      super[i] = v
+    } finally {
+      this.#adm.report(this.#key, this)
+    }
   }
 }
 
-type Structure = 'Map' | 'Date' | 'Array' | 'Set'
+/** Only plain object are allowed
+ * @example makeObservable({ foo: 'bar' }) */
+export function makeObservable<T extends object>(value: T): T & Observable {
+  try {
+    if (Object.prototype === Object.getPrototypeOf(value)) {
+      // turn on deep observable for plain objects
+      const plainAdm = new ObservableAdministration()
+      Reflect.set(plainAdm, Symbol.for('whoami'), value)
+      const proxiedValue = new Proxy({ [isObservable]: true }, observableProxyHandler(plainAdm))
+      Object.entries(value).forEach(([key, value]) => {
+        Reflect.defineProperty(proxiedValue, key, { value })
+      })
+      return proxiedValue
+    }
+    return undefined
+  } catch (e) {
+    throw new TypeError('Invalid argument. Only plain objects')
+  }
+}
 
 function maybeMakeObservable(property: string | symbol, value: any, adm: ObservableAdministration) {
-  if (!value || typeof value !== 'object' || value[isObservable]) { return value; }
+  if (!value) { return value; }
+  if (typeof value !== 'object') { return value }
+  if (value[isObservable]) { return value }
 
-  if ([ Map, Array, Set, Date ].some(Constructor => value instanceof Constructor)) {
-    const type = Reflect.getPrototypeOf(value).constructor.name as Structure
-    return new Proxy(value, structureProxyHandler(property, adm, type));
+  if (value instanceof Map) {
+    return new ObservableMap(property, adm, value)
+  }
+
+  if (value instanceof Set) {
+    return new ObservableSet(property, adm, value)
+  }
+
+  if (Array.isArray(value)) {
+    const observables = value.map(el => maybeMakeObservable(property, el, adm))
+    return new ObservableArray(property, adm, ...observables)
+  }
+
+  if (value instanceof Date) {
+    return new Proxy(value, structureProxyHandler(property, adm));
   }
   if (Object.prototype === Object.getPrototypeOf(value)) {
     return makeObservable(value)
@@ -35,16 +143,26 @@ function maybeMakeObservable(property: string | symbol, value: any, adm: Observa
   return value;
 }
 
+const AdmKeys = Object.create(null, {})
+Object.assign(AdmKeys, {
+  report: 1,
+  subscribe: 1,
+  unsubscribe: 1,
+  listen: 1,
+  unlisten: 1
+})
+
 function observableProxyHandler(adm: ObservableAdministration) {
   return {
     get(target: any, property: string | symbol, receiver: any) {
-      if (Reflect.has(adm, property)) {
-        return Reflect.get(adm, property);
-      }
-      const value = Reflect.get(target, property, receiver); // target[property]
-      if (/^\s*class\s+/.test(value?.toString())) {
+      if (AdmKeys[property]) { return adm[property]; }
+      const value = Reflect.get(target, property, receiver);
+
+      // for serializer
+      if (property === Symbol.for(`type:${property.toString()}`)) {
         return value;
       }
+
       if (typeof value === 'function') {
         return function (...args: any[]) {
           return value.apply(receiver, args);
@@ -55,112 +173,43 @@ function observableProxyHandler(adm: ObservableAdministration) {
       return value;
     },
     set(target: any, property: string, newValue: any, receiver: any) {
-      if (Reflect.get(target, property, receiver) === newValue) {
-        return true;
-      }
+      if (target[property] === newValue) { return true; }
       const value = maybeMakeObservable(property, newValue, adm);
-      Reflect.set(target, property, value, receiver);
+      target[property] = value
       adm.report(property, value);
       return true;
     },
-    defineProperty(target: any, property: string, attributes: PropertyDescriptor) {
-      if (!attributes?.value) {
-        return Reflect.set(target, property, attributes.value);
+    defineProperty(target: any, property: string, { value }: PropertyDescriptor) {
+      if (!value) {
+        target[property] = value
+        return true;
       }
-      let value = maybeMakeObservable(property, attributes?.value, adm);
-      if (attributes?.value instanceof Array) {
-        value = maybeMakeObservable(property, value.map((el: any) => maybeMakeObservable(property, el, adm)), adm)
-      }
-      return Reflect.set(target, property, value);
+      target[property] = maybeMakeObservable(property, value, adm)
+      return true
     }
   };
 }
 
-// faster than array.includes(key)
-const MapRead: Record<string | symbol, number> = Object.create(null, {})
-Object.assign(MapRead, { get: 1, has: 1 })
-
-const MapMutation: Record<string | symbol, number> = Object.create(null, {})
-Object.assign(MapMutation, { set: 1, delete: 1, clear: 1 })
-
-const SetMutation: Record<string | symbol, number> = Object.create(null, {})
-Object.assign(SetMutation, { add: 1, delete: 1, clear: 1 })
-
-const ArrayInsert: Record<string | symbol, number> = Object.create(null, {})
-Object.assign(ArrayInsert, { unshift: 1, splice: 1, push: 1 })
-
-const ArrayMutation: Record<string | symbol, number> = Object.create(null, {})
-Object.assign(ArrayMutation, { copyWithin: 1, pop: 1, reverse: 1, shift: 1, sort: 1 })
-
-
-function structureProxyHandler(property: string | symbol, adm: ObservableAdministration, type: Structure) {
+function structureProxyHandler(property: string | symbol, adm: ObservableAdministration) {
   return {
     get(target: any, key: string | symbol, receiver: any) {
       const value = target[key];
       if (key === 'toString') { return value }
-      if (typeof value === 'function') {
+      if (typeof value === 'function' && String(key).includes('set')) {
         return function (...args: any[]) {
-          if (type === 'Array') {
-            if (ArrayInsert[key]) {
-              if (key === 'splice' && args[2]) {
-                args[2] = args[2].map((el: any) => maybeMakeObservable(property, el, adm))
-              }
-              // @ts-ignore
-              const result = value.apply(this === receiver ? target : this, args)
-              if (adm.reportable) {
-                adm.report(property, args)
-              }
-              return result
-            }
-
-            // @ts-ignore
-            const arrayResult = value.apply(this === receiver ? target : this, args);
-            if (ArrayMutation[key] && adm.reportable) {
-              adm.report(property, args)
-            } else {
-              ObservableTransactions.report(adm, property);
-            }
-            return arrayResult
-          }
-
           // @ts-ignore
           const result = value.apply(this === receiver ? target : this, args);
-          if (type === 'Map') {
-            const composed = `${property.toString()}.${args[0]}`;
-            if (MapRead[key]) {
-              ObservableTransactions.report(adm, composed);
-            } else if (MapMutation[key] && adm.reportable) {
-              adm.report(composed, args[1]);
-              adm.report(property, target.size);
-            } else {
-              ObservableTransactions.report(adm, property);
-            }
-          }
-
-          if (type === 'Date') {
-            if (String(key).includes('set') && adm.reportable) {
-              adm.report(property, args)
-            } else {
-              ObservableTransactions.report(adm, property);
-            }
-          }
-
-          if (type === 'Set') {
-            if (SetMutation[key] && adm.reportable) {
-              adm.report(property, args)
-            } else {
-              ObservableTransactions.report(adm, property);
-            }
-          }
-          return result;
+          adm.report(property, args)
+          return result
         };
+      } else {
+        ObservableTransactions.report(adm, property)
       }
       return value;
     },
     set(target: any, key: string, newValue: any) {
-      let value = maybeMakeObservable(property, newValue, adm)
-      if (target[key] !== value) {
-        target[key] = value;
+      if (target[key] !== newValue) {
+        target[key] = newValue;
         adm.report(property, newValue);
       }
       return true;
@@ -168,14 +217,20 @@ function structureProxyHandler(property: string | symbol, adm: ObservableAdminis
   };
 }
 
-
 export class Observable {
   [isObservable] = true
   constructor() {
     const adm = new ObservableAdministration();
-    Reflect.set(adm, Symbol.for('whoami'), this);
-    return new Proxy(this, observableProxyHandler(adm));
+    Reflect.set(adm, Symbol.for('whoami'), this)
+    return new Proxy(this, observableProxyHandler(adm))
   }
 }
+
+declare global {
+  interface Array<T> {
+    set(i: number, v: T): void
+  }
+}
+
 
 export declare interface Observable extends ObservableAdministration {}
