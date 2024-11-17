@@ -26,7 +26,6 @@ function useObservable<T>(fn: () => T, name: string, options = {} as ObserverOpt
             console.info(`${debugName} will re-render because of changes:`, reason)
         }
     }, [])
-    Object.defineProperty(cb, 'name', { value: debugName })
     let renderResult!: T
     const { dispose, stats, exception, result } = ObservableTransactions.transaction(work, cb)
     renderResult = result

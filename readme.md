@@ -4,6 +4,8 @@ Proxy based state-manager
 2. Supports classes and plain objects
 3. Supports subclassing
 4. Tiny, no dependencies
+5. Framework-agnostic. <br />
+It comes with a hoc for React, as the most popular library, but can be used with any other.
 
 ## Getting Started with react
 ```tsx
@@ -202,3 +204,18 @@ setInterval(() => {
 }, 1000)
 ```
 
+## Limitations
+There is only one limitation: if you assign a new element to the array by index – changes will happen, of course, but You will not be notified.
+```typescript
+import { Observable } from 'kr-observable';
+
+class Example extends Observable {
+  array = []
+}
+
+const state = new Example()
+state.listen((p,v) => console.log(p,v))
+state.array[0] = 1 // 
+state.set(0,1) // array 1
+```
+There is a new `set` method in Array which you can use for that.
