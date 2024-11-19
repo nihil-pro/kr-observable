@@ -15,11 +15,11 @@ interface ObserverOptions {
     name?: string
 }
 
-function useObservable<T>(fn: () => T, name: string, options = {} as ObserverOptions) {
+function useObservable<T>(fn: () => T, name: string, options = {} as ObserverOptions, props: any) {
     const debugName = options?.name || name
     const debug = options?.debug || false
     const { 0: value, 1: render } = useState(0)
-    const work = useCallback(fn, [])
+    const work = useCallback(fn, [props])
     const cb = useCallback((reason?: Set<string | symbol>) => {
         render((prev) => 1 - prev)
         if (debug) {
@@ -63,7 +63,7 @@ export function observer<A extends object, B = {}>(
     rc: ForwardRefRenderFunction<B, A> | FunctionComponent<A> | ForwardRefExoticComponent<PropsWithoutRef<A> & RefAttributes<B>>,
     options?: ObserverOptions
 ) {
-    let observedComponent = (props: any, ref: Ref<B>) => useObservable(() => rc(props, ref), rc.name, options)
+    let observedComponent = (props: any, ref: Ref<B>) => useObservable(() => rc(props, ref), rc.name, options, props)
     observedComponent = memo(observedComponent)
     return observedComponent
 }

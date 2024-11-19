@@ -159,7 +159,7 @@ function observableProxyHandler(adm: ObservableAdministration) {
       const value = Reflect.get(target, property, receiver);
 
       // for serializer
-      if (property === Symbol.for(`type:${property.toString()}`)) {
+      if (typeof property === 'symbol') {
         return value;
       }
 
