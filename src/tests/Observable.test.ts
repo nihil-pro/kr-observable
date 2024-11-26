@@ -372,3 +372,4 @@ describe('Observable Array', () => {
     withArray.array = []
   })
 })
+

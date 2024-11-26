@@ -217,11 +217,44 @@ function structureProxyHandler(property: string | symbol, adm: ObservableAdminis
   };
 }
 
+
+function computed(property: string | symbol, descriptor: PropertyDescriptor, adm: ObservableAdministration): PropertyDescriptor {
+  let firstCall = true
+  let value: any
+  return {
+    ...descriptor,
+    get() {
+      ObservableTransactions.report(adm, property)
+      const work = () => {
+        const newValue = descriptor.get.call(this)
+        if (!firstCall && value !== newValue) {
+          adm.report(property, newValue)
+        }
+        value = newValue
+        if (firstCall) {
+          ObservableTransactions.transaction(work, work)
+          firstCall = false
+        }
+        return value
+      }
+    }
+  }
+}
+
+
 export class Observable {
   [isObservable] = true
   constructor() {
     const adm = new ObservableAdministration();
     Reflect.set(adm, Symbol.for('whoami'), this)
+    const proto = Reflect.getPrototypeOf(this)
+    Reflect.ownKeys(proto)
+      .forEach(property => {
+        const descriptor = Reflect.getOwnPropertyDescriptor(proto, property)
+        if (descriptor.get) {
+          Reflect.defineProperty(proto, property, computed(property, descriptor, adm));
+        }
+      })
     return new Proxy(this, observableProxyHandler(adm))
   }
 }

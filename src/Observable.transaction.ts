@@ -15,14 +15,13 @@ interface TransactionResult {
 }
 
 class ObservableTransactionsImpl {
-  static #current: Function = null;
   static #track: Map<Function, WorkStats> = new Map();
+  static #stack: Function[] = []
 
   static report(administration: ObservableAdministration, property: string | symbol) {
-    if (!this.#current || typeof property === 'symbol') {
-      return;
-    }
-    const stats = this.#track.get(this.#current);
+    const current = this.#stack.at(-1)
+    if (!current || typeof property === 'symbol') { return; }
+    const stats = this.#track.get(current);
     if (stats) {
       let read = stats.read.get(administration);
       if (!read) {
@@ -42,15 +41,14 @@ class ObservableTransactionsImpl {
     let result: any;
     let exception!: Error;
     try {
-      this.#current = work;
+      this.#stack.push(work)
       result = work();
-      stats = this.#track.get(work);
+      this.#stack.pop()
       stats.count++;
       stats.read.forEach((k, o) => o.subscribe(cb, k));
     } catch (e) {
       exception = e as Error;
     }
-    this.#current = null;
     return {
       stats,
       result,
