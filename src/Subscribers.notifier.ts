@@ -2,25 +2,33 @@ import { Subscriber } from "./types.js";
 import { getGlobal } from './global.this.js';
 
 class SubscribersNotifierImpl {
-  static #task: any
   static #subscribers: Set<Subscriber> = new Set()
   static #changes: Map<Subscriber, Set<string | symbol>> = new Map()
-  static notify(subscriber: Subscriber, properties?: Set<string | symbol>) {
-    this.#subscribers.add(subscriber)
+  static #notified: Set<Subscriber> = new Set()
+
+  static async notify(subscriber: Subscriber, properties?: Set<string | symbol>) {
     let changes = this.#changes.get(subscriber)
     if (!changes) {
       changes = new Set();
       this.#changes.set(subscriber, changes);
     }
     properties.forEach(property => changes.add(property))
-    clearTimeout(this.#task)
-    this.#task = setTimeout(() => {
-      this.#subscribers.forEach(cb => {
-        cb(changes)
-        this.#changes.delete(subscriber)
-      })
-      this.#subscribers.clear()
+    if (this.#subscribers.size < this.#subscribers.add(subscriber).size) {
+      this.#do(changes)
+    }
+  }
+
+  static #do(changes?: Set<string | symbol>) {
+    this.#subscribers.forEach(subscriber => {
+      if (!this.#notified.has(subscriber)) {
+        this.#notified.add(subscriber)
+        subscriber(changes)
+      }
     })
+    this.#notified.clear()
+    this.#subscribers.clear()
+    this.#changes.clear()
+    // queueMicrotask(() => {})
   }
 }
 

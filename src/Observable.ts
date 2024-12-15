@@ -1,10 +1,11 @@
-import { ObservableAdministration } from './Observable.administration.js';
+import { ObservableAdministration, AdmTrap } from './Observable.administration.js';
 import { ObservableTransactions } from './Observable.transaction.js';
 import { ObservableMap } from './Observable.map.js';
 import { ObservableSet } from './Observable.set.js';
+import { ObservableComputed } from './Observable.computed.js';
 
-// faster than check instanceof
 const isObservable = Symbol('Observable')
+const whoami = Symbol.for('whoami')
 
 Reflect.set(Array.prototype, 'set', function (i:number, value: unknown) {
   this[i] = value
@@ -13,85 +14,127 @@ Reflect.set(Array.prototype, 'set', function (i:number, value: unknown) {
 class ObservableArray<T> extends Array<T> {
   #key: string | symbol
   #adm: ObservableAdministration
+  #primitive: boolean
 
-  constructor(key: string | symbol, adm: ObservableAdministration, ...items: T[]) {
+  constructor(key: string | symbol, adm: ObservableAdministration, primitive, ...items: T[]) {
     super(...items);
-    this.#adm = adm || { report: () => {} } as unknown as ObservableAdministration
+    this.#adm = adm || {
+      report: () => {},
+      batch: () => {},
+      state: 0
+    } as unknown as ObservableAdministration
     this.#key = key || ''
+    this.#primitive = primitive || true
   }
 
   push(...items: any[]): number {
-    const observables = items.map(i => maybeMakeObservable(this.#key, i, this.#adm))
+    this.#adm.state = 0
+    let data = items
+    if (!this.#primitive) {
+      data = items.map(i => maybeMakeObservable(this.#key, i, this.#adm))
+    }
     try {
-      return super.push(...observables)
+      return super.push(...data)
     } finally {
-      this.#adm.report(this.#key, items)
+      this.#adm.state = 1
+      this.#adm.report(this.#key, true)
+      queueMicrotask(this.#adm.batch)
     }
   }
 
   unshift(...items: any[]): number {
-    const observables = items.map(i => maybeMakeObservable(this.#key, i, this.#adm))
+    this.#adm.state = 0
+    let data = items
+    if (!this.#primitive) {
+      data = items.map(i => maybeMakeObservable(this.#key, i, this.#adm))
+    }
     try {
-      return super.unshift(...observables)
+      return super.unshift(...data)
     } finally {
-      this.#adm.report(this.#key, items)
+      this.#adm.state = 1
+      this.#adm.report(this.#key, true)
+      queueMicrotask(this.#adm.batch)
     }
   }
 
   splice(start: number, deleteCount?: number, ...items: T[]): T[] {
-    const observables = items.map(i => maybeMakeObservable(this.#key, i, this.#adm))
+    this.#adm.state = 0
+    let data = items
+    if (!this.#primitive) {
+      data = items.map(i => maybeMakeObservable(this.#key, i, this.#adm))
+    }
     try {
-      return super.splice(start, deleteCount, ...observables)
+      return super.splice(start, deleteCount, ...data)
     } finally {
-      this.#adm.report(this.#key, items)
+      this.#adm.state = 1
+      this.#adm.report(this.#key, true)
+      queueMicrotask(this.#adm.batch)
     }
   }
 
   copyWithin(target: number, start: number, end?: number): this {
+    this.#adm.state = 0
     try {
       return super.copyWithin(target, start, end)
     } finally {
-      this.#adm.report(this.#key, this)
+      this.#adm.state = 1
+      this.#adm.report(this.#key, true)
+      queueMicrotask(this.#adm.batch)
     }
   }
 
   pop() {
+    this.#adm.state = 0
     try {
       return super.pop()
     } finally {
-      this.#adm.report(this.#key, this)
+      this.#adm.state = 1
+      this.#adm.report(this.#key, true)
+      queueMicrotask(this.#adm.batch)
     }
   }
 
   reverse() {
+    this.#adm.state = 0
     try {
       return super.reverse()
     } finally {
-      this.#adm.report(this.#key, this)
+      this.#adm.state = 1
+      this.#adm.report(this.#key, true)
+      queueMicrotask(this.#adm.batch)
     }
   }
 
   shift() {
+    this.#adm.state = 0
     try {
       return super.shift()
     } finally {
-      this.#adm.report(this.#key, this)
+      this.#adm.state = 1
+      this.#adm.report(this.#key, true)
+      queueMicrotask(this.#adm.batch)
     }
   }
 
   sort(compareFn?: (a: T, b: T) => number) {
+    this.#adm.state = 0
     try {
       return super.sort(compareFn)
     } finally {
-      this.#adm.report(this.#key, this)
+      this.#adm.state = 1
+      this.#adm.report(this.#key, true)
+      queueMicrotask(this.#adm.batch)
     }
   }
 
   set(i: number, v: T) {
+    this.#adm.state = 0
     try {
       super[i] = v
     } finally {
-      this.#adm.report(this.#key, this)
+      this.#adm.state = 1
+      this.#adm.report(this.#key, true)
+      queueMicrotask(this.#adm.batch)
     }
   }
 }
@@ -102,13 +145,11 @@ export function makeObservable<T extends object>(value: T): T & Observable {
   try {
     if (Object.prototype === Object.getPrototypeOf(value)) {
       // turn on deep observable for plain objects
-      const plainAdm = new ObservableAdministration()
-      Reflect.set(plainAdm, Symbol.for('whoami'), value)
-      const proxiedValue = new Proxy({ [isObservable]: true }, observableProxyHandler(plainAdm))
-      Object.entries(value).forEach(([key, value]) => {
-        Reflect.defineProperty(proxiedValue, key, { value })
-      })
-      return proxiedValue
+      const adm = new ObservableAdministration()
+      Reflect.set(adm, Symbol.for('whoami'), value.constructor.name)
+      Object.entries(value).forEach(([key, $value]) => value[key] = maybeMakeObservable(key, $value, adm))
+      value[isObservable] = true
+      return new Proxy(value, observableProxyHandler(adm))
     }
     return undefined
   } catch (e) {
@@ -130,132 +171,80 @@ function maybeMakeObservable(property: string | symbol, value: any, adm: Observa
   }
 
   if (Array.isArray(value)) {
+    const type = value[0];
+    if (!type || type[isObservable] || Object.prototype !== Object.getPrototypeOf(type)) {
+      return new ObservableArray(property, adm, true, ...value);
+    }
     const observables = value.map(el => maybeMakeObservable(property, el, adm))
-    return new ObservableArray(property, adm, ...observables)
+    return new ObservableArray(property, adm, false, ...observables)
   }
 
-  if (value instanceof Date) {
-    return new Proxy(value, structureProxyHandler(property, adm));
-  }
   if (Object.prototype === Object.getPrototypeOf(value)) {
     return makeObservable(value)
   }
   return value;
 }
 
-const AdmKeys = Object.create(null, {})
-Object.assign(AdmKeys, {
-  report: 1,
-  subscribe: 1,
-  unsubscribe: 1,
-  listen: 1,
-  unlisten: 1
-})
-
 function observableProxyHandler(adm: ObservableAdministration) {
   return {
     get(target: any, property: string | symbol, receiver: any) {
-      if (AdmKeys[property]) { return adm[property]; }
+      if (AdmTrap[property]) { return adm[property]; }
+      adm.batch()
       const value = Reflect.get(target, property, receiver);
-
-      // for serializer
-      if (typeof property === 'symbol') {
-        return value;
-      }
-
+      if (typeof property === 'symbol') { return value }
       if (typeof value === 'function') {
         return function (...args: any[]) {
+          // toDo
+          // this create a new function on each call
           return value.apply(receiver, args);
-        };
-      } else {
+        }
+      }
+      if (!adm.ignore[property]) {
         ObservableTransactions.report(adm, property);
       }
       return value;
     },
-    set(target: any, property: string, newValue: any, receiver: any) {
+    set(target: any, property: string, newValue: any) {
       if (target[property] === newValue) { return true; }
+      if (adm.ignore[property]) {
+        target[property] = newValue
+        return true;
+      }
+      adm.state = 0
       const value = maybeMakeObservable(property, newValue, adm);
       target[property] = value
       adm.report(property, value);
+      adm.state = 1
+      queueMicrotask(adm.batch)
       return true;
     },
-    defineProperty(target: any, property: string, { value }: PropertyDescriptor) {
-      if (!value) {
-        target[property] = value
-        return true;
-      }
-      target[property] = maybeMakeObservable(property, value, adm)
+    defineProperty(target: any, property: string, descriptor: PropertyDescriptor) {
+      target[property] = maybeMakeObservable(property, descriptor.value, adm)
       return true
     }
   };
 }
 
-function structureProxyHandler(property: string | symbol, adm: ObservableAdministration) {
-  return {
-    get(target: any, key: string | symbol, receiver: any) {
-      const value = target[key];
-      if (key === 'toString') { return value }
-      if (typeof value === 'function' && String(key).includes('set')) {
-        return function (...args: any[]) {
-          // @ts-ignore
-          const result = value.apply(this === receiver ? target : this, args);
-          adm.report(property, args)
-          return result
-        };
-      } else {
-        ObservableTransactions.report(adm, property)
-      }
-      return value;
-    },
-    set(target: any, key: string, newValue: any) {
-      if (target[key] !== newValue) {
-        target[key] = newValue;
-        adm.report(property, newValue);
-      }
-      return true;
-    }
-  };
-}
-
-
-function computed(property: string | symbol, descriptor: PropertyDescriptor, adm: ObservableAdministration): PropertyDescriptor {
-  let firstCall = true
-  let value: any
-  return {
-    ...descriptor,
-    get() {
-      ObservableTransactions.report(adm, property)
-      const work = () => {
-        const newValue = descriptor.get.call(this)
-        if (!firstCall && value !== newValue) {
-          adm.report(property, newValue)
-        }
-        value = newValue
-        if (firstCall) {
-          ObservableTransactions.transaction(work, work)
-          firstCall = false
-        }
-        return value
-      }
-    }
-  }
-}
-
-
 export class Observable {
+  static ignore: Array<string | symbol> = [];
   [isObservable] = true
   constructor() {
     const adm = new ObservableAdministration();
-    Reflect.set(adm, Symbol.for('whoami'), this)
     const proto = Reflect.getPrototypeOf(this)
-    Reflect.ownKeys(proto)
-      .forEach(property => {
-        const descriptor = Reflect.getOwnPropertyDescriptor(proto, property)
-        if (descriptor.get) {
-          Reflect.defineProperty(proto, property, computed(property, descriptor, adm));
-        }
-      })
-    return new Proxy(this, observableProxyHandler(adm))
+    adm[whoami] = proto.constructor.name
+    const ignored = Reflect.get(proto.constructor, 'ignore') || []
+    ignored.forEach((key: string | symbol) => adm.ignore[key] = 1)
+    adm.ignore[isObservable] = 1
+    const proxy = new Proxy(this, observableProxyHandler(adm))
+    const properties = Reflect.ownKeys(proto)
+    for (const property of properties) {
+      if (property === 'constructor') { continue; }
+      const descriptor = Reflect.getOwnPropertyDescriptor(proto, property)
+      if (descriptor?.get) {
+        Object.defineProperty(proto, property, new ObservableComputed(property, descriptor, adm, proxy));
+      }
+    }
+    return proxy
   }
 }
 

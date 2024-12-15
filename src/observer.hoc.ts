@@ -8,62 +8,56 @@ import type {
     ForwardRefExoticComponent,
     MemoExoticComponent
 } from 'react'
-import { ObservableTransactions } from './Observable.transaction.js';
+import { ObservableTransactions, TransactionResult } from './Observable.transaction.js';
 
-interface ObserverOptions {
-    debug?: boolean,
-    name?: string
-}
-
-function useObservable<T>(fn: () => T, name: string, options = {} as ObserverOptions, props: any) {
-    const debugName = options?.name || name
-    const debug = options?.debug || false
+function useObservable<T>(fn: () => T, name: string, props: any, debug = false) {
     const { 0: value, 1: render } = useState(0)
     const work = useCallback(fn, [props])
     const cb = useCallback((reason?: Set<string | symbol>) => {
-        render((prev) => 1 - prev)
         if (debug) {
-            console.info(`${debugName} will re-render because of changes:`, reason)
+            console.info(`${name} will re-render because of changes:`, reason)
         }
+        render((prev) => prev + 1) // 1 - prev
     }, [])
-    let renderResult!: T
-    const { dispose, stats, exception, result } = ObservableTransactions.transaction(work, cb)
-    renderResult = result
-    if (debug) {
-        const plainReads = new Map()
-        stats.read.forEach((keys, adm) => {
-            plainReads.set(adm[Symbol.for('whoami')], keys)
-        })
-        console.info(`${debugName} was rendered ${stats.count} times.`, plainReads)
-    }
+    let TR!: TransactionResult
 
     useEffect(() => {
         return () => {
-            dispose()
+            TR?.dispose()
             if (debug) {
-                console.info(`${debugName} was unmount`)
+                console.info(`${name} was unmount`)
             }
         }
-    }, []);
+    }, []); // toDo maybe props
 
-    if (exception) {
-        console.error(`In > ${name}`, exception)
-        throw exception;
+    TR = ObservableTransactions.transaction(work, cb, false)
+
+    if (debug) {
+        const plainReads = new Map()
+        TR.stats.read.forEach((keys, adm) => {
+            plainReads.set(adm[Symbol.for('whoami')], keys)
+        })
+        console.info(`${name} was rendered ${TR.stats.count} times.`, plainReads)
     }
-    return renderResult
+
+    if (TR.exception) {
+        console.error(`In > ${name}`, TR.exception)
+        throw TR.exception;
+    }
+    return TR.result
 }
 
 export function observer<P extends object, TRef = {}>(
-  rc: ForwardRefExoticComponent<PropsWithoutRef<P> & RefAttributes<TRef>>, options?: ObserverOptions
+  rc: ForwardRefExoticComponent<PropsWithoutRef<P> & RefAttributes<TRef>>, debug?: boolean
 ): MemoExoticComponent<ForwardRefExoticComponent<PropsWithoutRef<P> & RefAttributes<TRef>>>
 
-export function observer<P extends object>(rc: FunctionComponent<P>, options?: ObserverOptions): FunctionComponent<P>
+export function observer<P extends object>(rc: FunctionComponent<P>, debug?: boolean): FunctionComponent<P>
 
 export function observer<A extends object, B = {}>(
     rc: ForwardRefRenderFunction<B, A> | FunctionComponent<A> | ForwardRefExoticComponent<PropsWithoutRef<A> & RefAttributes<B>>,
-    options?: ObserverOptions
+    debug = false
 ) {
-    let observedComponent = (props: any, ref: Ref<B>) => useObservable(() => rc(props, ref), rc.name, options, props)
-    observedComponent = memo(observedComponent)
-    return observedComponent
+    let observedComponent = (props: any, ref: Ref<B>) => useObservable(() => rc(props, ref), rc.name, props, debug)
+    // observedComponent = memo(observedComponent)
+    return memo(observedComponent)
 }
