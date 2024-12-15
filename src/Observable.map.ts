@@ -15,6 +15,7 @@ export class ObservableMap<K,V> extends Map<K,V> {
     } finally {
       this.#adm.report(`${this.#key.toString()}.${key.toString()}`, value)
       this.#adm.report(this.#key, value)
+      this.#adm.batch()
     }
   }
 
@@ -24,6 +25,7 @@ export class ObservableMap<K,V> extends Map<K,V> {
     } finally {
       this.#adm.report(`${this.#key.toString()}.${key.toString()}`, undefined)
       this.#adm.report(this.#key, undefined)
+      this.#adm.batch()
     }
   }
 
@@ -32,6 +34,7 @@ export class ObservableMap<K,V> extends Map<K,V> {
       return super.clear()
     } finally {
       this.#adm.report(this.#key, undefined)
+      this.#adm.batch()
     }
   }
 }

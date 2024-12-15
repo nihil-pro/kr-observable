@@ -1,7 +1,7 @@
 # Observable
-Proxy based state-manager 
-1. Easy to use, see examples below
-2. Supports classes and plain objects
+A proxy based state manager & reactive programming library
+1. Easy to use and great DX. See examples below;
+2. Supports classes and plain objects;
 3. Supports subclassing
 4. Tiny, no dependencies
 5. Framework-agnostic. <br />
@@ -76,6 +76,7 @@ const Component = observer(function component() {
 })
 ```
 More complicated example on [CodeSandbox](https://codesandbox.io/p/sandbox/v7zf47)
+
 
 ## Api reference
 
@@ -168,6 +169,18 @@ example.array = [] // array was changed, new value = []
 example.date.setHour(12) // date was changed, new value = 12
 example.plain.foo = '' // foo was changed, new value = ''
 example.plain.nestedArray.push(42) // nestedArray was changed, new value = 42
+```
+
+### Ignore properties
+The static `ignore` property allows you to exclude some properties
+```typescript
+import { Observable } from 'kr-observable';
+
+class Foo extends Observable {
+  static ignore = ['foo']
+  foo = 1 // won't be observable
+  bar = 2
+}
 ```
 
 ### makeObservable
