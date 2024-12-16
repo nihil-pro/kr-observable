@@ -9,6 +9,7 @@ const eslintConfig = getEslintConfig({
 Object.assign(eslintConfig[0].rules, {
   'no-console': ['error', { allow: ['warn', 'error', 'info'] }],
   'no-underscore-dangle': ['off'],
+  '@typescript-eslint/no-magic-numbers': ['off'],
   '@typescript-eslint/no-floating-promises': ['off'],
   '@typescript-eslint/consistent-type-definitions': ['off'],
   'no-plusplus': ['off'],

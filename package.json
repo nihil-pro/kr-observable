@@ -6,6 +6,7 @@
   "scripts": {
     "build": "rm -rf ./dist && tsc -b ./tsconfig.cjs.json ./tsconfig.esm.json ./tsconfig.types.json && node --import tsx ./scripts/genPackageFiles.ts",
     "test": "npm run build && node --test --test-reporter=spec ./test/import*.*js && c8 node --import tsx --test --test-reporter=spec ./test/*.test.*",
+    "test-watch": "npm run build && node --import tsx --test --test-reporter=spec --watch ./test/*.test.*",
     "analyze:js": "eslint ./src",
     "format:js": "eslint --fix ./src"
   },
