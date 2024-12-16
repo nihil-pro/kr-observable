@@ -12,7 +12,6 @@ lint-staged.config.*
 /test
 
 .nyc_output
-coverage
 .github
 .mocharc.json
 tsconfig.json
