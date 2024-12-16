@@ -2,13 +2,12 @@
   "name": "kr-observable",
   "version": "1.0.23.1",
   "description": "A proxy-based observable with a hoc for react/preact",
-  "module": "./dist/index.js",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "type": "module",
   "scripts": {
-    "build": "rm -rf dist && tsc",
-    "test": "node --test --import tsx --experimental-strip-types"
+    "build": "rm -rf ./dist && tsc -b ./tsconfig.cjs.json ./tsconfig.esm.json ./tsconfig.types.json && node --import tsx ./scripts/genPackageFiles.ts",
+    "test": "npm run build && node --test --test-reporter=spec ./test/import*.*js && c8 node --import tsx --test --test-reporter=spec ./test/*.test.*",
+    "analyze:js": "eslint ./src",
+    "format:js": "eslint --fix ./src"
   },
   "keywords": [
     "proxy",
@@ -23,10 +22,19 @@
   "devDependencies": {
     "@types/node": "22.8.6",
     "@types/react": "^18.3.11",
+    "@espcom/eslint-config": "0.0.8",
     "tsx": "^4.19.2",
-    "typescript": "^4.9.5"
+    "typescript": "^4.9.5",
+    "c8": "10.1.2"
   },
   "sideEffect": false,
+  "exports": {
+    "types": "./dist/types/index.d.ts",
+    "require": "./dist/cjs/index.js",
+    "import": "./dist/esm/index.js"
+  },
+  "main": "dist/cjs/index.js",
+  "types": "dist/types/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/nihil-pro/observable-class.git"

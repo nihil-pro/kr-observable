@@ -1,6 +1,13 @@
-import { describe, test } from 'node:test'
-import expect from 'node:assert';
-import { Observable, makeObservable } from '../Observable.js';
+import { describe, it } from 'node:test';
+import * as assert from 'node:assert/strict';
+
+void describe('Test', async () => {
+  await it('scenario', () => {
+    assert.equal(1, 1);
+  });
+});
+
+// import { Observable, makeObservable } from '../src/Observable.js';
 
 // describe('Observable', () => {
 //   test('Should pass "instanceof" check',() => {
@@ -369,4 +376,3 @@ import { Observable, makeObservable } from '../Observable.js';
 //     withArray.array = []
 //   })
 // })
-

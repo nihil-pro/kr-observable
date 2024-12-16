@@ -1,14 +1,15 @@
 {
+  "include": [
+    "src",
+    "test",
+    "scripts",
+    "eslint.config.mjs"
+  ],
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "esnext",
+    "module": "esnext",
     "lib": [ "ES2022", "dom" ],
-    "module": "ESNext",
     "outDir": "dist",
-    "rootDir": "./src",
-    "skipLibCheck": true,
-    "moduleResolution": "Node",
-    "declaration": true,
-    "esModuleInterop": true
-  },
-  "exclude": ["src/tests"]
+    "moduleResolution": "node"
+  }
 }
