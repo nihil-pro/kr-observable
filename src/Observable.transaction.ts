@@ -55,9 +55,11 @@ class ObservableTransactionsImpl {
     let result: any;
 
     try {
-      this.#stack.push(work)
+      // this.#stack.push(work)
+      this.#current = work
       result = work();
-      this.#stack.pop()
+      // this.#stack.pop()
+      this.#current = undefined
       stats.count++;
       stats.result = result
 
