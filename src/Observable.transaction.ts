@@ -46,7 +46,7 @@ class ObservableTransactionsImpl {
     }
   }
 
-  public static transaction = (work: Function, cb: Subscriber, syncSubscribe = true) => {
+  public static transaction = (work: Function, cb: Subscriber) => {
     let stats = this.#track.get(work);
     if (!stats) {
       stats = workStats();
@@ -116,7 +116,7 @@ if (!(TransactionExecutor in _self)) {
 declare global {
   interface Window {
     [TransactionExecutor]: {
-      transaction(work: Function, cb: Subscriber, subscribeSync?: boolean): TransactionResult;
+      transaction(work: Function, cb: Subscriber, subscribeSync?: boolean): WorkStats;
       notify(subscriber: Subscriber, changes?: Set<string | symbol>): void;
       report(administration: ObservableAdministration, property: string | symbol): void;
     };
@@ -124,6 +124,11 @@ declare global {
 }
 
 export const ObservableTransactions = _self[TransactionExecutor];
+
+/** Accepts one function that should run every time anything it observes changes. <br />
+ It also runs once when you create the autorun itself.
+ Returns a dispose function.
+ */
 export function autorun(fn: () => void) {
   const { dispose } = ObservableTransactions.transaction(fn, fn);
   return dispose;
