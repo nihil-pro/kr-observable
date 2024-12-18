@@ -266,7 +266,8 @@ export class Observable {
       const descriptor = Reflect.getOwnPropertyDescriptor(proto, property);
       if (descriptor?.get) {
         Object.defineProperty(
-          proto,
+          // defining on this, not in prototype!
+          this,
           property,
           new ObservableComputed(property, descriptor, adm, proxy)
         );
