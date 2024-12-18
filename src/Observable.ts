@@ -1,4 +1,8 @@
-import { ObservableAdministration, AdmTrap } from './Observable.administration.js';
+import {
+  ObservableAdministration,
+  ObservableAdministrationPlug,
+  AdmTrap,
+} from './Observable.administration.js';
 import { ObservableTransactions } from './Observable.transaction.js';
 import { ObservableMap } from './Observable.map.js';
 import { ObservableSet } from './Observable.set.js';
@@ -24,13 +28,7 @@ class ObservableArray<T> extends Array<T> {
     ...items: T[]
   ) {
     super(...items);
-    this.#adm =
-      adm ||
-      ({
-        report: () => {},
-        batch: () => {},
-        state: 0,
-      } as unknown as ObservableAdministration);
+    this.#adm = adm || ObservableAdministrationPlug;
     this.#key = key || '';
     this.#primitive = primitive || true;
   }

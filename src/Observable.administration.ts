@@ -171,3 +171,13 @@ trap.listen = 1;
 trap.unlisten = 1;
 Object.freeze(trap);
 export const AdmTrap = trap;
+
+/** Some methods of Array returns shallow copy of this, which is ObservableArray in our case,
+ * they call the ObservableArray constructor but without arguments.
+ * This is a fast copy of ObservableAdministration
+ * */
+export const ObservableAdministrationPlug = {
+  report: () => void 0,
+  batch: () => void 0,
+  state: 0,
+} as unknown as ObservableAdministration;
