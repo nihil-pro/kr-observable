@@ -2,8 +2,8 @@
 A proxy based state manager & reactive programming library
 1. Easy to use and great DX. See examples below;
 2. Supports classes and plain objects;
-3. Supports subclassing
-4. Tiny, no dependencies
+3. Supports subclassing;
+4. Tiny (2.7 kB), no dependencies;
 5. Framework-agnostic. <br />
 It comes with a hoc for React, as the most popular library, but can be used with any other.
 
@@ -97,7 +97,9 @@ type observer<P> = (baseComponent: FunctionComponent<P>, options?: Options) => F
 ### Observable class
 ```typescript
 import { Observable } from 'kr-observable'
-class Foo extends Observable { }
+class Foo extends Observable {
+  // ...
+}
 ```
 - All properties are observable by default. Arrays and plain objects are deep observable.
 - All getters are computed by default
@@ -139,7 +141,6 @@ class Example extends Observable {
     foo: 'baz', 
     nestedArray: [] 
   } 
-  date = new Date() 
   
   get something() {
     return this.number + this.string // computed 
@@ -166,7 +167,6 @@ example.number = 2 // number was changed, new value = 2
 // anything that mutates an Array, Map, Set or Date is considered a change
 example.array.push('string') // array was changed, new value = string 
 example.array = [] // array was changed, new value = [] 
-example.date.setHour(12) // date was changed, new value = 12
 example.plain.foo = '' // foo was changed, new value = ''
 example.plain.nestedArray.push(42) // nestedArray was changed, new value = 42
 ```
@@ -178,7 +178,7 @@ import { Observable } from 'kr-observable';
 
 class Foo extends Observable {
   static ignore = ['foo']
-  foo = 1 // won't be observable
+  foo = 1 // won't be observed
   bar = 2
 }
 ```
@@ -216,6 +216,16 @@ setInterval(() => {
   example.one += 1 // total {number}
 }, 1000)
 ```
+
+## Performance 
+Is fast enough.
+![observable performance](https://avtodoka-msk.ru/perf.png)
+
+## Memory usage
+![observable memory usage](https://avtodoka-msk.ru/mem.png)
+
+## Size 
+~2.7 kb. See [BundlePhobia](https://bundlephobia.com/package/kr-observable@1.0.23)
 
 ## Limitations
 There is only one limitation: if you assign a new element to the array by index – changes will happen, of course, but You will not be notified.

@@ -1,6 +1,6 @@
 {
   "name": "kr-observable",
-  "version": "1.0.22",
+  "version": "1.0.23.1",
   "description": "A proxy-based observable with a hoc for react/preact",
   "type": "module",
   "scripts": {

@@ -14,6 +14,7 @@ Object.assign(eslintConfig[0].rules, {
   'no-plusplus': ['off'],
   'max-params': ['off'],
   '@typescript-eslint/array-type': ['off'],
+  '@typescript-eslint/no-empty-interface': ['off'],
   '@typescript-eslint/naming-convention': ['off'],
 });
 
