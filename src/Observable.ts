@@ -147,11 +147,14 @@ class ObservableArray<T> extends Array<T> {
 
 /** Only plain object are allowed
  * @example makeObservable({ foo: 'bar' }) */
-export function makeObservable<T extends object>(value: T): T & Observer {
+export function makeObservable<T extends object>(value: T, ignore: string[] = []): T & Observer {
   try {
     if (Object.prototype === Object.getPrototypeOf(value)) {
       // turn on deep observable for plain objects
       const adm = new ObservableAdministration();
+      ignore.forEach((key) => {
+        adm.ignore[key] = 1;
+      });
       Reflect.set(adm, Symbol.for('whoami'), value.constructor.name);
       Object.entries(value).forEach(
         ([key, $value]) => (value[key] = maybeMakeObservable(key, $value, adm))
@@ -161,7 +164,7 @@ export function makeObservable<T extends object>(value: T): T & Observer {
     }
     return undefined;
   } catch (e) {
-    throw new TypeError('Invalid argument. Only plain objects');
+    throw new TypeError('Invalid argument. Only plain objects', e);
   }
 }
 
@@ -175,15 +178,12 @@ function maybeMakeObservable(property: string | symbol, value: any, adm: Observa
   if (value[isObservable]) {
     return value;
   }
-
   if (value instanceof Map) {
     return new ObservableMap(property, adm, value);
   }
-
   if (value instanceof Set) {
     return new ObservableSet(property, adm, value);
   }
-
   if (Array.isArray(value)) {
     const type = value[0];
     if (!type || type[isObservable] || Object.prototype !== Object.getPrototypeOf(type)) {
@@ -200,6 +200,7 @@ function maybeMakeObservable(property: string | symbol, value: any, adm: Observa
 }
 
 function observableProxyHandler(adm: ObservableAdministration) {
+  const methods = new Map();
   return {
     get(target: any, property: string | symbol, receiver: any) {
       if (AdmTrap[property]) {
@@ -210,12 +211,13 @@ function observableProxyHandler(adm: ObservableAdministration) {
       if (typeof property === 'symbol') {
         return value;
       }
-      if (typeof value === 'function') {
-        return function (...args: any[]) {
-          // toDo
-          // this create a new function on each call
-          return value.apply(receiver, args);
-        };
+      if (adm.methods[property]) {
+        let method = methods.get(property);
+        if (!method) {
+          method = value.bind(receiver);
+          methods.set(property, method);
+        }
+        return method;
       }
       if (!adm.ignore[property]) {
         ObservableTransactions.report(adm, property);
@@ -269,6 +271,9 @@ export class Observable {
           property,
           new ObservableComputed(property, descriptor, adm, proxy)
         );
+      }
+      if (typeof descriptor.value === 'function') {
+        adm.methods[property] = 1;
       }
     }
     return proxy;

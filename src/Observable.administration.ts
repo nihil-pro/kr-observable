@@ -11,6 +11,9 @@ import { Listener, Subscriber } from './types.js';
  * Considering than such instances would be created many times
  * */
 export class ObservableAdministration {
+  /** Need to bind methods in prototype */
+  methods = Object.create(null);
+
   /** Because `batch` is mostly queued, this flag help to execute batch before the queued task will be executed,
    *  or to ignore queued microtask at all */
   state = 0;

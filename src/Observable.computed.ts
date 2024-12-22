@@ -2,7 +2,7 @@ import { ObservableAdministration } from './Observable.administration.js';
 import { ObservableTransactions } from './Observable.transaction.js';
 
 /** Custom property descriptor.
- * Memoized getters return value */
+ * Memoize getters return value */
 export class ObservableComputed {
   #property: string | symbol;
   #descriptor: PropertyDescriptor;

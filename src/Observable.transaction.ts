@@ -2,10 +2,9 @@ import { ObservableAdministration } from './Observable.administration.js';
 import { getGlobal } from './global.this.js';
 import { Subscriber } from './types.js';
 
-interface WorkStats {
+export interface WorkStats {
   count: number;
   read: Map<ObservableAdministration, Set<string | symbol>>;
-  current: Map<ObservableAdministration, Set<string | symbol>>;
   dispose: () => void | undefined;
   exception: undefined | Error;
   result: any;
@@ -15,7 +14,6 @@ function workStats() {
   return {
     count: 0,
     read: new Map<ObservableAdministration, Set<string | symbol>>(),
-    current: new Map<ObservableAdministration, Set<string | symbol>>(),
     exception: undefined,
     result: undefined,
     dispose: undefined,
@@ -32,15 +30,14 @@ export interface TransactionResult {
 class ObservableTransactionsImpl {
   static #track: Map<Function, WorkStats> = new Map();
   static #stack: Function[] = [];
-  static #current: Function | undefined;
   static report(administration: ObservableAdministration, property: string | symbol) {
-    // const current = this.#stack.at(-1)
-    const stats = this.#track.get(this.#current);
+    const current = this.#stack.at(-1);
+    const stats = this.#track.get(current);
     if (stats) {
-      let read = stats.current.get(administration);
+      let read = stats.read.get(administration);
       if (!read) {
         read = new Set();
-        stats.current.set(administration, read);
+        stats.read.set(administration, read);
       }
       read.add(property);
     }
@@ -53,49 +50,18 @@ class ObservableTransactionsImpl {
       this.#track.set(work, stats);
     }
     let result: any;
-
     try {
-      // this.#stack.push(work)
-      this.#current = work;
+      this.#stack.push(work);
       result = work();
-      // this.#stack.pop()
-      this.#current = undefined;
+      this.#stack.pop();
       stats.count++;
       stats.result = result;
-
-      Promise.resolve(stats).then(($stats) => {
-        if (this.#current === work || !this.#track.has(work)) {
-          return;
-        }
-        // if (this.#stack.at(-1) === work || !this.#track.has(work)) { return; }
-        for (const adm of $stats.read.keys()) {
-          if (!$stats.current.has(adm)) {
-            adm.unsubscribe(cb);
-            $stats.read.delete(adm);
-          }
-        }
-        for (const [adm, keys] of $stats.current) {
-          const existed = $stats.read.get(adm);
-          if (!existed) {
-            $stats.read.set(adm, keys);
-            adm.subscribe(cb, keys);
-          } else {
-            keys.forEach((key) => existed.add(key));
-          }
-        }
-        $stats.current.clear();
+      queueMicrotask(() => {
+        stats.read.forEach((keys, adm) => adm.subscribe(cb, keys));
       });
 
       if (!stats.dispose) {
-        stats.dispose = () => {
-          // if (this.#stack.at(-1) === work) { return; }
-          if (this.#current === work) {
-            return;
-          }
-          // stats.read.forEach((_,o) => o.unsubscribe(cb))
-          // stats.read.clear()
-          this.#track.delete(work);
-        };
+        stats.dispose = () => this.#track.delete(work);
       }
     } catch (e) {
       stats.exception = e as Error;
@@ -116,7 +82,7 @@ if (!(TransactionExecutor in _self)) {
 declare global {
   interface Window {
     [TransactionExecutor]: {
-      transaction(work: Function, cb: Subscriber, subscribeSync?: boolean): WorkStats;
+      transaction(work: Function, cb: Subscriber): WorkStats;
       notify(subscriber: Subscriber, changes?: Set<string | symbol>): void;
       report(administration: ObservableAdministration, property: string | symbol): void;
     };
