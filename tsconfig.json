@@ -3,7 +3,8 @@
     "src",
     "test",
     "scripts",
-    "eslint.config.mjs"
+    "eslint.config.mjs",
+    "lint-staged.config.mjs"
   ],
   "compilerOptions": {
     "target": "esnext",

@@ -12,7 +12,7 @@ type Observer = Pick<ObservableAdministration, 'subscribe' | 'unsubscribe' | 'li
 const isObservable = Symbol('Observable');
 const whoami = Symbol.for('whoami');
 
-Reflect.set(Array.prototype, 'set', function (i: number, value: unknown) {
+Reflect.set(Array.prototype, 'set', function patchArraySet(i: number, value: unknown) {
   this[i] = value;
 });
 
