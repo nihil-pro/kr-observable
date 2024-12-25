@@ -5,15 +5,17 @@ import { Observable } from '../src/Observable.js';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const DEF_DELAY = 0;
+
 describe('Subscribe', async () => {
-  class FooSimple extends Observable {
+  class Foo extends Observable {
     a = 1;
     b = 1;
     c = 1;
   }
 
   await it('Called sync if some property was read', async () => {
-    const foo = new FooSimple();
+    const foo = new Foo();
 
     const subscriber = mock.fn();
     foo.subscribe(subscriber, new Set(['a', 'b']));
@@ -26,7 +28,7 @@ describe('Subscribe', async () => {
 
     assert.equal(subscriber.mock.callCount(), 1, 'Should be called once');
 
-    await delay(1);
+    await delay(DEF_DELAY);
 
     assert.equal(subscriber.mock.callCount(), 1, 'Should be called once after delay');
 
@@ -40,7 +42,7 @@ describe('Subscribe', async () => {
 
     assert.equal(subscriber.mock.callCount(), 0, 'Should not be called if the value is the same');
 
-    await delay(1);
+    await delay(DEF_DELAY);
 
     assert.equal(
       subscriber.mock.callCount(),
@@ -60,7 +62,7 @@ describe('Subscribe', async () => {
       'Should not be called sync when changed unsubscribed'
     );
 
-    await delay(1);
+    await delay(DEF_DELAY);
 
     assert.equal(
       subscriber.mock.callCount(),
@@ -75,7 +77,7 @@ describe('Subscribe', async () => {
     assert.equal(foo.a, 3);
     assert.equal(subscriber.mock.callCount(), 1, 'Should be called once on next change');
 
-    await delay(1);
+    await delay(DEF_DELAY);
 
     assert.equal(
       subscriber.mock.callCount(),
@@ -93,7 +95,7 @@ describe('Subscribe', async () => {
 
     assert.equal(subscriber.mock.callCount(), 0, 'Should not be called after unsubscribe');
 
-    await delay(1);
+    await delay(DEF_DELAY);
 
     assert.equal(
       subscriber.mock.callCount(),
@@ -103,7 +105,7 @@ describe('Subscribe', async () => {
   });
 
   await it('Called async if no property was read', async () => {
-    const foo = new FooSimple();
+    const foo = new Foo();
 
     const subscriber = mock.fn();
     foo.subscribe(subscriber, new Set(['a', 'b']));
@@ -113,7 +115,7 @@ describe('Subscribe', async () => {
 
     assert.equal(subscriber.mock.callCount(), 0, 'Should not be called sync');
 
-    await delay(1);
+    await delay(DEF_DELAY);
 
     assert.equal(subscriber.mock.callCount(), 1, 'Should be called once after delay');
 
@@ -124,7 +126,7 @@ describe('Subscribe', async () => {
 
     assert.equal(subscriber.mock.callCount(), 0, 'Should not be called if the value is the same');
 
-    await delay(1);
+    await delay(DEF_DELAY);
 
     assert.equal(
       subscriber.mock.callCount(),
@@ -142,7 +144,7 @@ describe('Subscribe', async () => {
       'Should not be called sync when changed unsubscribed'
     );
 
-    await delay(1);
+    await delay(DEF_DELAY);
 
     assert.equal(
       subscriber.mock.callCount(),
@@ -156,7 +158,7 @@ describe('Subscribe', async () => {
 
     assert.equal(subscriber.mock.callCount(), 0, 'Should not be called on next change sync');
 
-    await delay(1);
+    await delay(DEF_DELAY);
 
     assert.equal(
       subscriber.mock.callCount(),
@@ -172,7 +174,7 @@ describe('Subscribe', async () => {
 
     assert.equal(subscriber.mock.callCount(), 0, 'Should not be called after unsubscribe');
 
-    await delay(1);
+    await delay(DEF_DELAY);
 
     assert.equal(
       subscriber.mock.callCount(),
@@ -182,7 +184,7 @@ describe('Subscribe', async () => {
   });
 
   await it('Called sync if async changes', async () => {
-    const foo = new FooSimple();
+    const foo = new Foo();
 
     const subscriber = mock.fn();
     foo.subscribe(subscriber, new Set(['a', 'b']));
@@ -194,7 +196,7 @@ describe('Subscribe', async () => {
 
     assert.equal(subscriber.mock.callCount(), 1, 'Should be called once sync');
 
-    await delay(1);
+    await delay(DEF_DELAY);
 
     assert.equal(subscriber.mock.callCount(), 1, 'Should be called once after delay');
 
@@ -207,7 +209,7 @@ describe('Subscribe', async () => {
 
     assert.equal(subscriber.mock.callCount(), 0, 'Should not be called if the value is the same');
 
-    await delay(1);
+    await delay(DEF_DELAY);
 
     assert.equal(
       subscriber.mock.callCount(),
@@ -227,7 +229,7 @@ describe('Subscribe', async () => {
       'Should not be called sync when changed unsubscribed'
     );
 
-    await delay(1);
+    await delay(DEF_DELAY);
 
     assert.equal(
       subscriber.mock.callCount(),
@@ -243,7 +245,7 @@ describe('Subscribe', async () => {
 
     assert.equal(subscriber.mock.callCount(), 1, 'Should not be called once on next change sync');
 
-    await delay(1);
+    await delay(DEF_DELAY);
 
     assert.equal(
       subscriber.mock.callCount(),
@@ -261,7 +263,7 @@ describe('Subscribe', async () => {
 
     assert.equal(subscriber.mock.callCount(), 0, 'Should not be called after unsubscribe');
 
-    await delay(1);
+    await delay(DEF_DELAY);
 
     assert.equal(
       subscriber.mock.callCount(),
@@ -271,7 +273,7 @@ describe('Subscribe', async () => {
   });
 
   await it('Multiple', async () => {
-    const foo = new FooSimple();
+    const foo = new Foo();
 
     const subscriber = mock.fn();
     foo.subscribe(subscriber, new Set(['a', 'b']));
@@ -281,7 +283,7 @@ describe('Subscribe', async () => {
 
     foo.a = 3;
 
-    await delay(1);
+    await delay(DEF_DELAY);
 
     assert.equal(subscriber.mock.callCount(), 1, 'Should be called for subscriber');
     assert.equal(subscriber2.mock.callCount(), 1, 'Should be called for subscriber2');
