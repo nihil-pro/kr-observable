@@ -61,7 +61,7 @@ const buildConfig: BuildOptions = {
   minify: true,
   metafile: true,
   sourcemap: false,
-  target: 'node18',
+  target: 'es2022',
   packages: 'external',
 };
 
