@@ -35,7 +35,8 @@
     "c8": "10.1.2",
     "badge-maker": "4.0.0",
     "xml-splitter": "1.2.1",
-    "esbuild": "~0.23.0"
+    "esbuild": "~0.23.0",
+    "@espcom/esbuild-plugin-compress": "1.1.0"
   },
   "sideEffect": false,
   "exports": {

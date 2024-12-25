@@ -4,8 +4,12 @@ import * as path from 'node:path';
 import * as esbuild from 'esbuild';
 import { BuildOptions, BuildResult } from 'esbuild';
 import { makeBadge } from 'badge-maker';
+import { pluginCompress } from '@espcom/esbuild-plugin-compress';
 
 const pkg = JSON.parse(fs.readFileSync(path.resolve('./package.json'), 'utf8'));
+const assetsPath = path.resolve('assets');
+
+if (!fs.existsSync(assetsPath)) fs.mkdirSync(assetsPath);
 
 function bytesForHuman(bytes: number, decimals = 2) {
   const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
@@ -19,40 +23,28 @@ function bytesForHuman(bytes: number, decimals = 2) {
 }
 
 function afterBuild(result: BuildResult, type: 'esm' | 'cjs') {
-  const size = bytesForHuman(result.metafile!.outputs['index.js'].bytes);
+  const sizes: Record<string, string> = {};
 
-  const assetsPath = path.resolve('assets');
+  result.outputFiles.forEach((file) => {
+    const ext = path.parse(file.path).ext.replace('.', '');
+
+    sizes[ext] = bytesForHuman(fs.statSync(file.path).size);
+  });
+
   const svgPath = path.resolve(assetsPath, `${type}.svg`);
 
-  if (!fs.existsSync(assetsPath)) fs.mkdirSync(assetsPath);
-
-  const prevSvg = fs.existsSync(svgPath) ? fs.readFileSync(svgPath, 'utf-8') : null;
-
-  if (prevSvg) {
-    const match = prevSvg.match(/>(\d+\.?\d+?\s\w+)</);
-    const prevSize = match?.[1];
-
-    if (size === prevSize) {
-      // eslint-disable-next-line no-console
-      console.log(`(unchanged) Size ${type} ${prevSize}`);
-
-      return;
-    }
-
-    // eslint-disable-next-line no-console
-    console.log(`(changed) Size ${type} changed from ${prevSize} to ${size}`);
-  } else {
-    // eslint-disable-next-line no-console
-    console.log(`(new) Size ${type} ${size}`);
-  }
+  // eslint-disable-next-line no-console
+  console.log(`Size ${type} ${sizes.js}`);
 
   const svg = makeBadge({
-    label: `Size (minified ${type})`,
-    message: size,
+    label: `Size (${type})`,
+    message: `min: ${sizes.js}; gz: ${sizes.gz}, br: ${sizes.br}`,
     color: 'blue',
   });
 
   fs.writeFileSync(path.resolve(svgPath), svg, 'utf-8');
+
+  fs.rmSync(path.resolve(assetsPath, type), { recursive: true, force: true });
 }
 
 const buildConfig: BuildOptions = {
@@ -63,6 +55,15 @@ const buildConfig: BuildOptions = {
   sourcemap: false,
   target: 'es2022',
   packages: 'external',
+  plugins: [
+    pluginCompress({
+      gzip: true,
+      zstd: false,
+      brotli: true,
+      level: 'high',
+      extensions: ['.js'],
+    }),
+  ],
 };
 
 await Promise.all([
@@ -71,6 +72,7 @@ await Promise.all([
       ...buildConfig,
       entryPoints: [path.resolve(pkg.exports.import)],
       format: 'esm',
+      outdir: 'assets/esm',
     })
     .then((res) => afterBuild(res, 'esm')),
   esbuild
@@ -78,6 +80,7 @@ await Promise.all([
       ...buildConfig,
       entryPoints: [path.resolve(pkg.exports.require)],
       format: 'cjs',
+      outdir: 'assets/cjs',
     })
     .then((res) => afterBuild(res, 'cjs')),
 ]);
