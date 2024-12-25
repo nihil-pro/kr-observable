@@ -108,18 +108,18 @@ describe('Observable', async () => {
     assert.equal(subscriber.mock.callCount(), 0, 'Should not be called after unsubscribe');
   });
 
-  await it.skip('listen', async () => {
-    const listener = mock.fn();
-    foo.listen(listener);
-    foo.setAll();
-
-    assert.equal(listener.mock.callCount(), 4, 'Should be called on each change');
-
-    listener.mock.resetCalls();
-    foo.unlisten(listener);
-    foo.setAll();
-    assert.equal(listener.mock.callCount(), 0, 'Should not be called after unlisten');
-  });
+  // await it.skip('listen', async () => {
+  //   const listener = mock.fn();
+  //   foo.listen(listener);
+  //   foo.setAll();
+  //
+  //   assert.equal(listener.mock.callCount(), 4, 'Should be called on each change');
+  //
+  //   listener.mock.resetCalls();
+  //   foo.unlisten(listener);
+  //   foo.setAll();
+  //   assert.equal(listener.mock.callCount(), 0, 'Should not be called after unlisten');
+  // });
 });
 
 describe.skip('Observable Map', async () => {
