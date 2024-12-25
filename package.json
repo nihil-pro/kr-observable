@@ -4,11 +4,15 @@
   "description": "A proxy-based observable with a hoc for react/preact",
   "type": "module",
   "scripts": {
-    "build": "rm -rf ./dist && tsc -b ./tsconfig.cjs.json ./tsconfig.esm.json ./tsconfig.types.json && node --import tsx ./scripts/genPackageFiles.ts",
-    "test": "npm run build && node --test --test-reporter=spec ./test/import*.*js && c8 node --import tsx --test --test-reporter=spec ./test/*.test.*",
+    "prepare": "husky",
+    "build": "rm -rf ./dist && tsc -b ./tsconfig.cjs.json ./tsconfig.esm.json ./tsconfig.types.json && node --import tsx ./scripts/genPackageFiles.ts && npm run gen-size-badge",
+    "test": "npm run build && node --test --test-reporter=spec ./test/import*.*js && c8 node --import tsx --test --test-reporter=spec ./test/*.test.* && npm run gen-coverage-badge",
     "test-watch": "npm run build && node --import tsx --test --test-reporter=spec --watch ./test/*.test.*",
     "analyze:js": "eslint ./src",
-    "format:js": "eslint --fix ./src"
+    "format:js": "eslint --fix ./src",
+    "check-types": "tsc --noEmit",
+    "gen-coverage-badge": "node --import tsx ./scripts/genCoverageBadge.ts",
+    "gen-size-badge": "node --import tsx ./scripts/genSizeBadges.ts"
   },
   "keywords": [
     "proxy",
@@ -24,9 +28,13 @@
     "@types/node": "22.8.6",
     "@types/react": "^18.3.11",
     "@espcom/eslint-config": "0.0.8",
+    "lint-staged": "15.2.9",
+    "husky": "9.1.5",
     "tsx": "^4.19.2",
     "typescript": "^4.9.5",
-    "c8": "10.1.2"
+    "c8": "10.1.2",
+    "badge-maker": "4.0.0",
+    "xml-splitter": "1.2.1"
   },
   "sideEffect": false,
   "exports": {
