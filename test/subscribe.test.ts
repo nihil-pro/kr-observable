@@ -9,28 +9,7 @@ describe('Subscribe', async () => {
   class FooSimple extends Observable {
     a = 1;
     b = 1;
-  }
-
-  class FooComplex extends Observable {
-    name = '';
-    age = 42;
-    city = 'Moscow';
-
-    setAll() {
-      this.city = 'Texas';
-      this.age = 52;
-      this.name = 'Egor';
-      this.city = 'London';
-    }
-
-    async setAsynchronously() {
-      await delay(1);
-
-      this.name = 'John';
-      this.city = 'Rome';
-
-      return true;
-    }
+    c = 1;
   }
 
   await it('Called sync if some property was read', async () => {
@@ -67,6 +46,26 @@ describe('Subscribe', async () => {
       subscriber.mock.callCount(),
       0,
       'Should not be called if the value is the same after delay'
+    );
+
+    subscriber.mock.resetCalls();
+
+    foo.c = 2; // We are not subscribed to this
+
+    assert.equal(foo.c, 2);
+
+    assert.equal(
+      subscriber.mock.callCount(),
+      0,
+      'Should not be called sync when changed unsubscribed'
+    );
+
+    await delay(1);
+
+    assert.equal(
+      subscriber.mock.callCount(),
+      0,
+      'Should not be called when changed unsubscribed after delay'
     );
 
     subscriber.mock.resetCalls();
@@ -135,6 +134,24 @@ describe('Subscribe', async () => {
 
     subscriber.mock.resetCalls();
 
+    foo.c = 2; // We are not subscribed to this
+
+    assert.equal(
+      subscriber.mock.callCount(),
+      0,
+      'Should not be called sync when changed unsubscribed'
+    );
+
+    await delay(1);
+
+    assert.equal(
+      subscriber.mock.callCount(),
+      0,
+      'Should not be called when changed unsubscribed after delay'
+    );
+
+    subscriber.mock.resetCalls();
+
     foo.a = 3;
 
     assert.equal(subscriber.mock.callCount(), 0, 'Should not be called on next change sync');
@@ -164,7 +181,7 @@ describe('Subscribe', async () => {
     );
   });
 
-  await it('Called half sync, half async if async changes', async () => {
+  await it('Called sync if async changes', async () => {
     const foo = new FooSimple();
 
     const subscriber = mock.fn();
@@ -196,6 +213,26 @@ describe('Subscribe', async () => {
       subscriber.mock.callCount(),
       0,
       'Should not be called if the value is the same after delay'
+    );
+
+    subscriber.mock.resetCalls();
+
+    await (async () => {
+      foo.c = 2; // We are not subscribed to this
+    })();
+
+    assert.equal(
+      subscriber.mock.callCount(),
+      0,
+      'Should not be called sync when changed unsubscribed'
+    );
+
+    await delay(1);
+
+    assert.equal(
+      subscriber.mock.callCount(),
+      0,
+      'Should not be called when changed unsubscribed after delay'
     );
 
     subscriber.mock.resetCalls();
@@ -233,53 +270,16 @@ describe('Subscribe', async () => {
     );
   });
 
-  await it('subscribe', async () => {
-    const foo = new FooComplex();
+  await it('Multiple', async () => {
+    const foo = new FooSimple();
 
     const subscriber = mock.fn();
-    foo.subscribe(subscriber, new Set(['name', 'city', 'surname']));
-
-    foo.setAll();
-
-    await delay(1);
-
-    assert.equal(
-      subscriber.mock.callCount(),
-      1,
-      'Should be called once per synchronous transaction'
-    );
-
-    subscriber.mock.resetCalls();
-
-    foo.age = 62; // We are not subscribed to age
-
-    await delay(1);
-
-    assert.equal(
-      subscriber.mock.callCount(),
-      0,
-      'Should not be called when changing a property that we are not subscribed to'
-    );
-
-    subscriber.mock.resetCalls();
-
-    await foo.setAsynchronously();
-
-    await delay(1);
-
-    assert.equal(
-      subscriber.mock.callCount(),
-      1,
-      'Should be called once after promise-based change'
-    );
-
-    subscriber.mock.resetCalls();
+    foo.subscribe(subscriber, new Set(['a', 'b']));
 
     const subscriber2 = mock.fn();
-    foo.subscribe(subscriber2, new Set(['name', 'city']));
+    foo.subscribe(subscriber2, new Set(['a']));
 
-    foo.city = 'Seoul';
-    foo.name = 'Choi';
+    foo.a = 3;
 
     await delay(1);
 
