@@ -245,6 +245,6 @@ class Example extends Observable {
 const state = new Example()
 state.listen((p,v) => console.log(p,v))
 state.array[0] = 1 // 
-state.set(0,1) // array 1
+state.array.set(0,1) // array 1
 ```
 There is a new `set` method in Array which you can use for that.
