@@ -33,6 +33,11 @@ class ObservableArray<T> extends Array<T> {
     this.#primitive = primitive || true;
   }
 
+  [Symbol.iterator]() {
+    this.#adm.batch(true);
+    return super[Symbol.iterator]();
+  }
+
   push(...items: any[]): number {
     this.#adm.state = 0;
     let data = items;
@@ -43,7 +48,7 @@ class ObservableArray<T> extends Array<T> {
       return super.push(...data);
     } finally {
       this.#adm.state = 1;
-      this.#adm.report(this.#key, true);
+      this.#adm.report(this.#key, data);
       queueMicrotask(this.#adm.batch);
     }
   }
@@ -58,7 +63,7 @@ class ObservableArray<T> extends Array<T> {
       return super.unshift(...data);
     } finally {
       this.#adm.state = 1;
-      this.#adm.report(this.#key, true);
+      this.#adm.report(this.#key, data);
       queueMicrotask(this.#adm.batch);
     }
   }
@@ -73,7 +78,7 @@ class ObservableArray<T> extends Array<T> {
       return super.splice(start, deleteCount, ...data);
     } finally {
       this.#adm.state = 1;
-      this.#adm.report(this.#key, true);
+      this.#adm.report(this.#key, this);
       queueMicrotask(this.#adm.batch);
     }
   }
@@ -84,7 +89,7 @@ class ObservableArray<T> extends Array<T> {
       return super.copyWithin(target, start, end);
     } finally {
       this.#adm.state = 1;
-      this.#adm.report(this.#key, true);
+      this.#adm.report(this.#key, this);
       queueMicrotask(this.#adm.batch);
     }
   }
@@ -95,7 +100,7 @@ class ObservableArray<T> extends Array<T> {
       return super.pop();
     } finally {
       this.#adm.state = 1;
-      this.#adm.report(this.#key, true);
+      this.#adm.report(this.#key, this);
       queueMicrotask(this.#adm.batch);
     }
   }
@@ -106,7 +111,7 @@ class ObservableArray<T> extends Array<T> {
       return super.reverse();
     } finally {
       this.#adm.state = 1;
-      this.#adm.report(this.#key, true);
+      this.#adm.report(this.#key, this);
       queueMicrotask(this.#adm.batch);
     }
   }
@@ -117,7 +122,7 @@ class ObservableArray<T> extends Array<T> {
       return super.shift();
     } finally {
       this.#adm.state = 1;
-      this.#adm.report(this.#key, true);
+      this.#adm.report(this.#key, this);
       queueMicrotask(this.#adm.batch);
     }
   }
@@ -128,7 +133,7 @@ class ObservableArray<T> extends Array<T> {
       return super.sort(compareFn);
     } finally {
       this.#adm.state = 1;
-      this.#adm.report(this.#key, true);
+      this.#adm.report(this.#key, this);
       queueMicrotask(this.#adm.batch);
     }
   }
@@ -139,7 +144,7 @@ class ObservableArray<T> extends Array<T> {
       super[i] = v;
     } finally {
       this.#adm.state = 1;
-      this.#adm.report(this.#key, true);
+      this.#adm.report(this.#key, v);
       queueMicrotask(this.#adm.batch);
     }
   }
@@ -202,12 +207,17 @@ function maybeMakeObservable(property: string | symbol, value: any, adm: Observa
 function observableProxyHandler(adm: ObservableAdministration) {
   const methods = new Map();
   return {
+    // sync: false,
     get(target: any, property: string | symbol, receiver: any) {
       if (AdmTrap[property]) {
         return adm[property];
       }
-      adm.batch();
       const value = Reflect.get(target, property, receiver);
+
+      if (typeof value !== 'object') {
+        adm.batch(true);
+      }
+
       if (typeof property === 'symbol') {
         return value;
       }

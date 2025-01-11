@@ -11,6 +11,7 @@
     "module": "esnext",
     "lib": [ "ES2022", "dom" ],
     "outDir": "dist",
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "removeComments": true
   }
 }

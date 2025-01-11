@@ -1,11 +1,11 @@
 import { describe, it, mock } from 'node:test';
 import * as assert from 'node:assert/strict';
 
-import { Observable } from '../src/Observable.js';
+import { Observable } from '../src/index.js';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const TEST_SECOND = false;
+const TEST_SECOND = true;
 
 describe('Observable Array', async () => {
   class Foo extends Observable {
@@ -220,7 +220,7 @@ describe('Observable Array', async () => {
   await it('Listen: should notify when add item by push', async () => {
     // BUG: listen says "true" for value
 
-    return;
+    // return;
 
     const foo = new Foo();
 
@@ -233,7 +233,7 @@ describe('Observable Array', async () => {
     assert.equal(subscriber.mock.callCount(), 1, 'Should be called once');
     assert.deepEqual(
       subscriber.mock.calls[0].arguments,
-      ['array', true],
+      ['array', [9]],
       'Should be called with relevant values'
     );
 
@@ -246,13 +246,13 @@ describe('Observable Array', async () => {
     assert.equal(subscriber.mock.callCount(), 2, 'Should be called twice');
     assert.deepEqual(
       subscriber.mock.calls[0].arguments,
-      ['array', true],
-      'Should be called with relevant values'
+      ['array', [10]],
+      'Should be called with relevant values1'
     );
     assert.deepEqual(
       subscriber.mock.calls[1].arguments,
-      ['array', true],
-      'Should be called with relevant values'
+      ['array', [11, 12]],
+      'Should be called with relevant values2'
     );
 
     subscriber.mock.resetCalls();
