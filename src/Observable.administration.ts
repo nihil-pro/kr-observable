@@ -59,10 +59,10 @@ export class ObservableAdministration {
    * @see ObservableComputed
    * @see proxyHandler
    * */
-  batch = () => {
+  batch = (sync = false) => {
     if (this.state === 1) {
       this.state = 0;
-      this.notify();
+      this.notify(sync);
     }
   };
 
@@ -83,7 +83,7 @@ export class ObservableAdministration {
   };
 
   /** Notify subscribers about changes */
-  private notify() {
+  private notify(sync = false) {
     if (this.changes.size === 0) {
       return;
     }
@@ -116,15 +116,19 @@ export class ObservableAdministration {
         }
       }
     });
-    queueMicrotask(() => {
-      // if is true, just ignore, because we run recursively, and it will be false on next iteration
-      if (!this.skipped) {
-        this.notified.clear();
-        this.changes.clear();
-        this.skipped = false;
-      }
-    });
+
+    if (sync) {
+      this.flush();
+    } else if (!this.skipped) {
+      queueMicrotask(this.flush);
+    }
   }
+
+  flush = () => {
+    this.notified.clear();
+    this.changes.clear();
+    this.skipped = false;
+  };
 
   // Public api.
   // These methods are accessed through the proxyHandler. See AdmTrap below.
