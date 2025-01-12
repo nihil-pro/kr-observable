@@ -16,7 +16,7 @@ Reflect.set(Array.prototype, 'set', function patchArraySet(i: number, value: unk
   this[i] = value;
 });
 
-class ObservableArray<T> extends Array<T> {
+export class ObservableArray<T> extends Array<T> {
   #key: string | symbol;
   #adm: ObservableAdministration;
   #primitive: boolean;
