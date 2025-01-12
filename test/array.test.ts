@@ -229,7 +229,7 @@ describe('Observable Array', async () => {
     assert.equal(subscriber.mock.callCount(), 0, 'Should not be called when unsubscribed');
   });
 
-  await it.skip('Listen: should notify when add item by push', async () => {
+  await it('Listen: should notify when add item by push', async () => {
     const foo = new Foo();
 
     const subscriber = mock.fn();

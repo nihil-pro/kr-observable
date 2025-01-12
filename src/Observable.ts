@@ -48,7 +48,7 @@ export class ObservableArray<T> extends Array<T> {
       return super.push(...data);
     } finally {
       this.#adm.state = 1;
-      this.#adm.report(this.#key, data);
+      this.#adm.report(this.#key, this);
       queueMicrotask(this.#adm.batch);
     }
   }
@@ -63,7 +63,7 @@ export class ObservableArray<T> extends Array<T> {
       return super.unshift(...data);
     } finally {
       this.#adm.state = 1;
-      this.#adm.report(this.#key, data);
+      this.#adm.report(this.#key, this);
       queueMicrotask(this.#adm.batch);
     }
   }
@@ -144,7 +144,7 @@ export class ObservableArray<T> extends Array<T> {
       super[i] = v;
     } finally {
       this.#adm.state = 1;
-      this.#adm.report(this.#key, v);
+      this.#adm.report(this.#key, this);
       queueMicrotask(this.#adm.batch);
     }
   }

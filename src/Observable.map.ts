@@ -16,6 +16,11 @@ export class ObservableMap<K, V> extends Map<K, V> {
     this.#adm = adm;
   }
 
+  [Symbol.iterator]() {
+    this.#adm.batch(true);
+    return super[Symbol.iterator]();
+  }
+
   has(key: K): boolean {
     try {
       return super.has(key);
@@ -27,6 +32,7 @@ export class ObservableMap<K, V> extends Map<K, V> {
 
   get(key: K): V | undefined {
     try {
+      this.#adm.batch(true);
       return super.get(key);
     } finally {
       // is needed to subscribe on a key in map
