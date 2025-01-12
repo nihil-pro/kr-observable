@@ -46,8 +46,8 @@ export class ObservableMap<K, V> extends Map<K, V> {
       return super.set(key, value);
     } finally {
       this.#adm.state = 1;
-      this.#adm.report(`${this.#key.toString()}.${key.toString()}`, value);
-      this.#adm.report(this.#key, value);
+      this.#adm.report(`${this.#key.toString()}.${key.toString()}`, this, true);
+      this.#adm.report(this.#key, this);
       queueMicrotask(this.#adm.batch);
     }
   }
@@ -58,8 +58,8 @@ export class ObservableMap<K, V> extends Map<K, V> {
       return super.delete(key);
     } finally {
       this.#adm.state = 1;
-      this.#adm.report(`${this.#key.toString()}.${key.toString()}`, undefined);
-      this.#adm.report(this.#key, undefined);
+      this.#adm.report(`${this.#key.toString()}.${key.toString()}`, this, true);
+      this.#adm.report(this.#key, this);
       queueMicrotask(this.#adm.batch);
     }
   }
@@ -70,7 +70,7 @@ export class ObservableMap<K, V> extends Map<K, V> {
       return super.clear();
     } finally {
       this.#adm.state = 1;
-      this.#adm.report(this.#key, undefined);
+      this.#adm.report(this.#key, this);
       queueMicrotask(this.#adm.batch);
     }
   }

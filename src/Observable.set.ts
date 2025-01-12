@@ -18,7 +18,7 @@ export class ObservableSet<T> extends Set<T> {
     try {
       return super.add(value);
     } finally {
-      this.#adm.report(this.#key, value);
+      this.#adm.report(this.#key, this);
       this.#adm.batch();
     }
   }
@@ -27,7 +27,7 @@ export class ObservableSet<T> extends Set<T> {
     try {
       return super.delete(value);
     } finally {
-      this.#adm.report(this.#key, undefined);
+      this.#adm.report(this.#key, this);
       this.#adm.batch();
     }
   }
@@ -36,7 +36,7 @@ export class ObservableSet<T> extends Set<T> {
     try {
       return super.clear();
     } finally {
-      this.#adm.report(this.#key, undefined);
+      this.#adm.report(this.#key, this);
       this.#adm.batch();
     }
   }
