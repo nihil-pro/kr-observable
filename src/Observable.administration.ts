@@ -74,11 +74,13 @@ export class ObservableAdministration {
    * @see ObservableComputed
    * @see proxyHandler
    * */
-  report = (property: string | symbol, value: any) => {
+  report = (property: string | symbol, value: any = undefined, ignoreListeners = false) => {
     if (!this.reportable) {
       return;
     }
-    this.listeners?.forEach((cb) => cb(property, value));
+    if (!ignoreListeners) {
+      this.listeners?.forEach((cb) => cb(property, value));
+    }
     this.changes.add(property);
   };
 
