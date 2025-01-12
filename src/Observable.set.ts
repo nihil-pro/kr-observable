@@ -9,6 +9,11 @@ export class ObservableSet<T> extends Set<T> {
     this.#adm = adm;
   }
 
+  [Symbol.iterator]() {
+    this.#adm.batch(true);
+    return super[Symbol.iterator]();
+  }
+
   add(value: T) {
     try {
       return super.add(value);

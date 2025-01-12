@@ -15,7 +15,7 @@ describe('Observable', async () => {
   });
 });
 
-describe.skip('Observable Map', async () => {
+describe('Observable Map', async () => {
   class WithMap extends Observable {
     map = new Map<string, string>();
   }
