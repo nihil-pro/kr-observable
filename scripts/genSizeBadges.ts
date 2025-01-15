@@ -12,7 +12,7 @@ const assetsPath = path.resolve('assets');
 if (!fs.existsSync(assetsPath)) fs.mkdirSync(assetsPath);
 
 function bytesForHuman(bytes: number, decimals = 2) {
-  const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  const units = ['B', 'kB', 'MB', 'GB', 'TB', 'PB'];
 
   let i = 0;
 
@@ -37,8 +37,8 @@ function afterBuild(result: BuildResult, type: 'esm' | 'cjs') {
   console.log(`Size ${type} ${sizes.js}`);
 
   const svg = makeBadge({
-    label: `Size (${type})`,
-    message: `min: ${sizes.js}; gz: ${sizes.gz}, br: ${sizes.br}`,
+    label: type.toUpperCase(), // ,`Size (${type})`,
+    message: `Minified + Gzipped: ${sizes.gz}`, // `min: ${sizes.js}; gz: ${sizes.gz} br: ${sizes.br}`,
     color: 'blue',
   });
 
@@ -59,7 +59,7 @@ const buildConfig: BuildOptions = {
     pluginCompress({
       gzip: true,
       zstd: false,
-      brotli: true,
+      brotli: false,
       level: 'high',
       extensions: ['.js'],
     }),

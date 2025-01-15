@@ -1,17 +1,20 @@
 # Observable
+## Adds reactivity power for your JavaScript 😎
 
 [![npm](https://img.shields.io/npm/v/kr-observable)](https://www.npmjs.com/package/kr-observable)
 ![coverage](https://github.com/nihil-pro/observable-class/blob/main/assets/coverage.svg)
-![size-esm](https://github.com/nihil-pro/observable-class/blob/main/assets/esm.svg)
-![size-cjs](https://github.com/nihil-pro/observable-class/blob/main/assets/cjs.svg)
+[![size-esm](https://bundlephobia.com/package/kr-observable)](https://github.com/nihil-pro/observable-class/blob/main/assets/esm.svg)
+[![size-cjs](https://bundlephobia.com/package/kr-observable)](https://github.com/nihil-pro/observable-class/blob/main/assets/cjs.svg)
 
-A proxy based state manager & reactive programming library
-1. Easy to use and great DX. See examples below;
+1. Easy to use and provides a great developer experience;
 2. Supports classes and plain objects;
 3. Supports subclassing;
-4. Tiny (2.7 kB), no dependencies;
-5. Framework-agnostic. <br />
-It comes with a hoc for React, as the most popular library, but can be used with any other.
+4. Works in all runtimes (Node.js, Web, e.t.c);
+5. Well typed;
+6. Framework-agnostic.
+
+For using as a state manager, it comes with a hoc for React, as the most popular library. 
+However, it can also be used with other libraries.
 
 ## Getting Started with react
 ```tsx
@@ -60,22 +63,16 @@ const Component = observer(function component() {
   // Will re-render only if the text or loading change
   return (
     <div>
-      <input 
-        placeholder="Text..." 
-        onChange={state.setText}
-        disabled={state.loading}
-        value={state.text}
-      />
-      <button 
-        onClick={state.search}
-        disabled={state.loading}
-      >
+      <input onChange={state.setText} value={state.text} />
+      
+      <button onClick={state.search} disabled={state.loading}>
         Submit
       </button>
       
       <button onClick={state.reset}> 
         Reset
       </button>
+      
       <Results />
     </div>
   )
@@ -229,9 +226,6 @@ Is fast enough.
 
 ## Memory usage
 ![observable memory usage](https://avtodoka-msk.ru/mem.png)
-
-## Size 
-~2.7 kb. See [BundlePhobia](https://bundlephobia.com/package/kr-observable@1.0.23)
 
 ## Limitations
 There is only one limitation: if you assign a new element to the array by index – changes will happen, of course, but You will not be notified.
