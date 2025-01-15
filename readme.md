@@ -3,8 +3,8 @@
 
 [![npm](https://img.shields.io/npm/v/kr-observable)](https://www.npmjs.com/package/kr-observable)
 ![coverage](https://github.com/nihil-pro/observable-class/blob/main/assets/coverage.svg)
-[![size-esm](https://bundlephobia.com/package/kr-observable)](https://github.com/nihil-pro/observable-class/blob/main/assets/esm.svg)
-[![size-cjs](https://bundlephobia.com/package/kr-observable)](https://github.com/nihil-pro/observable-class/blob/main/assets/cjs.svg)
+[![size-esm](https://github.com/nihil-pro/observable-class/blob/main/assets/esm.svg)](https://bundlephobia.com/package/kr-observable)
+[![size-cjs](https://github.com/nihil-pro/observable-class/blob/main/assets/cjs.svg)](https://bundlephobia.com/package/kr-observable)
 
 1. Easy to use and provides a great developer experience;
 2. Supports classes and plain objects;
