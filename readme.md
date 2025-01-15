@@ -22,7 +22,7 @@ class State extends Observable {
   text = ''
   loading = false
   
-  // All methods are automatically bounded, 
+  // All methods are automatically bound, 
   // so you can safely use them as listeners
   setText(event: Event) {
     this.text = event.target.value
@@ -109,7 +109,7 @@ class Foo extends Observable {
 ```
 - All properties are observable by default. Arrays and plain objects are deep observable.
 - All getters are computed by default
-- All methods are `bounded` by default
+- All methods are `bound` by default
 - Private properties (#prop) are just private properties, you can use them
 - All subclasses are also observable
 - `listen, unlisten, subscribe and unsubscribe` are reserved. They won't work even on accidentally redefine. 
