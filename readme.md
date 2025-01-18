@@ -104,11 +104,12 @@ class Foo extends Observable {
   // ...
 }
 ```
-- All properties are observable by default. Arrays and plain objects are deep observable.
-- All getters are computed by default
-- All methods are `bound` by default
-- Private properties (#prop) are just private properties, you can use them
-- All subclasses are also observable
+- All properties are observable by default;
+- [Arrays](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array), [Maps](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map), [Sets](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set) and [Objects](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object) are deep observable;
+- All getters are computed by default;
+- All methods are `bound` by default;
+- Private properties (#prop) are just private properties, you can use them;
+- All subclasses are also observable;
 - `listen, unlisten, subscribe and unsubscribe` are reserved. They won't work even on accidentally redefine. 
 Their signature below.
 ```typescript
