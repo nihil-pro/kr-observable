@@ -3,10 +3,10 @@ import {
   ObservableAdministrationPlug,
   AdmTrap,
 } from './Observable.administration.js';
-import { ObservableTransactions } from './Observable.transaction.js';
 import { ObservableMap } from './Observable.map.js';
 import { ObservableSet } from './Observable.set.js';
 import { ObservableComputed } from './Observable.computed.js';
+import { lib } from './global.this.js';
 
 type Observer = Pick<ObservableAdministration, 'subscribe' | 'unsubscribe' | 'listen' | 'unlisten'>;
 const isObservable = Symbol('Observable');
@@ -230,7 +230,7 @@ function observableProxyHandler(adm: ObservableAdministration) {
         return method;
       }
       if (!adm.ignore[property]) {
-        ObservableTransactions.report(adm, property);
+        lib.transactions.report(adm, property);
       }
       return value;
     },

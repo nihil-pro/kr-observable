@@ -1,7 +1,7 @@
 import { Subscriber } from './types.js';
-import { getGlobal } from './global.this.js';
+import { lib } from './global.this.js';
 
-class SubscribersNotifierImpl {
+export class SubscribersNotifier {
   static #subscribers: Set<Subscriber> = new Set();
   static #changes: Map<Subscriber, Set<string | symbol>> = new Map();
   static #notified: Set<Subscriber> = new Set();
@@ -22,7 +22,9 @@ class SubscribersNotifierImpl {
     this.#subscribers.forEach((subscriber) => {
       if (!this.#notified.has(subscriber)) {
         this.#notified.add(subscriber);
+        lib.runningEffect = true;
         subscriber(changes);
+        lib.runningEffect = false;
       }
     });
     this.#notified.clear();
@@ -31,20 +33,3 @@ class SubscribersNotifierImpl {
     // queueMicrotask(() => {})
   }
 }
-
-// This is for Webpack Module Federation V1
-// we should only use one instance of SubscribersNotifierImpl
-const Notifier = Symbol.for('SubscribersNotifier');
-const _self = getGlobal();
-
-if (!(Notifier in _self)) {
-  Reflect.set(_self, Notifier, SubscribersNotifierImpl);
-}
-
-declare global {
-  interface Window {
-    [Notifier]: { notify(subscriber: Subscriber, properties?: Set<string | symbol>): void };
-  }
-}
-
-export const SubscribersNotifier = _self[Notifier];

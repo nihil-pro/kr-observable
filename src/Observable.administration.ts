@@ -1,5 +1,5 @@
-import { SubscribersNotifier } from './Subscribers.notifier.js';
 import { Listener, Subscriber } from './types.js';
+import { lib } from './global.this.js';
 
 /** Observable companion object
  * We don't want to add any extra features to the user custom class.
@@ -75,7 +75,7 @@ export class ObservableAdministration {
    * @see proxyHandler
    * */
   report = (property: string | symbol, value: any = undefined, ignoreListeners = false) => {
-    if (!this.reportable) {
+    if (!this.reportable || lib.runningEffect) {
       return;
     }
     if (!ignoreListeners) {
@@ -103,7 +103,7 @@ export class ObservableAdministration {
       if (isSubscribed && !this.notified.has(cb)) {
         const s = this.changes.size; // maybe cane be just 0, need tests
         // notifying subscriber
-        SubscribersNotifier.notify(cb, changes);
+        lib.notifier.notify(cb, changes);
         // there can be some mutation inside cb, like an autorun which reads and sets at the same time,
         // if after that there wasn't any report about changes – we are done.
         if (this.changes.size === s) {
