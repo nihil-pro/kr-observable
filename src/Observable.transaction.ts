@@ -1,5 +1,5 @@
 import { ObservableAdministration } from './Observable.administration.js';
-import { getGlobal } from './global.this.js';
+import { lib } from './global.this.js';
 import { Subscriber } from './types.js';
 
 export interface WorkStats {
@@ -27,7 +27,7 @@ export interface TransactionResult {
   result: any;
 }
 
-class ObservableTransactionsImpl {
+export class ObservableTransactions {
   static #track: Map<Function, WorkStats> = new Map();
   static #stack: Function[] = [];
   static report(administration: ObservableAdministration, property: string | symbol) {
@@ -70,32 +70,11 @@ class ObservableTransactionsImpl {
   };
 }
 
-// This is for Webpack Module Federation V1
-// we should only use one instance of ObservableTransactionsImpl
-const TransactionExecutor = Symbol.for('ObservableTransactions');
-const _self = getGlobal();
-
-if (!(TransactionExecutor in _self)) {
-  Reflect.set(_self, TransactionExecutor, ObservableTransactionsImpl);
-}
-
-declare global {
-  interface Window {
-    [TransactionExecutor]: {
-      transaction(work: Function, cb: Subscriber): WorkStats;
-      notify(subscriber: Subscriber, changes?: Set<string | symbol>): void;
-      report(administration: ObservableAdministration, property: string | symbol): void;
-    };
-  }
-}
-
-export const ObservableTransactions = _self[TransactionExecutor];
-
 /** Accepts one function that should run every time anything it observes changes. <br />
  It also runs once when you create the autorun itself.
  Returns a dispose function.
  */
 export function autorun(fn: () => void) {
-  const { dispose } = ObservableTransactions.transaction(fn, fn);
+  const { dispose } = lib.transactions.transaction(fn, fn);
   return dispose;
 }

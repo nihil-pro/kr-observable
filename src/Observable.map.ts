@@ -1,5 +1,5 @@
 import { ObservableAdministration } from './Observable.administration.js';
-import { ObservableTransactions } from './Observable.transaction.js';
+import { lib } from './global.this.js';
 
 /** Much faster than using proxy */
 export class ObservableMap<K, V> extends Map<K, V> {
@@ -26,7 +26,7 @@ export class ObservableMap<K, V> extends Map<K, V> {
       return super.has(key);
     } finally {
       // is needed to subscribe on a key in map
-      ObservableTransactions.report(this.#adm, `${this.#key.toString()}.${key}`);
+      lib.transactions.report(this.#adm, `${this.#key.toString()}.${key}`);
     }
   }
 
@@ -36,7 +36,7 @@ export class ObservableMap<K, V> extends Map<K, V> {
       return super.get(key);
     } finally {
       // is needed to subscribe on a key in map
-      ObservableTransactions.report(this.#adm, `${this.#key.toString()}.${key}`);
+      lib.transactions.report(this.#adm, `${this.#key.toString()}.${key}`);
     }
   }
 

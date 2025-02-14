@@ -12,7 +12,7 @@ import {
   MemoExoticComponent,
 } from 'react';
 
-import { ObservableTransactions } from './Observable.transaction.js';
+import { lib } from './global.this.js';
 
 function useObservable<T>(fn: () => T, name: string, props: any, debug = false) {
   const { 1: render } = useState(0);
@@ -23,7 +23,7 @@ function useObservable<T>(fn: () => T, name: string, props: any, debug = false) 
     }
     render((prev) => prev + 1); // 1 - prev
   }, []);
-  const TR = ObservableTransactions.transaction(work, cb);
+  const TR = lib.transactions.transaction(work, cb);
   useEffect(() => {
     return () => {
       TR?.dispose();

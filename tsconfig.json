@@ -9,7 +9,7 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
-    "lib": [ "ES2022", "dom" ],
+    "lib": [ "ES2022", "DOM.Iterable", "DOM" ],
     "outDir": "dist",
     "moduleResolution": "node",
     "removeComments": true

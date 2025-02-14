@@ -1,5 +1,5 @@
 import { ObservableAdministration } from './Observable.administration.js';
-import { ObservableTransactions } from './Observable.transaction.js';
+import { lib } from './global.this.js';
 
 /** Custom property descriptor.
  * Memoize getters return value */
@@ -65,7 +65,7 @@ export class ObservableComputed {
   get = () => {
     // first call
     if (this.#uncalled) {
-      const { read } = ObservableTransactions.transaction(
+      const { read } = lib.transactions.transaction(
         () => {
           // get and store result
           this.#value = this.#descriptor.get?.call(this.#proxy);
