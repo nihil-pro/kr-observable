@@ -13,20 +13,109 @@
 5. Well typed;
 6. Framework-agnostic.
 
-For using as a state manager, it comes with a hoc for React, as the most popular library. 
-However, it can also be used with other libraries.
+For use as a state-manager, it comes with `observer` HOC (higher-order component) for React, as most popular library. 
+But it can be used with any JavaScript framework or library.
 
-## Getting Started with react
+## Getting started with react
+Install kr-observable: `npm install kr-observable` or `yarn add kr-observable`
+```ts
+import { Observable } from "kr-observable";
+
+// Defining the state.
+// A state (store) is a class which extends Observable
+export class State extends Observable {
+  results: string[] = []
+  text = ''
+  loading = false
+  
+  // All methods are automatically bound, 
+  // and can be safely used as callbacks or events listeners.
+  // A method can be defined in prototype, or as an instance property:
+  // setText = (event: Event) => { ... },
+  // or setText = function(event: Event) { ... }
+  setText(event: Event) {
+    this.text = event.target.value
+  }
+  
+  // To mutate state, you don't need any wrappers, actions or "reactive context".
+  // You can do this from anywhere, even in asynchronous processes.
+  async search() {
+    try {
+      this.loading = true
+      const response = await fetch('/someApi')
+      this.results = await response.json()
+    } catch(e) {
+      console.warn(e)
+    } finally {
+      this.loading = false
+    }
+  }
+  
+  reset() {
+    this.results = []
+  }
+}
+
+export const state = new State() // our state
+```
+Now we can use our state with React
 ```tsx
-import { Observable, observer } from "kr-observable";
+// importing HOC
+// This HOC automatically subscribes React components to observables that are used during rendering. 
+import { observer } from 'kr-observable'
+
+import { state, State } from './state'
+
+
+// No matter how observables arrive in the component
+// You can pass them as props or access directly
+// Component will re-render only if observables it read changes (*with batching)
+const Results = observer(function results({ state }: { state: State }) {
+  return (
+    <div>
+      {state.results.map(result => <div key={result}>{result}</div>)}
+    </div>
+  )
+})
+
+// Will re-render only if the text or loading change
+const Component = observer(function component() {
+  return (
+    <div>
+      <input
+        // setText is bound to state, so "this" will point to state
+        onChange={state.setText}
+
+        // or defaultValue, no matter
+        value={state.text}
+      />
+      
+      <button onClick={state.search} disabled={state.loading}>
+        Submit
+      </button>
+      
+      <button onClick={state.reset}> 
+        Reset
+      </button>
+      
+      <Results />
+    </div>
+  )
+})
+
+// "Batching" here means, that if a component read more than one observable during render,
+// and those observable changes almost at the same time, the component will re-render once
+// This makes react applications with kr-observable well optimized.  
+```
+It's all there. Let's combine it and remove the comments to see how clean the code looks.
+```tsx
+import { Observable } from "kr-observable";
 
 class State extends Observable {
   results: string[] = []
   text = ''
   loading = false
   
-  // All methods are automatically bound, 
-  // so you can safely use them as listeners
   setText(event: Event) {
     this.text = event.target.value
   }
@@ -50,8 +139,7 @@ class State extends Observable {
 
 const state = new State()
 
-const Results = observer(function results() {
-  // Will re-render only if the results change
+const Results = observer(function results({ state }: { state: State }) {
   return (
     <div>
       {state.results.map(result => <div key={result}>{result}</div>)}
@@ -60,26 +148,24 @@ const Results = observer(function results() {
 })
 
 const Component = observer(function component() {
-  // Will re-render only if the text or loading change
   return (
     <div>
       <input onChange={state.setText} value={state.text} />
-      
+
       <button onClick={state.search} disabled={state.loading}>
         Submit
       </button>
-      
-      <button onClick={state.reset}> 
+
+      <button onClick={state.reset}>
         Reset
       </button>
-      
+
       <Results />
     </div>
   )
 })
 ```
 More complicated example on [CodeSandbox](https://codesandbox.io/p/sandbox/v7zf47)
-
 
 ## Api reference
 
