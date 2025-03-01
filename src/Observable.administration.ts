@@ -75,7 +75,16 @@ export class ObservableAdministration {
    * @see proxyHandler
    * */
   report = (property: string | symbol, value: any = undefined, ignoreListeners = false) => {
-    if (!this.reportable || lib.runningEffect) {
+    if (!this.reportable) {
+      return;
+    }
+    if (lib.runningEffect) {
+      let keys = lib.changedInEffect.get(this);
+      if (!keys) {
+        keys = new Set<string | symbol>();
+        lib.changedInEffect.set(this, keys);
+      }
+      keys.add(property);
       return;
     }
     if (!ignoreListeners) {

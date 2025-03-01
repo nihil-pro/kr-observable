@@ -1,5 +1,6 @@
 import { ObservableTransactions } from './Observable.transaction.js';
 import { SubscribersNotifier } from './Subscribers.notifier.js';
+import { equal } from './equal.js';
 
 function getGlobal(): WindowOrWorkerGlobalScope {
   if (typeof self !== 'undefined') {
@@ -14,6 +15,10 @@ function getGlobal(): WindowOrWorkerGlobalScope {
 export const GlobalKey = Symbol.for('observable');
 Reflect.set(getGlobal(), GlobalKey, {});
 
+if (!Reflect.has(Object.prototype, 'equal')) {
+  Reflect.set(Object.prototype, 'equal', equal);
+}
+
 /** Maybe is not great idea, but it's a reliable way to get a singleton  */
 export const lib = Reflect.get(getGlobal(), GlobalKey);
 
@@ -23,4 +28,8 @@ if (!lib.transactions) {
 
 if (!lib.notifier) {
   lib.notifier = SubscribersNotifier;
+}
+
+if (!lib.changedInEffect) {
+  lib.changedInEffect = new Map();
 }
