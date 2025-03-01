@@ -1,6 +1,7 @@
 import { GlobalKey } from './global.this.js';
 import { ObservableTransactions } from './Observable.transaction.js';
 import { SubscribersNotifier } from './Subscribers.notifier.js';
+import { ObservableAdministration } from './Observable.administration.js';
 
 export type Subscriber = (changes?: Set<string | symbol>) => void | Promise<void>;
 export type Listener = (property: string | symbol, value: any) => void | Promise<void>;
@@ -14,6 +15,7 @@ declare global {
       runningEffect: boolean;
       transactions: typeof ObservableTransactions;
       notifier: typeof SubscribersNotifier;
+      changedInEffect: Map<ObservableAdministration, Set<string | symbol>>;
     };
   }
 }

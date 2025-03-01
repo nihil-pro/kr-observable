@@ -43,7 +43,7 @@ export class ObservableTransactions {
     }
   }
 
-  public static transaction = (work: Function, cb: Subscriber) => {
+  public static transaction = (work: Function, cb: Subscriber, autosub = true) => {
     let stats = this.#track.get(work);
     if (!stats) {
       stats = workStats();
@@ -57,7 +57,9 @@ export class ObservableTransactions {
       stats.count++;
       stats.result = result;
       queueMicrotask(() => {
-        stats.read.forEach((keys, adm) => adm.subscribe(cb, keys));
+        if (autosub) {
+          stats.read.forEach((keys, adm) => adm.subscribe(cb, keys));
+        }
       });
 
       if (!stats.dispose) {

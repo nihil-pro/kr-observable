@@ -22,6 +22,7 @@ export class SubscribersNotifier {
     this.#subscribers.forEach((subscriber) => {
       if (!this.#notified.has(subscriber)) {
         this.#notified.add(subscriber);
+        // allows to ignore changes made in a reaction
         lib.runningEffect = true;
         subscriber(changes);
         lib.runningEffect = false;

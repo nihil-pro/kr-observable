@@ -15,14 +15,13 @@ export class ObservableComputed {
    * and access to private properties won't work. */
   #proxy: object;
 
-  /** Is used to subscribe once */
-  #uncalled = true;
-
   /** Stores getter value */
   #value: any;
 
   /** Signify that getter result was changed */
-  #changed = false;
+  #changed = true;
+
+  #first = true;
 
   constructor(
     property: string | symbol,
@@ -46,15 +45,19 @@ export class ObservableComputed {
 
     // without this, nested computed won't work stable
     queueMicrotask(() => {
+      if (this.#changed === false) {
+        return;
+      }
       const prevValue = this.#value;
-      // toDo
-      // need tests, and maybe this should be called inside transaction,
-      // for cases when computed includes conditional expressions where different properties are accessed
-      this.#value = this.#descriptor.get?.call(this.#proxy);
-      // if property will be accessed before we'll call batch below,
-      // we'll return memoized value
-      this.#changed = false;
-      if (prevValue !== this.#value) {
+      this.#reader();
+      // this.#changed = false;
+      let shouldReport: boolean;
+      if (prevValue == null) {
+        shouldReport = this.#value != null;
+      } else {
+        shouldReport = !prevValue.equal(this.#value);
+      }
+      if (shouldReport) {
         this.#adm.report(this.#property, this.#value);
         this.#adm.state = 1;
         this.#adm.batch();
@@ -62,24 +65,50 @@ export class ObservableComputed {
     });
   };
 
+  #reads = new Map<ObservableAdministration, Set<string | symbol>>();
+
+  #reader = () => {
+    const { read, result } = lib.transactions.transaction(
+      () => this.#descriptor.get?.call(this.#proxy),
+      () => void 0,
+      false
+    );
+    read.forEach((keys, adm) => {
+      const subscriber = this.#reads.get(adm);
+      if (!subscriber) {
+        adm.subscribe(this.#update, keys);
+        this.#reads.set(adm, keys);
+      } else {
+        keys.forEach((key) => subscriber.add(key));
+      }
+    });
+    this.#value = result;
+  };
+
   get = () => {
-    // first call
-    if (this.#uncalled) {
-      const { read } = lib.transactions.transaction(
-        () => {
-          // get and store result
-          this.#value = this.#descriptor.get?.call(this.#proxy);
-        },
-        () => void 0
-      );
-      this.#uncalled = false;
-      // subscribe to changes of read observables
-      read?.forEach((keys, adm) => adm.subscribe(this.#update, keys));
-    }
-    // is accessed before microtask in subscriber is executed
     if (this.#changed) {
-      this.#value = this.#descriptor.get?.call(this.#proxy);
+      const prevValue = this.#value;
+      this.#reader();
       this.#changed = false;
+      if (this.#first) {
+        this.#first = false;
+        return this.#value;
+      }
+      let shouldReport: boolean;
+      if (prevValue == null) {
+        shouldReport = this.#value != null;
+      } else {
+        shouldReport = !prevValue.equal(this.#value);
+      }
+      if (shouldReport) {
+        this.#adm.report(this.#property, this.#value);
+      }
+      return this.#value;
+    }
+    if (lib.changedInEffect.has(this.#adm)) {
+      this.#changed = false;
+      this.#reader();
+      lib.changedInEffect.delete(this.#adm);
     }
     return this.#value;
   };
