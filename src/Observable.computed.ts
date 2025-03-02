@@ -50,7 +50,7 @@ export class ObservableComputed {
       }
       const prevValue = this.#value;
       this.#reader();
-      // this.#changed = false;
+      this.#changed = false;
       let shouldReport: boolean;
       if (prevValue == null) {
         shouldReport = this.#value != null;
@@ -65,27 +65,18 @@ export class ObservableComputed {
     });
   };
 
-  #reads = new Map<ObservableAdministration, Set<string | symbol>>();
-
   #reader = () => {
     const { read, result } = lib.transactions.transaction(
       () => this.#descriptor.get?.call(this.#proxy),
       () => void 0,
       false
     );
-    read.forEach((keys, adm) => {
-      const subscriber = this.#reads.get(adm);
-      if (!subscriber) {
-        adm.subscribe(this.#update, keys);
-        this.#reads.set(adm, keys);
-      } else {
-        keys.forEach((key) => subscriber.add(key));
-      }
-    });
+    read.forEach((keys, adm) => adm.subscribe(this.#update, keys));
     this.#value = result;
   };
 
   get = () => {
+    this.#adm.batch();
     if (this.#changed) {
       const prevValue = this.#value;
       this.#reader();

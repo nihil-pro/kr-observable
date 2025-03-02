@@ -242,6 +242,7 @@ function observableProxyHandler(adm: ObservableAdministration) {
         target[property] = newValue;
         return true;
       }
+
       adm.state = 0;
       const value = maybeMakeObservable(property, newValue, adm);
       target[property] = value;

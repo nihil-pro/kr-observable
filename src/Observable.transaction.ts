@@ -56,11 +56,9 @@ export class ObservableTransactions {
       this.#stack.pop();
       stats.count++;
       stats.result = result;
-      queueMicrotask(() => {
-        if (autosub) {
-          stats.read.forEach((keys, adm) => adm.subscribe(cb, keys));
-        }
-      });
+      if (autosub) {
+        stats.read.forEach((keys, adm) => adm.subscribe(cb, keys));
+      }
 
       if (!stats.dispose) {
         stats.dispose = () => this.#track.delete(work);
