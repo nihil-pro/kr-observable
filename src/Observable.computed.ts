@@ -21,6 +21,7 @@ export class ObservableComputed {
   /** Signify that getter result was changed */
   #changed = true;
 
+  /** Indicates that getter wasn't read  */
   #first = true;
 
   constructor(
@@ -37,7 +38,9 @@ export class ObservableComputed {
     this.enumerable = descriptor.enumerable;
   }
 
-  /** Subscriber */
+  /** Subscriber <br/>
+   * Will be invoked when one of read observable changes
+   * */
   #update = () => {
     // if property will be accessed earlier than below microtask will be executed,
     // we'll call original getter to get current result
@@ -46,11 +49,12 @@ export class ObservableComputed {
     // without this, nested computed won't work stable
     queueMicrotask(() => {
       if (this.#changed === false) {
+        // means that microtask was queued, but getter was accessed before microtask start execution
         return;
       }
       const prevValue = this.#value;
       this.#reader();
-      // this.#changed = false;
+      this.#changed = false;
       let shouldReport: boolean;
       if (prevValue == null) {
         shouldReport = this.#value != null;
@@ -65,31 +69,29 @@ export class ObservableComputed {
     });
   };
 
-  #reads = new Map<ObservableAdministration, Set<string | symbol>>();
-
+  /** Read getter value in a transaction and subscribes to observables */
   #reader = () => {
     const { read, result } = lib.transactions.transaction(
       () => this.#descriptor.get?.call(this.#proxy),
       () => void 0,
       false
     );
-    read.forEach((keys, adm) => {
-      const subscriber = this.#reads.get(adm);
-      if (!subscriber) {
-        adm.subscribe(this.#update, keys);
-        this.#reads.set(adm, keys);
-      } else {
-        keys.forEach((key) => subscriber.add(key));
-      }
-    });
+    read.forEach((keys, adm) => adm.subscribe(this.#update, keys));
     this.#value = result;
   };
 
+  /** A trap for original descriptor getter */
   get = () => {
+    // enable sync batching
+    this.#adm.batch();
+
+    // if property was changed, we should compare current value to previous
+    // and report if they aren't equal.
     if (this.#changed) {
       const prevValue = this.#value;
       this.#reader();
       this.#changed = false;
+      // no need to report if this is the first access
       if (this.#first) {
         this.#first = false;
         return this.#value;
@@ -102,6 +104,8 @@ export class ObservableComputed {
       }
       if (shouldReport) {
         this.#adm.report(this.#property, this.#value);
+        this.#adm.state = 1;
+        this.#adm.batch(true);
       }
       return this.#value;
     }

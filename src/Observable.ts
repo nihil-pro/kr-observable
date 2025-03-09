@@ -10,7 +10,7 @@ import { lib } from './global.this.js';
 
 type Observer = Pick<ObservableAdministration, 'subscribe' | 'unsubscribe' | 'listen' | 'unlisten'>;
 const isObservable = Symbol('Observable');
-const whoami = Symbol.for('whoami');
+export const whoami = Symbol.for('whoami');
 
 Reflect.set(Array.prototype, 'set', function patchArraySet(i: number, value: unknown) {
   this[i] = value;
@@ -213,7 +213,7 @@ function observableProxyHandler(adm: ObservableAdministration) {
         return adm[property];
       }
       const value = Reflect.get(target, property, receiver);
-
+      // && adm.action === 0
       if (typeof value !== 'object') {
         adm.batch(true);
       }
@@ -225,6 +225,16 @@ function observableProxyHandler(adm: ObservableAdministration) {
         let method = methods.get(property);
         if (!method) {
           method = value.bind(receiver);
+          // new Proxy(, {
+          //   apply(fn: any, thisArg: any, argArray: any[]): any {
+          //     adm.action = 1;
+          //     const result = fn.apply(thisArg, argArray);
+          //     adm.action = 0;
+          //     adm.state = 1;
+          //     adm.batch(true);
+          //     return result;
+          //   },
+          // });
           methods.set(property, method);
         }
         return method;
@@ -242,12 +252,16 @@ function observableProxyHandler(adm: ObservableAdministration) {
         target[property] = newValue;
         return true;
       }
+
       adm.state = 0;
       const value = maybeMakeObservable(property, newValue, adm);
       target[property] = value;
       adm.report(property, value);
       adm.state = 1;
       queueMicrotask(adm.batch);
+      // if (adm.action === 0) {
+      //
+      // }
       return true;
     },
     defineProperty(target: any, property: string, descriptor: PropertyDescriptor) {
@@ -257,6 +271,12 @@ function observableProxyHandler(adm: ObservableAdministration) {
   };
 }
 
+/**
+ * @example
+ * class Foo extends Observable {}
+ * @interface Observable
+ * @property {string[]} ignore Static. Optional. Properties in `ignore` won't be made observable or computed.
+ * */
 export class Observable {
   static ignore: Array<string | symbol> = [];
   [isObservable] = true;

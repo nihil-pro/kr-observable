@@ -1,5 +1,4 @@
 import { ObservableAdministration } from './Observable.administration.js';
-import { lib } from './global.this.js';
 import { Subscriber } from './types.js';
 
 export interface WorkStats {
@@ -20,13 +19,6 @@ function workStats() {
   };
 }
 
-export interface TransactionResult {
-  stats: WorkStats;
-  dispose: () => void;
-  exception: undefined | Error;
-  result: any;
-}
-
 export class ObservableTransactions {
   static #track: Map<Function, WorkStats> = new Map();
   static #stack: Function[] = [];
@@ -42,8 +34,7 @@ export class ObservableTransactions {
       read.add(property);
     }
   }
-
-  public static transaction = (work: Function, cb: Subscriber, autosub = true) => {
+  static transaction = (work: Function, cb: Subscriber, autosub = true) => {
     let stats = this.#track.get(work);
     if (!stats) {
       stats = workStats();
@@ -56,11 +47,9 @@ export class ObservableTransactions {
       this.#stack.pop();
       stats.count++;
       stats.result = result;
-      queueMicrotask(() => {
-        if (autosub) {
-          stats.read.forEach((keys, adm) => adm.subscribe(cb, keys));
-        }
-      });
+      if (autosub) {
+        stats.read.forEach((keys, adm) => adm.subscribe(cb, keys));
+      }
 
       if (!stats.dispose) {
         stats.dispose = () => this.#track.delete(work);
@@ -70,13 +59,6 @@ export class ObservableTransactions {
     }
     return stats;
   };
-}
-
-/** Accepts one function that should run every time anything it observes changes. <br />
- It also runs once when you create the autorun itself.
- Returns a dispose function.
- */
-export function autorun(fn: () => void) {
-  const { dispose } = lib.transactions.transaction(fn, fn);
-  return dispose;
+  static get = (work: Function) => this.#track.get(work);
+  static dispose = (work: Function) => this.#track.delete(work);
 }

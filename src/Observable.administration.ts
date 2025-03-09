@@ -11,6 +11,7 @@ import { lib } from './global.this.js';
  * Considering than such instances would be created many times
  * */
 export class ObservableAdministration {
+  action = 0;
   /** Need to bind methods in prototype */
   methods = Object.create(null);
 
@@ -198,4 +199,5 @@ export const ObservableAdministrationPlug = {
   report: () => void 0,
   batch: () => void 0,
   state: 0,
+  action: 0,
 } as unknown as ObservableAdministration;
