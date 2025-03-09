@@ -16,7 +16,10 @@ export const GlobalKey = Symbol.for('observable');
 Reflect.set(getGlobal(), GlobalKey, {});
 
 if (!Reflect.has(Object.prototype, 'equal')) {
-  Reflect.set(Object.prototype, 'equal', equal);
+  Reflect.defineProperty(Object.prototype, 'equal', {
+    enumerable: false,
+    value: equal,
+  });
 }
 
 /** Maybe is not great idea, but it's a reliable way to get a singleton  */

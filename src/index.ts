@@ -1,3 +1,3 @@
 export { Observable, makeObservable } from './Observable.js';
-export { observer } from './observer.hoc.js';
-export { autorun } from './Observable.transaction.js';
+export { observer } from './react/observer.js';
+export { autorun } from './autorun.js';

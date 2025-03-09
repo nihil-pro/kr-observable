@@ -12,6 +12,7 @@
     "lib": [ "ES2022", "DOM.Iterable", "DOM" ],
     "outDir": "dist",
     "moduleResolution": "node",
-    "removeComments": true
+    "removeComments": true,
+    "allowSyntheticDefaultImports": true
   }
 }
