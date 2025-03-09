@@ -13,7 +13,7 @@
     "check-types": "tsc --noEmit",
     "gen-coverage-badge": "node --import tsx ./scripts/genCoverageBadge.ts",
     "gen-size-badge": "node --import tsx ./scripts/genSizeBadges.ts",
-    "test-ts": "c8 node --import tsx --test --experimental-strip-types --test-reporter=spec ./src/tests/*.test.*"
+    "test-ts": "c8 node --import tsx --test --experimental-strip-types --test-reporter=spec ./src/tests/*.test.* && npm run gen-coverage-badge"
   },
   "keywords": [
     "proxy",
@@ -52,8 +52,5 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/nihil-pro/observable-class.git"
-  },
-  "dependencies": {
-    "use-sync-external-store": "^1.4.0"
   }
 }
