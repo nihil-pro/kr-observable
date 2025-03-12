@@ -9,11 +9,16 @@ import { ObservableComputed } from './Observable.computed.js';
 import { lib } from './global.this.js';
 
 type Observer = Pick<ObservableAdministration, 'subscribe' | 'unsubscribe' | 'listen' | 'unlisten'>;
-const isObservable = Symbol('Observable');
+const isObservable = Symbol.for('Observable');
 export const whoami = Symbol.for('whoami');
 
-Reflect.set(Array.prototype, 'set', function patchArraySet(i: number, value: unknown) {
+function set(i: number, value: unknown) {
   this[i] = value;
+}
+
+Reflect.defineProperty(Array.prototype, 'set', {
+  enumerable: false,
+  value: set,
 });
 
 export class ObservableArray<T> extends Array<T> {
@@ -47,9 +52,7 @@ export class ObservableArray<T> extends Array<T> {
     try {
       return super.push(...data);
     } finally {
-      this.#adm.state = 1;
-      this.#adm.report(this.#key, this);
-      queueMicrotask(this.#adm.batch);
+      this.#report();
     }
   }
 
@@ -62,9 +65,7 @@ export class ObservableArray<T> extends Array<T> {
     try {
       return super.unshift(...data);
     } finally {
-      this.#adm.state = 1;
-      this.#adm.report(this.#key, this);
-      queueMicrotask(this.#adm.batch);
+      this.#report();
     }
   }
 
@@ -77,9 +78,7 @@ export class ObservableArray<T> extends Array<T> {
     try {
       return super.splice(start, deleteCount, ...data);
     } finally {
-      this.#adm.state = 1;
-      this.#adm.report(this.#key, this);
-      queueMicrotask(this.#adm.batch);
+      this.#report();
     }
   }
 
@@ -88,9 +87,7 @@ export class ObservableArray<T> extends Array<T> {
     try {
       return super.copyWithin(target, start, end);
     } finally {
-      this.#adm.state = 1;
-      this.#adm.report(this.#key, this);
-      queueMicrotask(this.#adm.batch);
+      this.#report();
     }
   }
 
@@ -99,9 +96,7 @@ export class ObservableArray<T> extends Array<T> {
     try {
       return super.pop();
     } finally {
-      this.#adm.state = 1;
-      this.#adm.report(this.#key, this);
-      queueMicrotask(this.#adm.batch);
+      this.#report();
     }
   }
 
@@ -110,9 +105,7 @@ export class ObservableArray<T> extends Array<T> {
     try {
       return super.reverse();
     } finally {
-      this.#adm.state = 1;
-      this.#adm.report(this.#key, this);
-      queueMicrotask(this.#adm.batch);
+      this.#report();
     }
   }
 
@@ -121,9 +114,7 @@ export class ObservableArray<T> extends Array<T> {
     try {
       return super.shift();
     } finally {
-      this.#adm.state = 1;
-      this.#adm.report(this.#key, this);
-      queueMicrotask(this.#adm.batch);
+      this.#report();
     }
   }
 
@@ -132,9 +123,7 @@ export class ObservableArray<T> extends Array<T> {
     try {
       return super.sort(compareFn);
     } finally {
-      this.#adm.state = 1;
-      this.#adm.report(this.#key, this);
-      queueMicrotask(this.#adm.batch);
+      this.#report();
     }
   }
 
@@ -143,44 +132,48 @@ export class ObservableArray<T> extends Array<T> {
     try {
       super[i] = v;
     } finally {
-      this.#adm.state = 1;
-      this.#adm.report(this.#key, this);
-      queueMicrotask(this.#adm.batch);
+      this.#report();
     }
+  }
+
+  #report() {
+    this.#adm.report(this.#key, this);
+    queueMicrotask(this.#adm.batch);
+    this.#adm.state = 1;
   }
 }
 
 /** Only plain object are allowed
  * @example makeObservable({ foo: 'bar' }) */
 export function makeObservable<T extends object>(value: T, ignore: string[] = []): T & Observer {
-  try {
-    if (Object.prototype === Object.getPrototypeOf(value)) {
-      // turn on deep observable for plain objects
-      const adm = new ObservableAdministration();
-      ignore.forEach((key) => {
-        adm.ignore[key] = 1;
-      });
-      Reflect.set(adm, Symbol.for('whoami'), value.constructor.name);
-      Object.entries(value).forEach(
-        ([key, $value]) => (value[key] = maybeMakeObservable(key, $value, adm))
-      );
-      value[isObservable] = true;
-      return new Proxy(value, observableProxyHandler(adm));
-    }
-    return undefined;
-  } catch (e) {
-    throw new TypeError('Invalid argument. Only plain objects', e);
+  if (value == null || Object.prototype !== Object.getPrototypeOf(value)) {
+    throw new TypeError('Invalid argument. Only plain objects are allowed');
   }
+  // turn on deep observable for plain objects
+  const adm = new ObservableAdministration();
+  ignore.forEach((key) => {
+    adm.ignore[key] = 1;
+  });
+  Reflect.set(adm, Symbol.for('whoami'), value.constructor.name);
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  const computeds: Record<string, PropertyDescriptor> = {};
+  for (const [key, descriptor] of Object.entries(descriptors)) {
+    if (typeof descriptor.get === 'function') {
+      computeds[key] = descriptor;
+    } else {
+      value[key] = maybeMakeObservable(key, descriptor?.value, adm);
+    }
+  }
+  value[isObservable] = true;
+  const proxy = new Proxy(value, observableProxyHandler(adm));
+  for (const [key, descriptor] of Object.entries(computeds)) {
+    Object.defineProperty(value, key, new ObservableComputed(key, descriptor, adm, proxy));
+  }
+  return proxy;
 }
 
 function maybeMakeObservable(property: string | symbol, value: any, adm: ObservableAdministration) {
-  if (!value) {
-    return value;
-  }
-  if (typeof value !== 'object') {
-    return value;
-  }
-  if (value[isObservable]) {
+  if (value == null || typeof value !== 'object' || value[isObservable]) {
     return value;
   }
   if (value instanceof Map) {
@@ -197,7 +190,6 @@ function maybeMakeObservable(property: string | symbol, value: any, adm: Observa
     const observables = value.map((el) => maybeMakeObservable(property, el, adm));
     return new ObservableArray(property, adm, false, ...observables);
   }
-
   if (Object.prototype === Object.getPrototypeOf(value)) {
     return makeObservable(value);
   }
@@ -207,7 +199,6 @@ function maybeMakeObservable(property: string | symbol, value: any, adm: Observa
 function observableProxyHandler(adm: ObservableAdministration) {
   const methods = new Map();
   return {
-    // sync: false,
     get(target: any, property: string | symbol, receiver: any) {
       if (AdmTrap[property]) {
         return adm[property];
@@ -218,9 +209,6 @@ function observableProxyHandler(adm: ObservableAdministration) {
         adm.batch(true);
       }
 
-      if (typeof property === 'symbol') {
-        return value;
-      }
       if (adm.methods[property]) {
         let method = methods.get(property);
         if (!method) {
@@ -245,23 +233,16 @@ function observableProxyHandler(adm: ObservableAdministration) {
       return value;
     },
     set(target: any, property: string, newValue: any) {
-      if (target[property] === newValue) {
-        return true;
-      }
-      if (adm.ignore[property]) {
-        target[property] = newValue;
-        return true;
-      }
-
       adm.state = 0;
-      const value = maybeMakeObservable(property, newValue, adm);
-      target[property] = value;
-      adm.report(property, value);
+      if (target[property] === newValue || adm.ignore[property]) {
+        target[property] = newValue;
+      } else {
+        const value = maybeMakeObservable(property, newValue, adm);
+        target[property] = value;
+        adm.report(property, value);
+        queueMicrotask(adm.batch);
+      }
       adm.state = 1;
-      queueMicrotask(adm.batch);
-      // if (adm.action === 0) {
-      //
-      // }
       return true;
     },
     defineProperty(target: any, property: string, descriptor: PropertyDescriptor) {

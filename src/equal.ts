@@ -15,10 +15,10 @@ export function equal(input: any) {
       }
       for (const key of keys) {
         const $vot = vot[key];
-        const $voi = Reflect.getOwnPropertyDescriptor(voi, key)?.value;
+        const $voi = voi[key]; // Reflect.getOwnPropertyDescriptor(voi, key)?.value;
         if ($vot == null) {
           // eslint-disable-next-line max-depth,no-lonely-if
-          if (voi != null) {
+          if ($voi != null) {
             return false;
           }
         } else {

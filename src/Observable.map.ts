@@ -1,7 +1,6 @@
 import { ObservableAdministration } from './Observable.administration.js';
 import { lib } from './global.this.js';
 
-/** Much faster than using proxy */
 export class ObservableMap<K, V> extends Map<K, V> {
   #key: string | symbol;
   #adm: ObservableAdministration;
