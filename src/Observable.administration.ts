@@ -11,7 +11,6 @@ import { lib } from './global.this.js';
  * Considering than such instances would be created many times
  * */
 export class ObservableAdministration {
-  action = 0;
   /** Need to bind methods in prototype */
   methods = Object.create(null);
 
@@ -188,8 +187,7 @@ trap.subscribe = 1;
 trap.unsubscribe = 1;
 trap.listen = 1;
 trap.unlisten = 1;
-Object.freeze(trap);
-export const AdmTrap = trap;
+export const AdmTrap = Object.freeze(trap);
 
 /** Some methods of Array returns shallow copy of this, which is ObservableArray in our case,
  * they call the ObservableArray constructor but without arguments.

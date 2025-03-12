@@ -7,8 +7,8 @@ export class ObservableComputed {
   #property: string | symbol;
   #descriptor: PropertyDescriptor;
   #adm: ObservableAdministration;
-  enumerable: boolean | undefined;
-  configurable: boolean | undefined;
+  enumerable = false;
+  configurable = true;
 
   /** Ref to original target proxy.
    * Can't use target because properties access won't be tracked,
@@ -34,9 +34,14 @@ export class ObservableComputed {
     this.#descriptor = descriptor;
     this.#adm = adm;
     this.#proxy = proxy;
-    this.configurable = descriptor.configurable;
-    this.enumerable = descriptor.enumerable;
   }
+
+  #equal = (prev: any) => {
+    if (this.#value == null) {
+      return prev == null;
+    }
+    return this.#value.equal(prev);
+  };
 
   /** Subscriber <br/>
    * Will be invoked when one of read observable changes
@@ -45,28 +50,23 @@ export class ObservableComputed {
     // if property will be accessed earlier than below microtask will be executed,
     // we'll call original getter to get current result
     this.#changed = true;
-
     // without this, nested computed won't work stable
-    queueMicrotask(() => {
-      if (this.#changed === false) {
-        // means that microtask was queued, but getter was accessed before microtask start execution
-        return;
-      }
-      const prevValue = this.#value;
-      this.#reader();
-      this.#changed = false;
-      let shouldReport: boolean;
-      if (prevValue == null) {
-        shouldReport = this.#value != null;
-      } else {
-        shouldReport = !prevValue.equal(this.#value);
-      }
-      if (shouldReport) {
-        this.#adm.report(this.#property, this.#value);
-        this.#adm.state = 1;
-        this.#adm.batch();
-      }
-    });
+    queueMicrotask(this.#compute);
+  };
+
+  #compute = () => {
+    // means that microtask was queued, but getter was accessed before microtask start execution
+    if (this.#changed === false) {
+      return;
+    }
+    const prevValue = this.#value;
+    this.#reader();
+    this.#changed = false;
+    if (!this.#equal(prevValue)) {
+      this.#adm.report(this.#property, this.#value);
+      this.#adm.state = 1;
+      this.#adm.batch();
+    }
   };
 
   /** Read getter value in a transaction and subscribes to observables */
@@ -88,25 +88,15 @@ export class ObservableComputed {
     // if property was changed, we should compare current value to previous
     // and report if they aren't equal.
     if (this.#changed) {
-      const prevValue = this.#value;
-      this.#reader();
-      this.#changed = false;
       // no need to report if this is the first access
+      // todo (maybe can be safety removed, need more tests)
       if (this.#first) {
         this.#first = false;
+        this.#reader();
         return this.#value;
       }
-      let shouldReport: boolean;
-      if (prevValue == null) {
-        shouldReport = this.#value != null;
-      } else {
-        shouldReport = !prevValue.equal(this.#value);
-      }
-      if (shouldReport) {
-        this.#adm.report(this.#property, this.#value);
-        this.#adm.state = 1;
-        this.#adm.batch(true);
-      }
+
+      this.#compute();
       return this.#value;
     }
     if (lib.changedInEffect.has(this.#adm)) {
