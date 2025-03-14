@@ -2,6 +2,8 @@
   "include": [
     "src",
     "test",
+    "tests",
+    "src",
     "scripts",
     "eslint.config.mjs",
     "lint-staged.config.mjs"
@@ -14,5 +16,6 @@
     "moduleResolution": "node",
     "removeComments": true,
     "allowSyntheticDefaultImports": true
-  }
+  },
+//  "exclude": ["src/tests"]
 }

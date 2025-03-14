@@ -19,7 +19,7 @@ export class ObservableComputed {
   #value: any;
 
   /** Signify that getter result was changed */
-  #changed = true;
+  #changed = false;
 
   /** Indicates that getter wasn't read  */
   #first = true;
@@ -36,13 +36,6 @@ export class ObservableComputed {
     this.#proxy = proxy;
   }
 
-  #equal = (prev: any) => {
-    if (this.#value == null) {
-      return prev == null;
-    }
-    return this.#value.equal(prev);
-  };
-
   /** Subscriber <br/>
    * Will be invoked when one of read observable changes
    * */
@@ -50,13 +43,16 @@ export class ObservableComputed {
     // if property will be accessed earlier than below microtask will be executed,
     // we'll call original getter to get current result
     this.#changed = true;
-    // without this, nested computed won't work stable
-    queueMicrotask(this.#compute);
+    if (!lib.action) {
+      this.#compute();
+    } else {
+      queueMicrotask(this.#compute);
+    }
   };
 
   #compute = () => {
     // means that microtask was queued, but getter was accessed before microtask start execution
-    if (this.#changed === false) {
+    if (!this.#changed) {
       return;
     }
     const prevValue = this.#value;
@@ -67,6 +63,13 @@ export class ObservableComputed {
       this.#adm.state = 1;
       this.#adm.batch();
     }
+  };
+
+  #equal = (prev: any) => {
+    if (this.#value == null) {
+      return prev == null;
+    }
+    return this.#value.equal(prev);
   };
 
   /** Read getter value in a transaction and subscribes to observables */
@@ -83,24 +86,19 @@ export class ObservableComputed {
   /** A trap for original descriptor getter */
   get = () => {
     // enable sync batching
-    this.#adm.batch();
+    this.#adm.batch(true);
+
+    if (this.#first) {
+      this.#reader();
+      this.#first = false;
+    }
 
     // if property was changed, we should compare current value to previous
     // and report if they aren't equal.
     if (this.#changed) {
-      // no need to report if this is the first access
-      // todo (maybe can be safety removed, need more tests)
-      if (this.#first) {
-        this.#first = false;
-        this.#reader();
-        return this.#value;
-      }
-
       this.#compute();
-      return this.#value;
     }
     if (lib.changedInEffect.has(this.#adm)) {
-      this.#changed = false;
       this.#reader();
       lib.changedInEffect.delete(this.#adm);
     }
