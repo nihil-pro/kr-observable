@@ -12,4 +12,7 @@ export class SubscribersNotifier {
       queueMicrotask(() => this.#notified.delete(subscriber));
     }
   }
+  static clear() {
+    this.#notified.clear();
+  }
 }

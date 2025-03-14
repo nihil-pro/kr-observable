@@ -34,7 +34,7 @@ function afterBuild(result: BuildResult, type: 'esm' | 'cjs') {
   const svgPath = path.resolve(assetsPath, `${type}.svg`);
 
   // eslint-disable-next-line no-console
-  console.log(`Size ${type} ${sizes.js}`);
+  console.log(`Size ${type} ${sizes.js} ${sizes.gz}`);
 
   const svg = makeBadge({
     label: type.toUpperCase(), // ,`Size (${type})`,

@@ -16,6 +16,7 @@ declare global {
       transactions: typeof ObservableTransactions;
       notifier: typeof SubscribersNotifier;
       changedInEffect: Map<ObservableAdministration, Set<string | symbol>>;
+      action: boolean;
     };
   }
 }

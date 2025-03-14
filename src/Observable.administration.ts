@@ -34,10 +34,7 @@ export class ObservableAdministration {
   /** When proxy `set` is called, the name of the accessed property is stored here.
    * They will be used during notifying subscribers.
    * */
-  private changes: Set<string | symbol> = new Set();
-
-  /** Indicates that there is at least one subscriber or listener, otherwise we'll ignore `report` invoque. */
-  private reportable = false;
+  changes: Set<string | symbol> = new Set();
 
   /** Stores already notified subscribers during one notification "transaction". <br />
    * The `notified` will be cleared in a microtask, and this allows us to notify subscribers once.
@@ -46,9 +43,9 @@ export class ObservableAdministration {
    * */
   private notified: Set<Subscriber> = new Set();
 
-  /** The `notify` works recursively, and each time creates a new microtask which should clear state.
-   * This flag is needed to ignore work inside microtask until recursion is done. */
-  private skipped = false;
+  // /** The `notify` works recursively, and each time creates a new microtask which should clear state.
+  //  * This flag is needed to ignore work inside microtask until recursion is done. */
+  // private skipped = false;
 
   /** Is called from `proxyHandler`  and `ObservableMap`, `ObservableSet`, `ObservableArray` and `ObservableComputed`.
    * In setters is used to queue itself: `queueMicrotask(adm.batch)`. <br />
@@ -75,18 +72,6 @@ export class ObservableAdministration {
    * @see proxyHandler
    * */
   report = (property: string | symbol, value: any = undefined, ignoreListeners = false) => {
-    if (!this.reportable) {
-      return;
-    }
-    if (lib.runningEffect) {
-      let keys = lib.changedInEffect.get(this);
-      if (!keys) {
-        keys = new Set<string | symbol>();
-        lib.changedInEffect.set(this, keys);
-      }
-      keys.add(property);
-      return;
-    }
     if (!ignoreListeners) {
       this.listeners?.forEach((cb) => cb(property, value));
     }
@@ -98,39 +83,24 @@ export class ObservableAdministration {
     if (this.changes.size === 0) {
       return;
     }
-    // we need to store changes in a copy, you'll see bellow why
-    const changes = new Set(this.changes);
-    this.changes.clear(); // see bellow
+
     this.subscribers.forEach((keys, cb) => {
       let isSubscribed = false;
       for (const k of keys) {
-        if (changes.has(k)) {
+        if (this.changes.has(k)) {
           isSubscribed = true;
           break;
         }
       }
       if (isSubscribed && !this.notified.has(cb)) {
-        const s = this.changes.size; // maybe cane be just 0, need tests
-        // notifying subscriber
-        lib.notifier.notify(cb, changes);
-        // there can be some mutation inside cb, like an autorun which reads and sets at the same time,
-        // if after that there wasn't any report about changes – we are done.
-        if (this.changes.size === s) {
-          this.notified.add(cb); // mark as notified and exit
-          this.skipped = false;
-        } else {
-          // Otherwise we should run a little bit recursively
-          // First ignore the microtask which will be queued below (it will be anyway)
-          this.skipped = true;
-          // Second run notify again
-          this.notify();
-        }
+        lib.notifier.notify(cb, this.changes);
+        this.notified.add(cb);
       }
     });
 
     if (sync) {
       this.flush();
-    } else if (!this.skipped) {
+    } else {
       queueMicrotask(this.flush);
     }
   }
@@ -138,43 +108,38 @@ export class ObservableAdministration {
   flush = () => {
     this.notified.clear();
     this.changes.clear();
-    this.skipped = false;
   };
 
   // Public api.
   // These methods are accessed through the proxyHandler. See AdmTrap below.
 
   subscribe = (subscriber: Subscriber, keys: Set<string | symbol>) => {
-    if (this.subscribers.size < this.subscribers.set(subscriber, keys).size) {
-      this.reportable = true;
-    }
+    this.subscribers.set(subscriber, keys);
   };
 
   listen = (listener: Listener) => {
     if (!this.listeners) {
       this.listeners = new Set<Listener>();
-      this.reportable = true;
     }
     this.listeners.add(listener);
   };
 
   unsubscribe = (subscriber: Subscriber) => {
     this.subscribers.delete(subscriber);
-    if (this.subscribers.size === 0) {
-      if (this.listeners?.size === 0) {
-        this.reportable = false;
-      }
-    }
   };
 
   unlisten = (listener: Listener) => {
     this.listeners.delete(listener);
-    if (this.listeners.size === 0) {
-      this.listeners = undefined;
-      if (this.subscribers?.size === 0) {
-        this.reportable = false;
-      }
-    }
+  };
+
+  transaction = (work: () => void) => {
+    this.state = 0;
+    lib.action = true;
+    work();
+    this.state = 1;
+    lib.action = false;
+    this.batch(true);
+    lib.notifier.clear();
   };
 }
 
@@ -187,6 +152,7 @@ trap.subscribe = 1;
 trap.unsubscribe = 1;
 trap.listen = 1;
 trap.unlisten = 1;
+trap.transaction = 1;
 export const AdmTrap = Object.freeze(trap);
 
 /** Some methods of Array returns shallow copy of this, which is ObservableArray in our case,

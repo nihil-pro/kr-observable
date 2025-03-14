@@ -13,7 +13,7 @@ function getGlobal(): WindowOrWorkerGlobalScope {
 }
 
 export const GlobalKey = Symbol.for('observable');
-Reflect.set(getGlobal(), GlobalKey, {});
+Reflect.set(getGlobal(), GlobalKey, { action: false });
 
 if (!Reflect.has(Object.prototype, 'equal')) {
   Reflect.defineProperty(Object.prototype, 'equal', {

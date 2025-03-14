@@ -1,6 +1,6 @@
 {
   "name": "kr-observable",
-  "version": "1.0.38.beta.2",
+  "version": "1.0.38",
   "description": "Adds reactivity power for your JavaScript",
   "type": "module",
   "scripts": {
@@ -13,7 +13,7 @@
     "check-types": "tsc --noEmit",
     "gen-coverage-badge": "node --import tsx ./scripts/genCoverageBadge.ts",
     "gen-size-badge": "node --import tsx ./scripts/genSizeBadges.ts",
-    "test-ts": "c8 node --import tsx --test --experimental-strip-types --test-reporter=spec ./src/tests/*.test.* && npm run gen-coverage-badge"
+    "test-ts": "c8 node --import tsx --test --experimental-strip-types --test-reporter=spec ./tests/*.test.* && npm run gen-coverage-badge"
   },
   "keywords": [
     "proxy",
@@ -54,3 +54,4 @@
     "url": "https://github.com/nihil-pro/observable-class.git"
   }
 }
+
