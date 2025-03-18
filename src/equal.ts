@@ -30,10 +30,7 @@ export function equal(input: any) {
       }
       return true;
     }
-    if (isNaN(vot)) {
-      return isNaN(voi);
-    }
-    return vot === voi;
+    return Object.is(vot, voi);
   } catch {
     return false;
   }

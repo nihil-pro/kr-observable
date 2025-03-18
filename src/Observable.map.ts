@@ -16,7 +16,7 @@ export class ObservableMap<K, V> extends Map<K, V> {
   }
 
   [Symbol.iterator]() {
-    this.#adm.batch(true);
+    this.#adm.$_batch(true);
     return super[Symbol.iterator]();
   }
 
@@ -31,7 +31,7 @@ export class ObservableMap<K, V> extends Map<K, V> {
 
   get(key: K): V | undefined {
     try {
-      this.#adm.batch(true);
+      this.#adm.$_batch(true);
       return super.get(key);
     } finally {
       // is needed to subscribe on a key in map
@@ -40,37 +40,37 @@ export class ObservableMap<K, V> extends Map<K, V> {
   }
 
   set(key: K, value: V) {
-    this.#adm.state = 0;
+    this.#adm.$_state = 0;
     try {
       return super.set(key, value);
     } finally {
-      this.#adm.state = 1;
+      this.#adm.$_state = 1;
       this.#adm.report(`${this.#key.toString()}.${key.toString()}`, this, true);
       this.#adm.report(this.#key, this);
-      queueMicrotask(this.#adm.batch);
+      queueMicrotask(this.#adm.$_batch);
     }
   }
 
   delete(key: K) {
-    this.#adm.state = 0;
+    this.#adm.$_state = 0;
     try {
       return super.delete(key);
     } finally {
-      this.#adm.state = 1;
+      this.#adm.$_state = 1;
       this.#adm.report(`${this.#key.toString()}.${key.toString()}`, this, true);
       this.#adm.report(this.#key, this);
-      queueMicrotask(this.#adm.batch);
+      queueMicrotask(this.#adm.$_batch);
     }
   }
 
   clear() {
-    this.#adm.state = 0;
+    this.#adm.$_state = 0;
     try {
       return super.clear();
     } finally {
-      this.#adm.state = 1;
+      this.#adm.$_state = 1;
       this.#adm.report(this.#key, this);
-      queueMicrotask(this.#adm.batch);
+      queueMicrotask(this.#adm.$_batch);
     }
   }
 }

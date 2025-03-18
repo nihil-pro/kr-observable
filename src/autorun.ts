@@ -5,6 +5,6 @@ import { lib } from './global.this.js';
  Returns a dispose function.
  */
 export function autorun(fn: () => void) {
-  const { dispose } = lib.transactions.transaction(fn, fn);
-  return dispose;
+  lib.transactions.transaction(fn, fn);
+  return () => lib.transactions.dispose(fn, fn);
 }
