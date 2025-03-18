@@ -32,7 +32,3 @@ if (!lib.transactions) {
 if (!lib.notifier) {
   lib.notifier = SubscribersNotifier;
 }
-
-if (!lib.changedInEffect) {
-  lib.changedInEffect = new Map();
-}

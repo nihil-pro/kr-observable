@@ -60,20 +60,20 @@ export class ObservableComputed {
     this.#changed = false;
     if (!this.#equal(prevValue)) {
       this.#adm.report(this.#property, this.#value);
-      this.#adm.state = 1;
-      this.#adm.batch();
+      this.#adm.$_state = 1;
+      this.#adm.$_batch();
     }
   };
 
-  #equal = (prev: any) => {
+  #equal(prev: any) {
     if (this.#value == null) {
       return prev == null;
     }
     return this.#value.equal(prev);
-  };
+  }
 
   /** Read getter value in a transaction and subscribes to observables */
-  #reader = () => {
+  #reader() {
     const { read, result } = lib.transactions.transaction(
       () => this.#descriptor.get?.call(this.#proxy),
       () => void 0,
@@ -81,12 +81,12 @@ export class ObservableComputed {
     );
     read.forEach((keys, adm) => adm.subscribe(this.#update, keys));
     this.#value = result;
-  };
+  }
 
   /** A trap for original descriptor getter */
   get = () => {
     // enable sync batching
-    this.#adm.batch(true);
+    this.#adm.$_batch(true);
 
     if (this.#first) {
       this.#reader();
@@ -97,10 +97,6 @@ export class ObservableComputed {
     // and report if they aren't equal.
     if (this.#changed) {
       this.#compute();
-    }
-    if (lib.changedInEffect.has(this.#adm)) {
-      this.#reader();
-      lib.changedInEffect.delete(this.#adm);
     }
     return this.#value;
   };

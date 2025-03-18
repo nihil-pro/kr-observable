@@ -1,7 +1,7 @@
 import { describe, mock, test } from 'node:test';
 import assert from 'node:assert';
 
-import { Observable, autorun } from '../index.js';
+import { Observable, autorun } from '../src/index.js';
 
 describe('Synchronous batching', () => {
   test('should invoke subscriber once, when values are changed at the same time', (ctx) => {
@@ -9,6 +9,9 @@ describe('Synchronous batching', () => {
       a = 1;
       b = '';
       c = false;
+      method() {
+        return 'foo';
+      }
     }
     const foo = new Foo();
     const subscriber = mock.fn();
@@ -275,5 +278,61 @@ describe('Synchronous batching', () => {
     assert.equal(foo.b, 1);
     assert.equal(foo.c, false);
     assert.equal(subscriber.mock.callCount(), 2, 'Should be called twice');
+  });
+
+  test('should have actual value in computed', async () => {
+    class Foo extends Observable {
+      a = 1;
+      b = 2;
+      get isLess() {
+        return this.a < this.b;
+      }
+    }
+
+    const foo = new Foo();
+    assert.equal(foo.isLess, true);
+    foo.a = 2;
+    assert.equal(foo.isLess, false);
+    await new Promise((resolve) => {
+      setTimeout(resolve, 50);
+    });
+    assert.equal(foo.isLess, false);
+  });
+
+  test('should work normal when change state inside autorun', (ctx) => {
+    class Foo extends Observable {
+      a = 0;
+
+      get computed() {
+        return `computed from ${this.a}`;
+      }
+
+      change() {
+        this.a += 1;
+      }
+    }
+
+    const foo = new Foo();
+
+    const subscriber1 = mock.fn();
+    const subscriber2 = mock.fn();
+
+    autorun(() => {
+      foo.a += 1;
+      ctx.diagnostic(`Current value of "a": ${foo.a}`);
+      subscriber1();
+    });
+
+    autorun(() => {
+      ctx.diagnostic(`Current value of "computed": ${foo.computed}`);
+      subscriber2();
+    });
+
+    foo.change();
+    assert.equal(foo.a, 3);
+    assert.equal(foo.computed, 'computed from 3');
+
+    assert.equal(subscriber1.mock.callCount(), 2);
+    assert.equal(subscriber2.mock.callCount(), 2);
   });
 });

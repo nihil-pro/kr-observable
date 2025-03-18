@@ -10,7 +10,7 @@ export class ObservableSet<T> extends Set<T> {
   }
 
   [Symbol.iterator]() {
-    this.#adm.batch(true);
+    this.#adm.$_batch(true);
     return super[Symbol.iterator]();
   }
 
@@ -19,7 +19,7 @@ export class ObservableSet<T> extends Set<T> {
       return super.add(value);
     } finally {
       this.#adm.report(this.#key, this);
-      this.#adm.batch();
+      this.#adm.$_batch();
     }
   }
 
@@ -28,7 +28,7 @@ export class ObservableSet<T> extends Set<T> {
       return super.delete(value);
     } finally {
       this.#adm.report(this.#key, this);
-      this.#adm.batch();
+      this.#adm.$_batch();
     }
   }
 
@@ -37,7 +37,7 @@ export class ObservableSet<T> extends Set<T> {
       return super.clear();
     } finally {
       this.#adm.report(this.#key, this);
-      this.#adm.batch();
+      this.#adm.$_batch();
     }
   }
 }

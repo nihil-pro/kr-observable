@@ -37,12 +37,12 @@ test('Karlovskiy reactivity test', async (ctx) => {
       return this.C + (this.C || this.E % 2) + this.D[4].x + this.F;
     }
 
-    round1() {
+    change1() {
       this.A = 1;
       this.B = 1;
     }
 
-    round2() {
+    change2() {
       this.A = 2;
       this.B = 2;
     }
@@ -63,10 +63,10 @@ test('Karlovskiy reactivity test', async (ctx) => {
   });
 
   diagnostic = true;
-  foo.transaction(foo.round1);
+  foo.transaction(foo.change1);
   ctx.diagnostic(`First round: ${text}`);
   text = '';
-  foo.transaction(foo.round2);
+  foo.transaction(foo.change2);
   ctx.diagnostic(`Second round: ${text}`);
   assert.equal(res.toString(), toBe.toString());
 });

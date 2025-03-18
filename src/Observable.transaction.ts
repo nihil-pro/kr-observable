@@ -4,19 +4,9 @@ import { Subscriber } from './types.js';
 export interface WorkStats {
   count: number;
   read: Map<ObservableAdministration, Set<string | symbol>>;
-  dispose: () => void | undefined;
   exception: undefined | Error;
   result: any;
-}
-
-function workStats() {
-  return {
-    count: 0,
-    read: new Map<ObservableAdministration, Set<string | symbol>>(),
-    exception: undefined,
-    result: undefined,
-    dispose: undefined,
-  };
+  sub: boolean;
 }
 
 export class ObservableTransactions {
@@ -37,22 +27,22 @@ export class ObservableTransactions {
   static transaction = (work: Function, cb: Subscriber, autosub = true) => {
     let stats = this.#track.get(work);
     if (!stats) {
-      stats = workStats();
+      stats = {
+        count: 0,
+        read: new Map<ObservableAdministration, Set<string | symbol>>(),
+        exception: undefined,
+        result: undefined,
+        sub: true,
+      };
       this.#track.set(work, stats);
     }
-    let result: any;
     try {
       this.#stack.push(work);
-      result = work();
+      stats.result = work();
       this.#stack.pop();
       stats.count++;
-      stats.result = result;
       if (autosub) {
         stats.read.forEach((keys, adm) => adm.subscribe(cb, keys));
-      }
-
-      if (!stats.dispose) {
-        stats.dispose = () => this.#track.delete(work);
       }
     } catch (e) {
       stats.exception = e as Error;
@@ -60,5 +50,8 @@ export class ObservableTransactions {
     return stats;
   };
   static get = (work: Function) => this.#track.get(work);
-  static dispose = (work: Function) => this.#track.delete(work);
+  static dispose = (work: Function, subscriber: Subscriber) => {
+    this.#track.get(work)?.read.forEach((_, adm) => adm.unsubscribe(subscriber));
+    this.#track.delete(work);
+  };
 }
