@@ -25,7 +25,7 @@ export class ObservableMap<K, V> extends Map<K, V> {
       return super.has(key);
     } finally {
       // is needed to subscribe on a key in map
-      lib.transactions.report(this.#adm, `${this.#key.toString()}.${key}`);
+      lib.executor.report(this.#adm, `${this.#key.toString()}.${key}`);
     }
   }
 
@@ -35,7 +35,7 @@ export class ObservableMap<K, V> extends Map<K, V> {
       return super.get(key);
     } finally {
       // is needed to subscribe on a key in map
-      lib.transactions.report(this.#adm, `${this.#key.toString()}.${key}`);
+      lib.executor.report(this.#adm, `${this.#key.toString()}.${key}`);
     }
   }
 

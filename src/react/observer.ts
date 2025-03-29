@@ -12,102 +12,68 @@ import {
 } from 'react';
 
 import { lib } from '../global.this.js';
-import { Subscriber } from '../types.js';
+import { ObservedRunnable } from '../types.js';
 
-class Rss {
-  version = 0;
-  name: string;
-  debug: boolean;
+class Rss implements ObservedRunnable {
+  props: any = {};
+  ref: any = {};
+  version = 1;
+  autosub = true;
+  debug = false;
   rc: Function;
-  onStoreChange: () => void | undefined;
 
-  constructor(rc: Function, name: string, debug: boolean) {
+  constructor(rc: Function, debug: boolean) {
     this.rc = rc;
-    this.name = name;
     this.debug = debug;
   }
 
-  work = () => this.rc();
   getSnapshot = () => this.version;
-  onChange = (changes?: Set<string | symbol>) => {
+
+  subscriber(changes?: Set<string | symbol>) {
     if (this.debug) {
-      console.info(`${this.name} will re-render. Changes:`, changes);
+      console.info(`[${this.rc.name}] will re-render. Changes:`, changes);
     }
     ++this.version;
-    if (this.onStoreChange) {
-      this.onStoreChange();
-    }
-  };
+    this.onStoreChange();
+  }
+
+  run() {
+    return this.rc(this.props, this.ref);
+  }
+
   subscribe = (onStoreChange: () => void) => {
     this.onStoreChange = onStoreChange;
-    const read = lib.transactions.get(this.work)?.read;
-    read.forEach((keys, adm) => adm.subscribe(this.onChange, keys));
-    return () => {
-      lib.transactions.dispose(this.work, this.onChange);
-      if (this.debug) {
-        console.info(`${this.name} was unmounted`);
-      }
-    };
+    return this.unsubscribe;
   };
+  unsubscribe = () => {
+    lib.executor.dispose(this);
+    if (this.debug) {
+      console.info(`[${this.rc.name}] was unmounted`);
+    }
+  };
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  onStoreChange() {}
 }
 
-interface ReactSyncStore {
-  name: string;
-  version: number;
-  onChange: Subscriber;
-  subscribe(onStoreChange: () => void): () => void;
-  getSnapshot(): number;
-  work: Function;
-  rc: Function;
-}
+type Rc<T> = (p: any, r: any) => T;
 
-// function noop(): void {}
-//
-// function createSyncStore(rc: Function, name: string, debug: boolean): ReactSyncStore {
-//   const rss = {
-//     name,
-//     rc,
-//     work: () => rss.rc(),
-//     version: 0,
-//     onChange: noop,
-//     getSnapshot: () => rss.version,
-//     subscribe: (onStoreChange: () => void) => {
-//       rss.onChange = (changes?: Set<string | symbol>) => {
-//         ++rss.version;
-//         if (debug) {
-//           console.info(`${name} will re-render. Changes: `, changes);
-//         }
-//         onStoreChange();
-//       };
-//       const read = lib.transactions.get(rss.work)?.read;
-//       read?.forEach((keys, adm) => adm.subscribe(rss.onChange, keys));
-//       return () => {
-//         if (debug) {
-//           console.info(`${rss.name} was unmounted`);
-//         }
-//         lib.transactions.dispose(rss.work, rss.onChange);
-//       };
-//     },
-//   };
-//   return rss;
-// }
-
-function useObserver<T>(render: () => T, name: string, debug = false) {
-  const ref = useRef<ReactSyncStore | null>(null);
-  if (!ref.current) {
-    ref.current = new Rss(render, name, debug);
+function useObserver<T>(rc: Rc<T>, props: any, ref: any, debug = false) {
+  const rssRef = useRef<Rss | null>(null);
+  if (!rssRef.current) {
+    rssRef.current = new Rss(rc, debug);
   }
-  const store = ref.current!;
-  store.rc = render;
+  const store = rssRef.current!;
+  store.props = props;
+  store.ref = ref;
   useSyncExternalStore(store.subscribe, store.getSnapshot);
-  const TR = lib.transactions.transaction(store.work, store.onChange);
-  if (TR?.exception) throw TR.exception;
+  const TR = lib.executor.execute(store);
+  if (TR.exception) throw TR.exception;
   if (debug) {
     const read: Record<string, Set<string | symbol>> = {};
-    TR?.read.forEach((keys, adm) => (read[adm.owner] = keys));
-    console.info(`${name} was rendered. Read: `, read);
+    TR.read.forEach((keys, adm) => (read[adm.owner] = keys));
+    console.info(`[${rc.name}] was rendered. Read: `, read);
   }
-  return TR?.result;
+  return TR.result;
 }
 
 export function observer<P extends object, TRef = {}>(
@@ -127,8 +93,6 @@ export function observer<A extends object, B = {}>(
     | ForwardRefExoticComponent<PropsWithoutRef<A> & RefAttributes<B>>,
   debug = false
 ) {
-  const observedComponent = (props: any, ref: Ref<B>) => {
-    return useObserver(() => rc(props, ref), rc.name, debug);
-  };
+  const observedComponent = (props: any, ref: Ref<B>) => useObserver(rc, props, ref, debug);
   return memo(observedComponent);
 }

@@ -4,7 +4,8 @@ import { lib } from './global.this.js';
  It also runs once when you create the autorun itself.
  Returns a dispose function.
  */
-export function autorun(fn: () => void) {
-  lib.transactions.transaction(fn, fn);
-  return () => lib.transactions.dispose(fn, fn);
+export function autorun(work: () => void) {
+  const runnable = { run: work, subscriber: work, autosub: true };
+  lib.executor.execute(runnable);
+  return () => lib.executor.dispose(runnable);
 }

@@ -1,13 +1,23 @@
 import { GlobalKey } from './global.this.js';
-import { ObservableTransactions } from './Observable.transaction.js';
+import { ObservableExecutor } from './Observable.executor.js';
 import { SubscribersNotifier } from './Subscribers.notifier.js';
 
-export type Subscriber = (changes?: Set<string | symbol>) => void | Promise<void>;
-export type Listener = (property: string | symbol, value: any) => void | Promise<void>;
+export type Subscriber = (changes?: Set<string | symbol>) => void;
+export type Listener = (property: string | symbol, value: any) => void;
+export interface WeakSubscriber {
+  subscribe: Subscriber;
+}
+
+export interface ObservedRunnable {
+  run: Function;
+  subscriber: Subscriber;
+  autosub: boolean;
+}
+
 declare global {
   interface WindowOrWorkerGlobalScope {
     [GlobalKey]: {
-      transactions: typeof ObservableTransactions;
+      executor: typeof ObservableExecutor;
       notifier: typeof SubscribersNotifier;
       action: boolean;
     };

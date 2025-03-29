@@ -47,10 +47,15 @@ More example and full docs on [observable.ru](https://observable.ru/)
 
 ## Performance 
 Is fast enough.
-![observable performance](https://avtodoka-msk.ru/perf.png)
+![observable performance](https://observable.ru/perf.png)
 
-## Memory usage
-![observable memory usage](https://avtodoka-msk.ru/mem.png)
+## Memory allocation
+Economical)
+![observable memory usage](https://observable.ru/mem.png)
+
+## Size
+Is really tiny 
+![observable memory usage](https://observable.ru/size.png)
 
 ## Limitations
 There is only one limitation: if you assign a new element to the array by index – changes will happen, of course, but You will not be notified.

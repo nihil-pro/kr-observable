@@ -1,5 +1,9 @@
-import { Listener, Subscriber } from './types.js';
+import { Listener, Subscriber, ObservedRunnable } from './types.js';
 import { lib } from './global.this.js';
+
+type WeakSubscriber = WeakRef<ObservedRunnable> | Subscriber;
+
+const temp = new Set<Set<string | symbol>>();
 
 /** Observable companion object
  * We don't want to add any extra features to the user custom class.
@@ -15,11 +19,11 @@ export class ObservableAdministration {
    *  or to ignore queued microtask at all */
   $_state = 0;
 
-  ignore: Array<string | symbol>;
-  shallow: Array<string | symbol>;
+  ignore: Set<string | symbol>;
+  shallow: Set<string | symbol>;
   owner: string;
 
-  constructor(owner: string, ignore: Array<string | symbol>, shallow: Array<string | symbol>) {
+  constructor(owner: string, ignore: Set<string | symbol>, shallow: Set<string | symbol>) {
     this.owner = owner;
     this.ignore = ignore;
     this.shallow = shallow;
@@ -28,7 +32,7 @@ export class ObservableAdministration {
   /** Stores subscribers as key => value map, where key is subscriber callback,
    * and value is a set of properties that the subscriber wants to track.
    * */
-  private $_subscribers: Map<Subscriber, Set<string | symbol>> = new Map();
+  private $_subscribers: Map<WeakSubscriber, Set<string | symbol>> = new Map();
 
   /** Set of listeners. Is `undefined` by default, because `listen` is used rarely.
    * This way we save memory and get a better performance when creating a large number of Observable instances.
@@ -72,7 +76,7 @@ export class ObservableAdministration {
   }
 
   /** Notify subscribers about changes */
-  private notify(sync = false) {
+  private notify(sync: boolean) {
     if (this.$_changes.size === 0) {
       return;
     }
@@ -80,7 +84,16 @@ export class ObservableAdministration {
     this.$_subscribers.forEach((keys, cb) => {
       for (const k of keys) {
         if (this.$_changes.has(k)) {
-          lib.notifier.notify(cb, this.$_changes);
+          if (typeof cb === 'function') {
+            lib.notifier.notify(cb, this.$_changes);
+          } else {
+            const $cb = cb.deref();
+            if ($cb) {
+              lib.notifier.notify($cb, this.$_changes);
+            } else {
+              this.$_subscribers.delete(cb);
+            }
+          }
           break;
         }
       }
@@ -88,15 +101,19 @@ export class ObservableAdministration {
 
     if (sync) {
       this.$_changes.clear();
-    } else {
+      temp.delete(this.$_changes);
+      return;
+    }
+    if (temp.size === 0) {
       queueMicrotask(() => this.$_changes.clear());
+    } else {
+      temp.add(this.$_changes);
     }
   }
 
   // Public api.
   // These methods are accessed through the proxyHandler. See AdmTrap below.
-
-  subscribe(subscriber: Subscriber, keys: Set<string | symbol>) {
+  subscribe(subscriber: WeakSubscriber, keys: Set<string | symbol>) {
     this.$_subscribers.set(subscriber, keys);
   }
 
@@ -115,7 +132,7 @@ export class ObservableAdministration {
     this.$_listeners.delete(listener);
   }
 
-  transaction(work: () => void) {
+  transaction = (work: () => void) => {
     this.$_state = 0;
     lib.action = true;
     work();
@@ -123,7 +140,7 @@ export class ObservableAdministration {
     lib.action = false;
     this.$_batch(true);
     lib.notifier.clear();
-  }
+  };
 }
 
 /** Provide fast access to ObservableAdministration through proxy `get`.
@@ -140,7 +157,8 @@ trap.$_batch = 1;
 trap.$_state = 1;
 trap.$_subscribers = 1;
 trap.$_listeners = 1;
-export const AdmTrap = Object.freeze(trap);
+Object.freeze(trap);
+export const AdmTrap = trap;
 
 /** Some methods of Array returns shallow copy of this, which is ObservableArray in our case,
  * they call the ObservableArray constructor but without arguments.
