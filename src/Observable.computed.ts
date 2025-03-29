@@ -1,19 +1,21 @@
 import { ObservableAdministration } from './Observable.administration.js';
 import { lib } from './global.this.js';
+import { ObservedRunnable } from './types.js';
 
-/** Custom property descriptor.
- * Memoize getters return value */
-export class ObservableComputed {
-  #property: string | symbol;
+/** Custom property descriptor which memoize getters return value */
+export class ObservableComputed implements ObservedRunnable, PropertyDescriptor {
+  /** Ref to original target proxy.
+   * Can't use target because properties access won't be tracked, and access to private properties won't work. */
+  #proxy: object;
+
+  /** Original descriptor */
   #descriptor: PropertyDescriptor;
+
   #adm: ObservableAdministration;
   enumerable = false;
   configurable = true;
 
-  /** Ref to original target proxy.
-   * Can't use target because properties access won't be tracked,
-   * and access to private properties won't work. */
-  #proxy: object;
+  #property: string | symbol;
 
   /** Stores getter value */
   #value: any;
@@ -21,8 +23,11 @@ export class ObservableComputed {
   /** Signify that getter result was changed */
   #changed = false;
 
-  /** Indicates that getter wasn't read  */
+  /** Indicates that getter wasn't accessed yet  */
   #first = true;
+
+  autosub = false;
+  ref: WeakRef<ObservableComputed>;
 
   constructor(
     property: string | symbol,
@@ -34,23 +39,28 @@ export class ObservableComputed {
     this.#descriptor = descriptor;
     this.#adm = adm;
     this.#proxy = proxy;
+    this.ref = new WeakRef<ObservableComputed>(this);
   }
 
   /** Subscriber <br/>
    * Will be invoked when one of read observable changes
    * */
-  #update = () => {
+  subscriber() {
     // if property will be accessed earlier than below microtask will be executed,
     // we'll call original getter to get current result
     this.#changed = true;
     if (!lib.action) {
       this.#compute();
     } else {
-      queueMicrotask(this.#compute);
+      queueMicrotask(() => this.#compute());
     }
-  };
+  }
 
-  #compute = () => {
+  run() {
+    return this.#descriptor.get?.call(this.#proxy);
+  }
+
+  #compute() {
     // means that microtask was queued, but getter was accessed before microtask start execution
     if (!this.#changed) {
       return;
@@ -63,7 +73,7 @@ export class ObservableComputed {
       this.#adm.$_state = 1;
       this.#adm.$_batch();
     }
-  };
+  }
 
   #equal(prev: any) {
     if (this.#value == null) {
@@ -74,13 +84,9 @@ export class ObservableComputed {
 
   /** Read getter value in a transaction and subscribes to observables */
   #reader() {
-    const { read, result } = lib.transactions.transaction(
-      () => this.#descriptor.get?.call(this.#proxy),
-      () => void 0,
-      false
-    );
-    read.forEach((keys, adm) => adm.subscribe(this.#update, keys));
+    const { result, read } = lib.executor.execute(this);
     this.#value = result;
+    read.forEach((keys, adm) => adm.subscribe(this.ref, keys));
   }
 
   /** A trap for original descriptor getter */
@@ -88,13 +94,13 @@ export class ObservableComputed {
     // enable sync batching
     this.#adm.$_batch(true);
 
+    // Initial value is undefined. Without this, we will report changed on first access
     if (this.#first) {
       this.#reader();
       this.#first = false;
     }
 
-    // if property was changed, we should compare current value to previous
-    // and report if they aren't equal.
+    // if property was changed, we should compare current value to previous, and report if they are not equal.
     if (this.#changed) {
       this.#compute();
     }
