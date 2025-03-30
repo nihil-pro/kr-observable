@@ -113,24 +113,24 @@ export class ObservableAdministration {
 
   // Public api.
   // These methods are accessed through the proxyHandler. See AdmTrap below.
-  subscribe(subscriber: WeakSubscriber, keys: Set<string | symbol>) {
+  subscribe = (subscriber: WeakSubscriber, keys: Set<string | symbol>) => {
     this.$_subscribers.set(subscriber, keys);
-  }
+  };
 
-  listen(listener: Listener) {
+  listen = (listener: Listener) => {
     if (!this.$_listeners) {
       this.$_listeners = new Set<Listener>();
     }
     this.$_listeners.add(listener);
-  }
+  };
 
-  unsubscribe(subscriber: Subscriber) {
+  unsubscribe = (subscriber: Subscriber) => {
     this.$_subscribers.delete(subscriber);
-  }
+  };
 
-  unlisten(listener: Listener) {
+  unlisten = (listener: Listener) => {
     this.$_listeners.delete(listener);
-  }
+  };
 
   transaction = (work: () => void) => {
     this.$_state = 0;
