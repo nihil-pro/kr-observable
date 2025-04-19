@@ -1,7 +1,7 @@
 import { describe, mock, test } from 'node:test';
 import assert from 'node:assert';
 
-import { makeObservable, Observable } from '../src/index.js';
+import { makeObservable, Observable, subscribe, listen, transaction } from '../src/index.js';
 
 describe('Bind tests', () => {
   test('should has correct receiver when access adm trap', () => {
@@ -16,14 +16,14 @@ describe('Bind tests', () => {
 
     const subscriber = mock.fn();
     const listener = mock.fn();
-    observable.subscribe(subscriber, new Set(['c']));
-    observable.listen(listener);
+    const sbDisposer = subscribe(observable, subscriber, new Set(['c']));
+    const lsDisposer = listen(observable, listener);
     observable.change();
     assert.equal(observable.c, 2);
     assert.equal(listener.mock.callCount(), 1, 'Should be called once');
     assert.equal(subscriber.mock.callCount(), 1, 'Should be called once');
-    observable.unsubscribe(subscriber);
-    observable.unlisten(listener);
+    sbDisposer();
+    lsDisposer();
     observable.c = 5;
     assert.equal(listener.mock.callCount(), 1, 'Should be called once');
     assert.equal(subscriber.mock.callCount(), 1, 'Should be called once');
@@ -49,17 +49,17 @@ describe('Bind tests', () => {
 
     const subscriber = mock.fn();
     const listener = mock.fn();
-    observable.subscribe(subscriber, new Set(['c']));
-    observable.listen(listener);
-    observable.transaction(observable.change);
+    subscribe(observable, subscriber, new Set(['c']));
+    listen(observable, listener);
+    transaction(observable.change);
     assert.equal(observable.c, 2);
     assert.equal(listener.mock.callCount(), 1, 'Should be called once');
     assert.equal(subscriber.mock.callCount(), 1, 'Should be called once');
-    observable.transaction(observable.change2);
+    transaction(observable.change2);
     assert.equal(observable.c, 10);
     assert.equal(listener.mock.callCount(), 2, 'Should be called twice');
     assert.equal(subscriber.mock.callCount(), 2, 'Should be called twice');
-    observable.transaction(observable.change3);
+    transaction(observable.change3);
     assert.equal(observable.a, 5);
     assert.equal(listener.mock.callCount(), 3, 'Should be called three times');
   });

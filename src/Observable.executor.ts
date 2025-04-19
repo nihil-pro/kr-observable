@@ -1,13 +1,13 @@
-import { ObservableAdministration } from './Observable.administration.js';
-import { ObservedRunnable } from './types.js';
+import { ObservableAdm } from './Observable.adm.js';
+import { ObservedRunnable, Property } from './types.js';
 
 /** Stores ObservedRunnable execution result
  * @see ObservedRunnable */
 class ExecutionResult {
-  read: Map<ObservableAdministration, Set<string | symbol>> = new Map();
+  read: Map<ObservableAdm, Set<Property>> = new Map();
 
   /** If the execution fails, it will contain thrown error */
-  exception: undefined | Error;
+  error: undefined | Error;
 
   /** Execution result */
   result: any;
@@ -18,11 +18,11 @@ export class ObservableExecutor {
   static #stack: Array<{ runnable: ObservedRunnable; result: ExecutionResult }> = [];
 
   /** Stores relation between a runnable and Observables read by it execution */
-  static #registry: WeakMap<ObservedRunnable, ExecutionResult> = new WeakMap();
+  static #registry: Map<ObservedRunnable, ExecutionResult> = new Map();
 
   /** The `get` method of ObservableProxyHandler invoque this every time a property is read
    * @see ObservableProxyHandler */
-  static report(adm: ObservableAdministration, key: string | symbol) {
+  static report(adm: ObservableAdm, property: Property) {
     if (this.#stack.length === 0) return;
     const { runnable, result } = this.#stack[this.#stack.length - 1];
     let keys = result.read.get(adm);
@@ -30,10 +30,10 @@ export class ObservableExecutor {
       keys = new Set(); // we'll use to subscribe
       result.read.set(adm, keys);
       if (runnable.autosub) {
-        adm.subscribe(new WeakRef(runnable), keys);
+        adm.subscribers.set(runnable, keys);
       }
     }
-    keys.add(key);
+    keys.add(property);
   }
 
   /** Execute a runnable and store read Observables */
@@ -47,7 +47,7 @@ export class ObservableExecutor {
     try {
       result.result = runnable.run();
     } catch (e) {
-      result.exception = e as Error;
+      result.error = e as Error;
     }
     this.#stack.pop();
     return result;
@@ -55,6 +55,10 @@ export class ObservableExecutor {
 
   /** Unsubscribes from Observables read during passed runnable execution */
   static dispose(runnable: ObservedRunnable) {
-    this.#registry.delete(runnable);
+    const res = this.#registry.get(runnable);
+    if (res) {
+      res.read.forEach((_, adm) => adm.subscribers.delete(runnable));
+      this.#registry.delete(runnable);
+    }
   }
 }

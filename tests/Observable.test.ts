@@ -1,7 +1,7 @@
 import { describe, mock, test } from 'node:test';
 import assert from 'node:assert';
 
-import { Observable, autorun } from '../src/index.js';
+import { Observable, autorun, subscribe } from '../src/index.js';
 
 describe('Synchronous batching', () => {
   test('should invoke subscriber once, when values are changed at the same time', (ctx) => {
@@ -15,8 +15,9 @@ describe('Synchronous batching', () => {
     }
     const foo = new Foo();
     const subscriber = mock.fn();
-    foo.subscribe(subscriber, new Set(['a', 'b', 'c']));
-    foo.subscribe(
+    subscribe(foo, subscriber, new Set(['a', 'b', 'c']));
+    subscribe(
+      foo,
       (changes) => {
         let changed = '';
         changes?.forEach((property) => {
@@ -43,7 +44,7 @@ describe('Synchronous batching', () => {
     }
     const foo = new Foo();
     const subscriber = mock.fn();
-    foo.subscribe(subscriber, new Set(['a', 'b', 'c']));
+    subscribe(foo, subscriber, new Set(['a', 'b', 'c']));
     foo.a = 1;
     foo.b = '';
     foo.c = false;
@@ -334,5 +335,39 @@ describe('Synchronous batching', () => {
 
     assert.equal(subscriber1.mock.callCount(), 2);
     assert.equal(subscriber2.mock.callCount(), 2);
+  });
+
+  test('should run all changes in one action', () => {
+    class Foo extends Observable {
+      a = 1;
+      b = '';
+      c = false;
+
+      setA() {
+        this.a += 1;
+      }
+
+      setB() {
+        this.b = 'string';
+      }
+
+      setC() {
+        this.c = !this.c;
+      }
+
+      changeAll() {
+        this.setA();
+        this.setB();
+        this.setC();
+      }
+    }
+    const foo = new Foo();
+    const subscriber = mock.fn();
+    subscribe(foo, subscriber, new Set(['a', 'b', 'c']));
+    foo.changeAll();
+    assert.equal(foo.a, 2);
+    assert.equal(foo.b, 'string');
+    assert.equal(foo.c, true);
+    assert.equal(subscriber.mock.callCount(), 1, 'Should not be called');
   });
 });
