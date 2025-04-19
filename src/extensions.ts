@@ -1,3 +1,7 @@
+export function set(i: number, value: unknown) {
+  this[i] = value;
+}
+
 export function equal(input: any) {
   try {
     if (input == null) {
@@ -54,5 +58,10 @@ declare global {
      * @description Inspired by same method in Java.
      *  */
     equal(input: any): boolean;
+  }
+
+  /** Same as arr[index] = value */
+  interface Array<T> {
+    set(i: number, v: T): void;
   }
 }

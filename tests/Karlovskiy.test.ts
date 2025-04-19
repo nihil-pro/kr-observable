@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 
-import { Observable, autorun } from '../src/index.js';
+import { Observable, autorun, transaction } from '../src/index.js';
 
 test('Karlovskiy reactivity test', async (ctx) => {
   const toBe = [8369, 4188, 8364, 8372, 4191, 8369, 4188];
@@ -63,10 +63,10 @@ test('Karlovskiy reactivity test', async (ctx) => {
   });
 
   diagnostic = true;
-  foo.transaction(foo.change1);
+  transaction(foo.change1);
   ctx.diagnostic(`First round: ${text}`);
   text = '';
-  foo.transaction(foo.change2);
+  transaction(foo.change2);
   ctx.diagnostic(`Second round: ${text}`);
   assert.equal(res.toString(), toBe.toString());
 });
