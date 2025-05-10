@@ -58,7 +58,7 @@ function useObserver<T>(rc: () => T, debug = false) {
   }
   const store = ref.current!;
   store.run = rc;
-  useSyncExternalStore(store.subscribe, store.getSnapshot);
+  useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
   const TR = lib.executor.execute(store);
   if (TR.error) throw TR.error;
   if (debug) {

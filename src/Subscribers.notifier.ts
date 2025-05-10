@@ -13,7 +13,9 @@ export class SubscribersNotifier {
           this.#queued = false;
         });
       }
+      return true;
     }
+    return false;
   }
 
   static clear() {

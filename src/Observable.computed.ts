@@ -26,7 +26,10 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
   /** Indicates that getter wasn't accessed yet  */
   #first = true;
 
+  #isGetter = false;
+
   autosub = false;
+  set: undefined | any = undefined;
 
   constructor(
     property: Property,
@@ -38,12 +41,28 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
     this.#descriptor = descriptor;
     this.#adm = adm;
     this.#proxy = proxy;
+    // @ts-ignore
+    this.name = property;
+    if (descriptor.set) {
+      this.set = (value: any) => {
+        const prevValue = this.#value;
+        this.#value = value;
+        if (!this.#equal(prevValue)) {
+          this.#changed = true;
+          this.#adm.report(this.#property, this.#value);
+          this.#adm.state = 1;
+          this.#adm.batch(true);
+        }
+      };
+      this.#isGetter = true;
+    }
   }
 
   /** Subscriber <br/>
    * Will be invoked when one of read observable changes
    * */
   subscriber() {
+    // console.log(this.#property, 'subscriber');
     // if property will be accessed earlier than below microtask will be executed,
     // we'll call original getter to get current result
     this.#changed = true;
@@ -56,6 +75,11 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
 
   run() {
     return this.#descriptor.get?.call(this.#proxy);
+    // if (lib.action) return this.#descriptor.get?.call(this.#proxy);
+    // lib.action = true;
+    // const res = this.#descriptor.get?.call(this.#proxy);
+    // lib.action = false;
+    // return res;
   }
 
   #compute() {
@@ -67,7 +91,8 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
     if (!this.#equal(prevValue)) {
       this.#adm.report(this.#property, this.#value);
       this.#adm.state = 1;
-      this.#adm.batch();
+      this.#adm.batch(true);
+      // console.log('call batch', this.#property);
     }
   }
 
@@ -78,15 +103,31 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
 
   /** Read getter value in a transaction and subscribes to observables */
   #reader() {
+    // console.log('read', this.#property);
     const { result, read } = lib.executor.execute(this);
+    if (read.size === 0) this.#isGetter = true;
     this.#value = result;
     read.forEach((keys, adm) => adm.subscribers.set(this, keys));
   }
 
   /** A trap for original descriptor getter */
   get = () => {
+    // console.log('get', this.#property);
     // enable sync batching
     this.#adm.batch(true);
+
+    if (this.#isGetter) {
+      if (this.#first) {
+        this.#first = false;
+        return this.run();
+      }
+      if (this.#changed) {
+        this.#changed = false;
+        this.run();
+        return this.#value;
+      }
+      return this.#value;
+    }
 
     // Initial value is undefined. Without this, we will report changed on first access
     if (this.#first) {
