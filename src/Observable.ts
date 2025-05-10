@@ -28,7 +28,7 @@ export function makeObservable<T extends object>(
   // eslint-disable-next-line guard-for-in
   for (const key in value) {
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
-    if (descriptor?.get) {
+    if (descriptor.get) {
       if (!adm.ignore.has(key)) {
         Object.defineProperty(value, key, new ObservableComputed(key, descriptor, adm, proxy));
       }
@@ -96,21 +96,60 @@ class ObservableProxyHandler {
     return value;
   }
   set(target: any, property: string, newValue: any) {
-    if (target[property] === newValue) {
-      target[property] = newValue;
-    } else {
-      this.adm.state = 0;
-      const value = maybeMakeObservable(property, newValue, this.adm);
-      target[property] = value;
-      this.adm.report(property, value);
-      this.adm.state = 1;
-      queueBatch(this.adm);
+    // need benchmarks, this can be slow...
+    const descriptor = Reflect.getOwnPropertyDescriptor(target, property);
+    if (!descriptor || (descriptor.writable && !descriptor.set)) {
+      if (target[property] === newValue) {
+        target[property] = newValue;
+      } else {
+        if (this.methods[property]) this.methods[property] = undefined;
+        this.adm.state = 0;
+        const value = maybeMakeObservable(property, newValue, this.adm);
+        Reflect.set(target, property, value);
+        this.adm.report(property, value);
+        this.adm.state = 1;
+        queueBatch(this.adm);
+      }
+      return true;
     }
-    return true;
+
+    if (descriptor.set) {
+      Reflect.set(target, property, newValue);
+      return true;
+    }
+
+    return false;
   }
   defineProperty(target: any, property: string, descriptor: PropertyDescriptor) {
+    if (this.methods[property]) {
+      this.methods[property] = undefined;
+    }
     target[property] = maybeMakeObservable(property, descriptor.value, this.adm);
     return true;
+  }
+  deleteProperty(target: any, property: string | symbol): boolean {
+    if (!(property in target)) return false;
+    if (this.methods[property]) this.methods[property] = undefined;
+    this.adm.state = 0;
+    delete target[property];
+    this.adm.report(property, undefined);
+    this.adm.state = 1;
+    queueBatch(this.adm);
+    return true;
+  }
+  has(target: any, property: string | symbol) {
+    if (!lib.action) {
+      if (this.adm.changes.has(property)) this.adm.batch(true);
+    }
+    if (!this.adm.ignore.has(property)) lib.executor.report(this.adm, property);
+    return property in target;
+  }
+  getOwnPropertyDescriptor(target: any, property: string | symbol) {
+    if (!lib.action) {
+      if (this.adm.changes.has(property)) this.adm.batch(true);
+    }
+    if (!this.adm.ignore.has(property)) lib.executor.report(this.adm, property);
+    return Reflect.getOwnPropertyDescriptor(target, property);
   }
 }
 
@@ -258,6 +297,14 @@ class ObservableMap<K, V> extends Map<K, V> {
     return lib.meta.get(this) || metaPlug;
   }
 
+  get size() {
+    const meta = this.meta;
+    if (!lib.action) {
+      if (meta.adm.changes.has(meta.key)) meta.adm.batch(true);
+    }
+    return super.size;
+  }
+
   report() {
     const meta = this.meta;
     meta.adm.report(meta.key, this);
@@ -329,6 +376,15 @@ class ObservableSet<T> extends Set<T> {
     meta.adm.report(meta.key, this);
     queueBatch(meta.adm);
     meta.adm.state = 1;
+  }
+
+  has(key: T): boolean {
+    const meta = this.meta;
+    try {
+      return super.has(key);
+    } finally {
+      lib.executor.report(meta.adm, meta.key);
+    }
   }
 
   [Symbol.iterator]() {

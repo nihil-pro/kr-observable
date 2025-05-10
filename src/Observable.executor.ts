@@ -25,6 +25,7 @@ export class ObservableExecutor {
   static report(adm: ObservableAdm, property: Property) {
     if (this.#stack.length === 0) return;
     const { runnable, result } = this.#stack[this.#stack.length - 1];
+
     let keys = result.read.get(adm);
     if (!keys) {
       keys = new Set(); // we'll use to subscribe

@@ -19,6 +19,7 @@ export class ActionHandler {
     lib.action = false;
     lib.queue.forEach((adm) => adm.batch(true));
     lib.queue.clear();
+    lib.notifier.clear();
     return result;
   }
 }
