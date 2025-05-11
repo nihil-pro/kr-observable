@@ -16,6 +16,7 @@ export function subscribe(target: Observable, cb: Subscriber, keys: Set<Property
   };
 }
 
+/** Will react on any changes in Observable */
 export function listen(target: Observable, cb: Listener) {
   const adm = Reflect.get(target, $adm) as ObservableAdm | undefined;
   if (!adm) throw error;

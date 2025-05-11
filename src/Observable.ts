@@ -20,7 +20,13 @@ export function makeObservable<T extends object>(
   ignore: Set<Property> = emptySet,
   shallow: Set<Property> = emptySet
 ): T {
-  if (value == null || Object.prototype !== Object.getPrototypeOf(value)) {
+  // toDo
+  // || Object.prototype !== Object.getPrototypeOf(value)
+  if (value == null) {
+    throw new TypeError('Invalid argument. Only plain objects are allowed');
+  }
+  const proto = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto != null) {
     throw new TypeError('Invalid argument. Only plain objects are allowed');
   }
   const adm = new ObservableAdm('', ignore, shallow);
@@ -32,7 +38,7 @@ export function makeObservable<T extends object>(
       if (!adm.ignore.has(key)) {
         Object.defineProperty(value, key, new ObservableComputed(key, descriptor, adm, proxy));
       }
-    } else {
+    } else if (descriptor.writable) {
       value[key] = maybeMakeObservable(key, value[key], adm);
     }
   }
@@ -43,7 +49,8 @@ function maybeMakeObservable(key: Property, value: any, adm: ObservableAdm) {
   if (value == null || typeof value !== 'object') return value;
   if (value[$adm] || adm.ignore.has(key)) return value;
 
-  if (Object.prototype === Object.getPrototypeOf(value)) return makeObservable(value);
+  const proto = Object.getPrototypeOf(value);
+  if (Object.prototype === proto || proto === null) return makeObservable(value);
   if (Array.isArray(value)) {
     if (!adm.shallow.has(key)) {
       for (let i = 0; i < value.length; i++) {
@@ -75,6 +82,13 @@ class ObservableProxyHandler {
     this.adm = adm;
   }
 
+  #batch(property: Property) {
+    if (!lib.action) {
+      if (this.adm.changes.has(property)) this.adm.batch(true);
+    }
+    if (!this.adm.ignore.has(property)) lib.executor.report(this.adm, property);
+  }
+
   get(target: any, property: Property, receiver: any) {
     if (property === $adm) return this.adm;
     const value = Reflect.get(target, property, receiver);
@@ -87,69 +101,64 @@ class ObservableProxyHandler {
       }
       return method;
     }
-    if (!lib.action) {
-      if (this.adm.changes.has(property)) this.adm.batch(true);
-    }
-
-    if (!this.adm.ignore.has(property)) lib.executor.report(this.adm, property);
-
+    this.#batch(property);
     return value;
   }
   set(target: any, property: string, newValue: any) {
     // need benchmarks, this can be slow...
     const descriptor = Reflect.getOwnPropertyDescriptor(target, property);
     if (!descriptor || (descriptor.writable && !descriptor.set)) {
-      if (target[property] === newValue) {
+      if (descriptor && target[property] === newValue) {
         target[property] = newValue;
       } else {
         if (this.methods[property]) this.methods[property] = undefined;
         this.adm.state = 0;
         const value = maybeMakeObservable(property, newValue, this.adm);
         Reflect.set(target, property, value);
-        this.adm.report(property, value);
-        this.adm.state = 1;
-        queueBatch(this.adm);
+        this.#report(property);
       }
       return true;
     }
-
-    if (descriptor.set) {
-      Reflect.set(target, property, newValue);
-      return true;
-    }
-
+    if (descriptor.set) return Reflect.set(target, property, newValue);
     return false;
   }
   defineProperty(target: any, property: string, descriptor: PropertyDescriptor) {
-    if (this.methods[property]) {
-      this.methods[property] = undefined;
+    if (this.methods[property]) this.methods[property] = undefined;
+    if (descriptor.value) {
+      descriptor.value = maybeMakeObservable(property, descriptor.value, this.adm);
     }
-    target[property] = maybeMakeObservable(property, descriptor.value, this.adm);
-    return true;
+    // if (descriptor.value) {
+    //   return Reflect.defineProperty(target, property, {
+    //     ...descriptor,
+    //     value: maybeMakeObservable(property, descriptor.value, this.adm),
+    //   });
+    // }
+    // can't create computeds in this way!
+    return Reflect.defineProperty(target, property, descriptor);
+
+    // target[property] = maybeMakeObservable(property, descriptor.value, this.adm);
+    // return true;
   }
   deleteProperty(target: any, property: string | symbol): boolean {
     if (!(property in target)) return false;
     if (this.methods[property]) this.methods[property] = undefined;
     this.adm.state = 0;
     delete target[property];
-    this.adm.report(property, undefined);
-    this.adm.state = 1;
-    queueBatch(this.adm);
+    this.#report(property);
     return true;
   }
   has(target: any, property: string | symbol) {
-    if (!lib.action) {
-      if (this.adm.changes.has(property)) this.adm.batch(true);
-    }
-    if (!this.adm.ignore.has(property)) lib.executor.report(this.adm, property);
+    this.#batch(property);
     return property in target;
   }
   getOwnPropertyDescriptor(target: any, property: string | symbol) {
-    if (!lib.action) {
-      if (this.adm.changes.has(property)) this.adm.batch(true);
-    }
-    if (!this.adm.ignore.has(property)) lib.executor.report(this.adm, property);
+    this.#batch(property);
     return Reflect.getOwnPropertyDescriptor(target, property);
+  }
+  #report(property: Property) {
+    this.adm.report(property, undefined);
+    this.adm.state = 1;
+    queueBatch(this.adm);
   }
 }
 
