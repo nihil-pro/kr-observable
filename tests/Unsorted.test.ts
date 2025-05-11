@@ -155,20 +155,20 @@ describe('Big test', () => {
   //   assert.equal(isProxy(result.fn())).toBe(true);
   //
   //   const r = result.fn();
-  //   assert.equal(r.cat).toBe('quack');
+  //   assert.equal(r.cat, 'quack');
   //
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls++;
   //     r.cat;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   r.cat = 'murci';
   //   execute();
-  //   assert.equal(r.cat).toBe('murci');
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(r.cat, 'murci');
+  //   assert.equal(calls, 2);
   // });
 
   test(`getters: object`, () => {
@@ -657,37 +657,6 @@ describe('Big test', () => {
     });
   });
 
-  // not applicable for kr-observable
-  // test(`misc objects (nested)`, (ctx) => {
-  //   const sources = [
-  //     new Date(),
-  //     /[a-z]/,
-  //     document.createElement('div'),
-  //     new Set([1, 2, 3]),
-  //     new Map(),
-  //     Symbol(),
-  //   ];
-  //   for (const source of sources) {
-  //     try {
-  //       const result = makeObservable({ o: source });
-  //       if (result.o instanceof Map && supportsMap) {
-  //         assert.equal(result.o).not.toBe(source);
-  //         assert.equal(isProxy(result.o)).toBe(true);
-  //       } else {
-  //         assert.equal(result.o).toBe(source);
-  //         assert.equal(isProxy(result.o)).toBe(false);
-  //       }
-  //     } catch (e) {
-  //       console.error('misc objects (nested): throws having nested', source);
-  //     }
-  //   }
-  //
-  //   const source = {};
-  //   const result = makeObservable({ o: source });
-  //   assert.equal(result.o).not.toBe(source);
-  //   assert.equal(isProxy(result.o)).toBe(true);
-  // });
-
   test(`misc native objects should work`, () => {
     const result = makeObservable({ set: new Set(), map: new Map() });
 
@@ -1029,26 +998,6 @@ describe('Big test', () => {
     assert.equal(result.data.name, 'murci');
   });
 
-  // not applicable for kr-observable
-  // test(`track: state from signal`, (ctx) => {
-  //   const [read, write] = signal('init');
-  //   const result = makeObservable({ data: '' });
-  //
-  //   let called = 0;
-  //   const execute = memo(() => {
-  //     called++;
-  //     result.data = read();
-  //   });
-  //   execute();
-  //   assert.equal(called).toBe(1);
-  //   assert.equal(result.data).toBe('init');
-  //
-  //   write('signal');
-  //   execute();
-  //   assert.equal(called).toBe(2);
-  //   assert.equal(result.data).toBe('signal');
-  // });
-
   test(`track \`in\``, (ctx) => {
     let access = 0;
     const result = makeObservable({
@@ -1310,1437 +1259,791 @@ describe('Big test', () => {
     assert.equal(subscriber.mock.callCount(), 3);
   });
 
-  // test(`hasOwnProperty shoulnt throw`, (ctx) => {
-  //   let m = makeObservable({ a: { deep: 'test' } });
-  //   m.hasOwnProperty('a');
-  //   m.a.hasOwnProperty('deep');
-  //
-  //   m = makeObservable(Object.create(null));
-  //   m.a = { deep: 'test' };
-  //   // m.hasOwnProperty('a')
-  //   m.a.hasOwnProperty('deep');
-  // });
-  //
-  // test(`reacts to hasOwnProperty [solid, oby]`, (ctx) => {
-  //   const m = makeObservable({ a: { deep: 'test' }, c: {} });
-  //
-  //   let has;
-  //
-  //   let calls1 = 0;
-  //   const execute1 = memo(() => {
-  //     calls1++;
-  //     has = m.hasOwnProperty('b');
-  //   });
-  //
-  //   let calls2 = 0;
-  //   const execute2 = memo(() => {
-  //     calls2++;
-  //     has = m.a.hasOwnProperty('b');
-  //   });
-  //
-  //   let calls3 = 0;
-  //   const execute3 = memo(() => {
-  //     calls3++;
-  //     has = Object.hasOwn(m, 'z');
-  //   });
-  //
-  //   execute1(), execute2(), execute3();
-  //   assert.equal(calls1).toBe(1);
-  //   assert.equal(calls2).toBe(1);
-  //   assert.equal(calls3).toBe(1);
-  //   assert.equal(has).toBe(false);
-  //
-  //   m.b = 1;
-  //
-  //   execute1(), execute2(), execute3();
-  //   assert.equal(calls1).toBe(2);
-  //   assert.equal(calls2).toBe(1);
-  //   assert.equal(calls3).toBe(1);
-  //   assert.equal(has).toBe(true);
-  //   has = false;
-  //   assert.equal(has).toBe(false);
-  //
-  //   m.a.b = 1;
-  //
-  //   execute1(), execute2(), execute3();
-  //   assert.equal(calls1).toBe(2);
-  //   assert.equal(calls2).toBe(2);
-  //   assert.equal(calls3).toBe(1);
-  //   assert.equal(has).toBe(true);
-  //   has = false;
-  //   assert.equal(has).toBe(false);
-  //
-  //   m.z = 1;
-  //
-  //   execute1(), execute2(), execute3();
-  //   assert.equal(calls1).toBe(2);
-  //   assert.equal(calls2).toBe(2);
-  //   assert.equal(calls3).toBe(2);
-  //   assert.equal(has).toBe(true);
-  // });
-  //
-  // // oby test suite
-  //
-  // test(`is both a getter and a setter, for shallow primitive properties`, (ctx) => {
-  //   const o = makeObservable({ value: undefined });
-  //   assert.equal(o.value).toBe(undefined);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.value = v;
-  //     },
-  //     () => o.value
-  //   );
-  // });
-  //
-  // test(`Object.create(null)`, (ctx) => {
-  //   const o = makeObservable(Object.create(null));
-  //   assert.equal(o.value).toBe(undefined);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.value = v;
-  //     },
-  //     () => o.value
-  //   );
-  // });
-  //
-  // test(`Object.create(null) nested`, (ctx) => {
-  //   const o = makeObservable({ value: Object.create(null) });
-  //   assert.equal(o.value).not.toBe(undefined);
-  //   assert.equal(o.value.deep).toBe(undefined);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.value.deep = v;
-  //     },
-  //     () => o.value.deep
-  //   );
-  // });
-  //
-  // test(`${
-  //   lib
-  // }deeper: is both a getter and a setter, for shallow primitive properties`, (ctx) => {
-  //   const o = makeObservable({ value: { deeper: undefined } });
-  //   assert.equal(o.value.deeper).toBe(undefined);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.value.deeper = v;
-  //     },
-  //     () => o.value.deeper
-  //   );
-  // });
-  //
-  // test(`is both a getter and a setter, for shallow non-primitive properties`, (ctx) => {
-  //   const obj1 = { foo: 123 };
-  //   const obj2 = {};
-  //
-  //   const o = makeObservable({ value: obj1 });
-  //   assert.equal(o.value).toEqual(obj1);
-  //
-  //   o.value = obj2;
-  //   assert.equal(o.value).toEqual(obj2);
-  //
-  //   o.value = obj1;
-  //   assert.equal(o.value).toEqual(obj1);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.value = v;
-  //     },
-  //     () => o.value
-  //   );
-  // });
-  //
-  // test(`is both a getter and a setter, for deep primitive properties`, (ctx) => {
-  //   const o = makeObservable({ deep: { value: undefined } });
-  //   assert.equal(o.deep.value).toBe(undefined);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.deep.value = v;
-  //     },
-  //     () => o.deep.value
-  //   );
-  // });
-  //
-  // test(`is both a getter and a setter, for deep non-primitive properties`, (ctx) => {
-  //   const obj1 = { foo: 123 };
-  //   const obj2 = {};
-  //
-  //   const o = makeObservable({ deep: { value: obj1 } });
-  //   assert.equal(o.deep.value).toEqual(obj1);
-  //
-  //   o.deep.value = obj2;
-  //   assert.equal(o.deep.value).toEqual(obj2);
-  //
-  //   o.deep.value = obj1;
-  //   assert.equal(o.deep.value).toEqual(obj1);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.deep.value = v;
-  //     },
-  //     () => o.deep.value
-  //   );
-  // });
-  //
-  // test(`is both a getter and a setter, for deep non-primitive properties`, (ctx) => {
-  //   const obj1 = { foo: 123 };
-  //   const obj2 = {};
-  //
-  //   const o = makeObservable({ deep: { value: obj1 } });
-  //   assert.equal(o.deep.value).toEqual(obj1);
-  //
-  //   let calls = 0;
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.deep.value;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.deep.value = obj2;
-  //   execute();
-  //   assert.equal(o.deep.value).toEqual(obj2);
-  //   assert.equal(calls).toBe(2);
-  //
-  //   o.deep.value = obj1;
-  //   execute();
-  //   assert.equal(o.deep.value).toEqual(obj1);
-  //   assert.equal(calls).toBe(3);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.deep.value = v;
-  //     },
-  //     () => o.deep.value
-  //   );
-  // });
-  //
-  // test(`creates a dependency in a memo when getting a shallow property`, (ctx) => {
-  //   const o = makeObservable({ value: 1 });
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.value = v;
-  //     },
-  //     () => o.value
-  //   );
-  // });
-  //
-  // test(`creates a dependency in a memo when getting a deep property`, (ctx) => {
-  //   const o = makeObservable({ deep: { value: 1 } });
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.deep.value = v;
-  //     },
-  //     () => o.deep.value
-  //   );
-  // });
-  //
-  // test(`${
-  //   lib
-  // }creates a single dependency in an memo even if getting a shallow property multiple times`, (ctx) => {
-  //   const o = makeObservable({ value: 1 });
-  //
-  //   let calls = 0;
-  //
-  //   const value = memo(() => {
-  //     calls += 1;
-  //     o.value;
-  //     o.value;
-  //     o.value;
-  //     return o.value;
-  //   });
-  //
-  //   assert.equal(value()).toBe(1);
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.value = 2;
-  //
-  //   assert.equal(value()).toBe(2);
-  //   assert.equal(calls).toBe(2);
-  //
-  //   o.value = 3;
-  //
-  //   assert.equal(value()).toBe(3);
-  //   assert.equal(calls).toBe(3);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.value = v;
-  //     },
-  //     () => o.value
-  //   );
-  // });
-  //
-  // test(`${
-  //   lib
-  // }creates a single dependency even if getting a shallow property multiple times`, (ctx) => {
-  //   const o = makeObservable({ value: 1 });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.value;
-  //     o.value;
-  //     o.value;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.value = 2;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //
-  //   o.value = 3;
-  //   execute();
-  //   assert.equal(calls).toBe(3);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.value = v;
-  //     },
-  //     () => o.value
-  //   );
-  // });
-  //
-  // test(`${
-  //   lib
-  // }creates a single dependency in a memo even if getting a deep property multiple times`, (ctx) => {
-  //   const o = makeObservable({ deep: { value: 1 } });
-  //
-  //   let calls = 0;
-  //
-  //   const value = memo(() => {
-  //     calls += 1;
-  //     o.deep.value;
-  //     o.deep.value;
-  //     o.deep.value;
-  //     return o.deep.value;
-  //   });
-  //
-  //   assert.equal(value()).toBe(1);
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.deep.value = 2;
-  //
-  //   assert.equal(value()).toBe(2);
-  //   assert.equal(calls).toBe(2);
-  //
-  //   o.deep.value = 3;
-  //
-  //   assert.equal(value()).toBe(3);
-  //   assert.equal(calls).toBe(3);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.deep.value = v;
-  //     },
-  //     () => o.deep.value
-  //   );
-  // });
-  //
-  // test(`${
-  //   lib
-  // }creates a single dependency in an effect even if getting a deep property multiple times`, (ctx) => {
-  //   const o = makeObservable({ deep: { value: 1 } });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.deep.value;
-  //     o.deep.value;
-  //     o.deep.value;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.deep.value = 2;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //
-  //   o.deep.value = 3;
-  //   execute();
-  //   assert.equal(calls).toBe(3);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.deep.value = v;
-  //     },
-  //     () => o.deep.value
-  //   );
-  // });
-  //
-  // test(`does not create a dependency in a memo when creating`, (ctx) => {
-  //   let o;
-  //   let calls = 0;
-  //
-  //   const value = memo(() => {
-  //     calls += 1;
-  //     o = makeObservable({ value: 1 });
-  //   });
-  //
-  //   assert.equal(value()).toBe(undefined);
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.value = 2;
-  //
-  //   assert.equal(value()).toBe(undefined);
-  //   assert.equal(calls).toBe(1);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.value = v;
-  //     },
-  //     () => o.value
-  //   );
-  //
-  //   assert.equal(calls).toBe(1);
-  // });
-  //
-  // test(`does not create a dependency in an effect when creating`, (ctx) => {
-  //   let o;
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o = makeObservable({ value: 1 });
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.value = 2;
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.value = v;
-  //     },
-  //     () => o.value
-  //   );
-  //
-  //   assert.equal(calls).toBe(1);
-  // });
-  //
-  // test(`does not create a dependency in a memo when setting a shallow property`, (ctx) => {
-  //   const o = makeObservable({ value: 0 });
-  //   let calls = 0;
-  //
-  //   const value = memo(() => {
-  //     calls += 1;
-  //     o.value = 1;
-  //   });
-  //
-  //   assert.equal(value()).toBe(undefined);
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.value = 2;
-  //
-  //   assert.equal(value()).toBe(undefined);
-  //   assert.equal(calls).toBe(1);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.value = v;
-  //     },
-  //     () => o.value
-  //   );
-  // });
-  //
-  // test(`${
-  //   lib
-  // }does not create a dependency in an effect when setting a shallow property`, (ctx) => {
-  //   const o = makeObservable({ value: 0 });
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.value = 1;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.value = 2;
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.value = v;
-  //     },
-  //     () => o.value
-  //   );
-  // });
-  //
-  // test(`${
-  //   lib
-  // }does not create a dependency in a memo when getting a parent property of the one being updated`, (ctx) => {
-  //   const o = makeObservable({ deep: { value: 1 } });
-  //
-  //   let calls = 0;
-  //
-  //   const value = memo(() => {
-  //     calls += 1;
-  //     o.deep;
-  //   });
-  //
-  //   assert.equal(value()).toBe(undefined);
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.deep.value = 2;
-  //
-  //   assert.equal(value()).toBe(undefined);
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.deep.value = 3;
-  //
-  //   assert.equal(value()).toBe(undefined);
-  //   assert.equal(calls).toBe(1);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.deep.value = v;
-  //     },
-  //     () => o.deep.value
-  //   );
-  // });
-  //
-  // test(`${
-  //   lib
-  // }does not create a dependency in an effect when getting a parent property of the one being updated`, (ctx) => {
-  //   const o = makeObservable({ deep: { value: 1 } });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.deep;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.deep.value = 2;
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.deep.value = 3;
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.deep = v;
-  //     },
-  //     () => o.deep
-  //   );
-  // });
-  //
-  // test(`${
-  //   lib
-  // }does create a dependency (on the parent) in a memo when setting a deep property`, (ctx) => {
-  //   // FIXME: This can't quite be fixed, it's a quirk of how makeObservable stores work
-  //
-  //   const o = makeObservable({ deep: { value: 1 } });
-  //
-  //   let calls = 0;
-  //
-  //   const value = memo(() => {
-  //     calls += 1;
-  //     o.deep.value = 2;
-  //   });
-  //
-  //   assert.equal(value()).toBe(undefined);
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.deep.value = 3;
-  //   assert.equal(value()).toBe(undefined);
-  //   assert.equal(calls).toBe(1);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.deep.value = v;
-  //     },
-  //     () => o.deep.value
-  //   );
-  //
-  //   o.deep = {};
-  //   assert.equal(value()).toBe(undefined);
-  //   assert.equal(calls).toBe(2);
-  // });
-  //
-  // test(`${
-  //   lib
-  // }does create a dependency (on the parent) in an effect when setting a deep property`, (ctx) => {
-  //   // FIXME: This can't quite be fixed, it's a quirk of how makeObservable stores work
-  //
-  //   const o = makeObservable({ deep: { value: 1 } });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.deep.value = 2;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.deep.value = 3;
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.deep.value = v;
-  //     },
-  //     () => o.deep.value
-  //   );
-  //
-  //   o.deep = {};
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  // });
-  //
-  // test(`returns primitive values as is`, (ctx) => {
-  //   // solid doesnt wrap non-objects
-  //   if (lib !== 'solid: ') {
-  //     let o = makeObservable(123);
-  //     assert.equal(o).toBe(123);
-  //
-  //     o = makeObservable(321);
-  //     assert.equal(o).toBe(321);
-  //
-  //     o = makeObservable(undefined);
-  //     assert.equal(o).toBe(undefined);
-  //
-  //     o = makeObservable(null);
-  //     assert.equal(o).toBe(null);
-  //
-  //     o = makeObservable('');
-  //     assert.equal(o).toBe('');
-  //
-  //     o = makeObservable('string');
-  //     assert.equal(o).toBe('string');
-  //
-  //     o = makeObservable(true);
-  //     assert.equal(o).toBe(true);
-  //
-  //     o = makeObservable(false);
-  //     assert.equal(o).toBe(false);
-  //
-  //     o = makeObservable(Infinity);
-  //     assert.equal(o).toBe(Infinity);
-  //   }
-  //
-  //   let o = makeObservable([true]);
-  //   assert.equal(o).toEqual([true]);
-  //
-  //   o = makeObservable({ 0: true });
-  //   assert.equal(o).toEqual({ 0: true });
-  //
-  //   o = makeObservable([true]);
-  //   assert.equal(o).toEqual([true]);
-  //
-  //   o = makeObservable({ 0: true });
-  //   assert.equal(o).toEqual({ 0: true });
-  // });
-  //
-  // test(`${
-  //   lib
-  // }returns unproxied "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString", "toSource", "toString", "valueOf", properties [solid]`, (ctx) => {
-  //   const o = makeObservable({});
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.hasOwnProperty;
-  //     o.isPrototypeOf;
-  //     o.propertyIsEnumerable;
-  //     o.toLocaleString;
-  //     o.toSource;
-  //     o.toString;
-  //     o.valueOf;
-  //   });
-  //   execute();
-  //
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.hasOwnProperty = 1;
-  //   o.isPrototypeOf = 1;
-  //   o.propertyIsEnumerable = 1;
-  //   o.toLocaleString = 1;
-  //   o.toSource = 1;
-  //   o.toString = 1;
-  //   o.valueOf = 1;
-  //   execute();
-  //
-  //   if (lib === 'oby: ') {
-  //     assert.equal(calls).toBe(1);
-  //   } else {
-  //     assert.equal(calls).toBe(2);
-  //   }
-  // });
-  //
-  // test(`returns the value being set`, (ctx) => {
-  //   const o = makeObservable({ value: undefined });
-  //
-  //   assert.equal((o.value = 123)).toBe(123);
-  //   assert.equal((o.value = undefined)).toBe(undefined);
-  //   assert.equal((o.value = null)).toBe(null);
-  //   assert.equal((o.value = '')).toBe('');
-  //   assert.equal((o.value = 'string')).toBe('string');
-  //   assert.equal((o.value = [true])).toEqual([true]);
-  //   assert.equal((o.value = { 0: true })).toEqual({ 0: true });
-  //   assert.equal((o.value = true)).toBe(true);
-  //   assert.equal((o.value = false)).toBe(false);
-  //   assert.equal((o.value = Infinity)).toBe(Infinity);
-  //   assert.equal((o.value = 0)).toBe(0);
-  //   assert.equal(Object.is((o.value = NaN), NaN)).toBe(true);
-  //   assert.equal((o.value = 1)).toBe(1);
-  // });
-  //
-  // test(`supports setting functions`, (ctx) => {
-  //   const fn = () => {};
-  //   const o = makeObservable({ value: () => {} });
-  //
-  //   o.value = fn;
-  //   // pota will return wrapped functions
-  //   if (lib === 'pota: ') {
-  //     assert.equal(typeof o.value).toBe('function');
-  //   } else {
-  //     assert.equal(o.value).toBe(fn);
-  //   }
-  // });
-  //
-  // test(`supports wrapping a plain object`, (ctx) => {
-  //   const o = makeObservable({});
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.value;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.value = 2;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  // });
-  //
-  // test(`supports wrapping a deep plain object inside a plain object`, (ctx) => {
-  //   const o = makeObservable({ value: {} });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.value.lala;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.value.lala = 3;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal(o.value.lala).toBe(3);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.value.lala = v;
-  //     },
-  //     () => o.value.lala
-  //   );
-  // });
-  //
-  // test(`supports reacting to deleting a shallow property`, (ctx) => {
-  //   const o = makeObservable({ value: 123 });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.value;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   delete o.value;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal('value' in o).toBe(false);
-  //   assert.equal(calls).toBe(2);
-  //
-  //   o.value = undefined;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //
-  //   o.value = true;
-  //   execute();
-  //   assert.equal(calls).toBe(3);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.value = v;
-  //     },
-  //     () => o.value
-  //   );
-  // });
-  //
-  // test(`${
-  //   lib
-  // }supports not reacting when deleting a shallow property that was undefined [solid]`, (ctx) => {
-  //   const o = makeObservable({ value: undefined });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.value;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   delete o.value;
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //   assert.equal('value' in o).toBe(false);
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.value = undefined;
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.value = true;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.value = v;
-  //     },
-  //     () => o.value
-  //   );
-  // });
-  // test(`supports reacting when deleting a shallow property that was null`, (ctx) => {
-  //   const o = makeObservable({ value: null });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.value;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   delete o.value;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //
-  //   assert.equal('value' in o).toBe(false);
-  //   assert.equal(calls).toBe(2);
-  //
-  //   o.value = undefined;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //
-  //   o.value = true;
-  //   execute();
-  //   assert.equal(calls).toBe(3);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.value = v;
-  //     },
-  //     () => o.value
-  //   );
-  // });
-  //
-  // test(`supports reacting to deleting a deep property`, (ctx) => {
-  //   const o = makeObservable({ deep: { value: 123 } });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.deep.value;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   delete o.deep.value;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //
-  //   assert.equal('value' in o.deep).toBe(false);
-  //   assert.equal(calls).toBe(2);
-  //
-  //   o.deep.value = undefined;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //
-  //   o.deep.value = true;
-  //   execute();
-  //   assert.equal(calls).toBe(3);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.deep.value = v;
-  //     },
-  //     () => o.deep.value
-  //   );
-  // });
-  //
-  // test(`${
-  //   lib
-  // }supports not reacting when deleting a deep property that was undefined [solid]`, (ctx) => {
-  //   const o = makeObservable({ deep: { value: undefined } });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.deep.value;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   delete o.deep.value;
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //   assert.equal('value' in o.deep).toBe(false);
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.deep.value = undefined;
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.deep.value = true;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.deep.value = v;
-  //     },
-  //     () => o.deep.value
-  //   );
-  // });
-  //
-  // test(`supports not reacting when setting a primitive property to itself`, (ctx) => {
-  //   const o = makeObservable({ value: 1 });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.value;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.value = 1;
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.value = v;
-  //     },
-  //     () => o.value
-  //   );
-  // });
-  //
-  // test(`supports not reacting when setting a non-primitive property to itself`, (ctx) => {
-  //   const o = makeObservable({ deep: { value: 2 } });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.deep.value;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.deep = o.deep;
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.deep.value = v;
-  //     },
-  //     () => o.deep.value
-  //   );
-  // });
-  //
-  // test(`${
-  //   lib
-  // }supports not reacting when setting a non-primitive property to itself, when reading all values - object `, (ctx) => {
-  //   const o = makeObservable({ value: {} });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.value;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.value = o.value;
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       o.value = v;
-  //     },
-  //     () => o.value
-  //   );
-  // });
-  //
-  // test(`${
-  //   lib
-  // }supports not reacting when reading the length on a non-array, when reading all values, if the length does not actually change`, (ctx) => {
-  //   // TODO
-  //
-  //   const o = makeObservable({ length: 0 });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.length;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.length = o.length;
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  // });
-  //
-  // test(`supports reacting to own keys`, (ctx) => {
-  //   const o = makeObservable({ foo: 1, bar: 2, baz: 3 });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     Object.keys(o);
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.qux = 4;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //
-  //   o.foo = 2; // already in
-  //   o.bar = 3; // already in
-  //   o.baz = 4; // already in
-  //   o.qux = 5; // already in
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //
-  //   o.qux = 5;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //
-  //   o.qux = 6;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //
-  //   o.qux2 = 7;
-  //   execute();
-  //   assert.equal(calls).toBe(3);
-  //
-  //   delete o.foo;
-  //   execute();
-  //   assert.equal(calls).toBe(4);
-  //   assert.equal('foo' in o).toBe(false);
-  //   assert.equal(calls).toBe(4);
-  //
-  //   o.foo = undefined;
-  //   execute();
-  //   assert.equal(calls).toBe(5);
-  //   assert.equal(o.foo).toBe(undefined);
-  //   assert.equal('foo' in o).toBe(true);
-  //
-  //   o.foo = true;
-  //   execute();
-  //   assert.equal(calls).toBe(5);
-  //   assert.equal(o.foo).toBe(true);
-  //   assert.equal('foo' in o).toBe(true);
-  // });
-  //
+  test(`hasOwnProperty shouldn't throw`, () => {
+    let m = makeObservable({ a: { deep: 'test' } });
+    m.hasOwnProperty('a');
+    m.a.hasOwnProperty('deep');
+
+    m = makeObservable(Object.create(null));
+    m.a = { deep: 'test' };
+    m.a.hasOwnProperty('deep');
+  });
+
+  test(`reacts to hasOwnProperty [solid, oby]`, () => {
+    const m = makeObservable({ a: { deep: 'test' }, c: {} });
+
+    let has;
+
+    const subscriber = mock.fn();
+    autorun(() => {
+      subscriber();
+      has = m.hasOwnProperty('b');
+    });
+
+    const subscriber2 = mock.fn();
+    autorun(() => {
+      subscriber2();
+      has = m.a.hasOwnProperty('b');
+    });
+
+    const subscriber3 = mock.fn();
+    autorun(() => {
+      subscriber3();
+      has = Object.hasOwn(m, 'z');
+    });
+
+    assert.equal(subscriber.mock.callCount(), 1);
+    assert.equal(subscriber2.mock.callCount(), 1);
+    assert.equal(subscriber3.mock.callCount(), 1);
+    assert.equal(has, false);
+
+    transaction(() => Reflect.set(m, 'b', 1));
+
+    assert.equal(subscriber.mock.callCount(), 2);
+    assert.equal(subscriber2.mock.callCount(), 1);
+    assert.equal(subscriber3.mock.callCount(), 1);
+    assert.equal(has, true);
+    has = false;
+    assert.equal(has, false);
+
+    // @ts-ignore
+    transaction(() => (m.a.b = 1));
+
+    assert.equal(subscriber.mock.callCount(), 2);
+    assert.equal(subscriber2.mock.callCount(), 2);
+    assert.equal(subscriber3.mock.callCount(), 1);
+    assert.equal(has, true);
+    has = false;
+    assert.equal(has, false);
+
+    // @ts-ignore
+    transaction(() => (m.z = 1));
+
+    assert.equal(subscriber.mock.callCount(), 2);
+    assert.equal(subscriber2.mock.callCount(), 2);
+    assert.equal(subscriber3.mock.callCount(), 2);
+    assert.equal(has, true);
+  });
+
+  // modified compared to original, but check that autorun don't subscribe to an observable created inside it
+  test(`does not create a dependency in a memo when creating`, () => {
+    let o;
+    const subscriber = mock.fn();
+
+    autorun(() => {
+      subscriber();
+      o = makeObservable({ value: 1 });
+    });
+
+    assert.equal(subscriber.mock.callCount(), 1);
+    transaction(() => (o.value = 2));
+    assert.equal(subscriber.mock.callCount(), 1);
+  });
+
+  test(`does not create a dependency in a memo when setting a shallow property`, () => {
+    const o = makeObservable({ value: 0 });
+    const subscriber = mock.fn();
+
+    autorun(() => {
+      subscriber();
+      o.value = 1;
+    });
+
+    assert.equal(subscriber.mock.callCount(), 1);
+    transaction(() => (o.value = 2));
+    assert.equal(subscriber.mock.callCount(), 1);
+  });
+
+  test(`does not create a dependency in a memo when getting a parent property of the one being updated`, (ctx) => {
+    const o = makeObservable({ deep: { value: 1 } });
+    const subscriber = mock.fn();
+
+    autorun(() => {
+      subscriber();
+      if (o.deep) ctx.diagnostic('1');
+    });
+
+    assert.equal(subscriber.mock.callCount(), 1);
+    transaction(() => (o.deep.value = 2));
+    assert.equal(subscriber.mock.callCount(), 1);
+
+    transaction(() => (o.deep.value = 3));
+    assert.equal(subscriber.mock.callCount(), 1);
+  });
+
+  test(`does create a dependency (on the parent) in a memo when setting a deep property`, () => {
+    const o = makeObservable({ deep: { value: 1 } });
+    const subscriber = mock.fn();
+
+    autorun(() => {
+      subscriber();
+      o.deep.value = 2;
+    });
+
+    assert.equal(subscriber.mock.callCount(), 1);
+    transaction(() => (o.deep.value = 3));
+    assert.equal(subscriber.mock.callCount(), 1);
+
+    // @ts-ignore
+    transaction(() => (o.deep = {}));
+    assert.equal(subscriber.mock.callCount(), 2);
+  });
+
+  // in kr-observable "makeObservable" accept only plain objects and returns proxied object
+  test.skip(`returns primitive values as is`, () => {
+    let o = makeObservable([true]);
+    assert.equal(o, [true]);
+
+    // @ts-ignore
+    o = makeObservable({ 0: true });
+    assert.equal(o, { 0: true });
+  });
+
+  // somnitelno, no okay
+  test.todo(
+    `returns unproxied "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString", "toSource", "toString", "valueOf", properties`,
+    () => {
+      const o = makeObservable({});
+
+      const subscriber = mock.fn();
+
+      autorun(() => {
+        subscriber();
+        console.info(
+          o.hasOwnProperty,
+          o.isPrototypeOf,
+          o.propertyIsEnumerable,
+          o.toLocaleString,
+          // @ts-ignore
+          o.toSource,
+          o.toString,
+          o.valueOf
+        );
+      });
+
+      assert.equal(subscriber.mock.callCount(), 1);
+
+      transaction(() => {
+        // @ts-ignore
+        o.hasOwnProperty = 1;
+        // @ts-ignore
+        o.isPrototypeOf = 1;
+        // @ts-ignore
+        o.propertyIsEnumerable = 1;
+        // @ts-ignore
+        o.toLocaleString = 1;
+        // @ts-ignore
+        o.toSource = 1;
+        // @ts-ignore
+        o.toString = 1;
+        // @ts-ignore
+        o.valueOf = 1;
+      });
+      // assert.equal(subscriber.mock.callCount(), 1);
+    }
+  );
+
+  test(`returns the value being set`, () => {
+    const o = makeObservable({ value: undefined });
+
+    assert.equal((o.value = 123), 123);
+    assert.equal((o.value = undefined), undefined);
+    assert.equal((o.value = null), null);
+    assert.equal((o.value = ''), '');
+    assert.equal((o.value = 'string'), 'string');
+    assert.equal((o.value = true), true);
+    assert.equal((o.value = false), false);
+    assert.equal((o.value = Infinity), Infinity);
+    assert.equal((o.value = 0), 0);
+    assert.equal(Object.is((o.value = NaN), NaN), true);
+    assert.equal((o.value = 1), 1);
+
+    // not applicable for kr-observable, cause it will make those deep observable
+    // assert.equal((o.value = [true]), [true]);
+    // assert.equal((o.value = { 0: true }), { 0: true });
+  });
+
+  test(`supports setting functions`, () => {
+    function fn() {
+      console.info(1);
+    }
+    const o = makeObservable({
+      value: () => {
+        console.info(1);
+      },
+    });
+    o.value = fn;
+    assert.equal(o.value.name, 'fn');
+  });
+
+  test(`supports wrapping a plain object`, (ctx) => {
+    const o = makeObservable({});
+
+    const subscriber = mock.fn();
+
+    autorun(() => {
+      subscriber();
+      // @ts-ignore
+      if (o.value) ctx.diagnostic('yes');
+    });
+    assert.equal(subscriber.mock.callCount(), 1);
+    // @ts-ignore
+    transaction(() => (o.value = 2));
+    assert.equal(subscriber.mock.callCount(), 2);
+  });
+
+  test(`supports wrapping a deep plain object inside a plain object`, (ctx) => {
+    const o = makeObservable({ value: {} });
+    const subscriber = mock.fn();
+
+    autorun(() => {
+      subscriber();
+      // @ts-ignore
+      ctx.diagnostic(`${o.value.lala}`);
+    });
+    assert.equal(subscriber.mock.callCount(), 1);
+    // @ts-ignore
+    transaction(() => (o.value.lala = 3));
+    assert.equal(subscriber.mock.callCount(), 2);
+    // @ts-ignore
+    assert.equal(o.value.lala, 3);
+  });
+
+  test.todo(`supports reacting to deleting a shallow property`, (ctx) => {
+    const o = makeObservable({ value: 123 });
+    const subscriber = mock.fn();
+
+    autorun(() => {
+      subscriber();
+      ctx.diagnostic(`${o.value}`);
+    });
+
+    assert.equal(subscriber.mock.callCount(), 1);
+    transaction(() => delete o.value);
+    assert.equal(subscriber.mock.callCount(), 2);
+    assert.equal('value' in o, false);
+    assert.equal(subscriber.mock.callCount(), 2);
+
+    transaction(() => (o.value = undefined));
+    assert.equal(subscriber.mock.callCount(), 2);
+
+    // @ts-ignore
+    transaction(() => (o.value = true));
+    assert.equal(subscriber.mock.callCount(), 3);
+  });
+
+  test.todo(`supports not reacting when deleting a shallow property that was undefined`, (ctx) => {
+    const o = makeObservable({ value: undefined });
+    const subscriber = mock.fn();
+
+    autorun(() => {
+      subscriber();
+      ctx.diagnostic(`${o.value}`);
+    });
+
+    assert.equal(subscriber.mock.callCount(), 1);
+
+    transaction(() => delete o.value);
+    assert.equal(subscriber.mock.callCount(), 1);
+    assert.equal('value' in o, false);
+    assert.equal(subscriber.mock.callCount(), 1);
+
+    transaction(() => (o.value = undefined));
+    assert.equal(subscriber.mock.callCount(), 1);
+
+    transaction(() => (o.value = true));
+    assert.equal(subscriber.mock.callCount(), 2);
+  });
+
+  test.todo(`supports reacting when deleting a shallow property that was null`, (ctx) => {
+    const o = makeObservable({ value: null });
+    const subscriber = mock.fn();
+
+    autorun(() => {
+      subscriber();
+      ctx.diagnostic(`${o.value}`);
+    });
+
+    assert.equal(subscriber.mock.callCount(), 1);
+
+    transaction(() => delete o.value);
+    assert.equal(subscriber.mock.callCount(), 2);
+
+    assert.equal('value' in o, false);
+    assert.equal(subscriber.mock.callCount(), 2);
+
+    transaction(() => (o.value = undefined));
+    assert.equal(subscriber.mock.callCount(), 2);
+
+    transaction(() => (o.value = true));
+    assert.equal(subscriber.mock.callCount(), 3);
+  });
+
+  // reacts after deleting and then set to undefined
+  test.todo(`supports reacting to deleting a deep property`, (ctx) => {
+    const o = makeObservable({ deep: { value: 123 } });
+    const subscriber = mock.fn();
+
+    autorun(() => {
+      subscriber();
+      ctx.diagnostic(`${o.deep.value}`);
+    });
+    assert.equal(subscriber.mock.callCount(), 1);
+
+    transaction(() => delete o.deep.value);
+    assert.equal(subscriber.mock.callCount(), 2);
+    assert.equal('value' in o.deep, false);
+    assert.equal(subscriber.mock.callCount(), 2);
+
+    transaction(() => (o.deep.value = undefined));
+    assert.equal(subscriber.mock.callCount(), 2);
+
+    // @ts-ignore
+    transaction(() => (o.deep.value = true));
+    assert.equal(subscriber.mock.callCount(), 3);
+  });
+
+  test.todo(`supports not reacting when deleting a deep property that was undefined`, (ctx) => {
+    const o = makeObservable({ deep: { value: undefined } });
+    const subscriber = mock.fn();
+
+    autorun(() => {
+      subscriber();
+      ctx.diagnostic(`${o.deep.value}`);
+    });
+
+    assert.equal(subscriber.mock.callCount(), 1);
+
+    transaction(() => delete o.deep.value);
+    assert.equal(subscriber.mock.callCount(), 1);
+    assert.equal('value' in o.deep, false);
+    assert.equal(subscriber.mock.callCount(), 1);
+
+    transaction(() => (o.deep.value = undefined));
+    assert.equal(subscriber.mock.callCount(), 1);
+
+    transaction(() => (o.deep.value = true));
+    assert.equal(subscriber.mock.callCount(), 2);
+  });
+
+  test(`supports not reacting when setting a primitive property to itself`, (ctx) => {
+    const o = makeObservable({ value: 1 });
+    const subscriber = mock.fn();
+
+    autorun(() => {
+      subscriber();
+      ctx.diagnostic(`${o.value}`);
+    });
+
+    assert.equal(subscriber.mock.callCount(), 1);
+
+    transaction(() => (o.value = 1));
+    assert.equal(subscriber.mock.callCount(), 1);
+  });
+
+  test(`supports not reacting when setting a non-primitive property to itself`, (ctx) => {
+    const o = makeObservable({ deep: { value: 2 } });
+    const subscriber = mock.fn();
+
+    autorun(() => {
+      subscriber();
+      ctx.diagnostic(`${o.deep.value}`);
+    });
+
+    assert.equal(subscriber.mock.callCount(), 1);
+    // @ts-ignore
+    // eslint-disable-next-line no-self-assign
+    transaction(() => (o.deep = o.deep));
+    assert.equal(subscriber.mock.callCount(), 1);
+  });
+
+  test(`supports not reacting when setting a non-primitive property to itself, when reading all values - object `, (ctx) => {
+    const o = makeObservable({ value: {} });
+    const subscriber = mock.fn();
+
+    autorun(() => {
+      subscriber();
+      if (o.value) ctx.diagnostic('yep');
+    });
+
+    assert.equal(subscriber.mock.callCount(), 1);
+    // @ts-ignore
+    // eslint-disable-next-line no-self-assign
+    transaction(() => (o.value = o.value));
+    assert.equal(subscriber.mock.callCount(), 1);
+  });
+
+  test(`supports not reacting when reading the length on a non-array, when reading all values, if the length does not actually change`, (ctx) => {
+    const o = makeObservable({ length: 0 });
+    const sb = mock.fn();
+    autorun(() => {
+      sb();
+      ctx.diagnostic(`${o.length}`);
+    });
+
+    assert.equal(sb.mock.callCount(), 1);
+    // eslint-disable-next-line no-self-assign
+    transaction(() => (o.length = o.length));
+    assert.equal(sb.mock.callCount(), 1);
+  });
+
+  // This can be implemented,
+  // but it seems that apart from increasing the size of the library and memory consumption, nothing will bring.
+  test.skip(`supports reacting to own keys`, (ctx) => {
+    const o = makeObservable({ foo: 1, bar: 2, baz: 3 });
+    const sb = mock.fn();
+
+    autorun(() => {
+      sb();
+      ctx.diagnostic(`${Object.keys(o).toString()}`);
+    });
+
+    assert.equal(sb.mock.callCount(), 1);
+
+    // @ts-ignore
+    transaction(() => (o.qux = 4));
+    assert.equal(sb.mock.callCount(), 2);
+
+    transaction(() => {
+      o.foo = 2; // already in
+      o.bar = 3; // already in
+      o.baz = 4; // already in
+      // @ts-ignore
+      o.qux = 5; // already in toDo since value is changed, kr-observable reacts
+    });
+    assert.equal(sb.mock.callCount(), 2);
+
+    // @ts-ignore
+    transaction(() => (o.qux = 5));
+    assert.equal(sb.mock.callCount(), 2);
+
+    // @ts-ignore
+    transaction(() => (o.qux = 6));
+    assert.equal(sb.mock.callCount(), 2);
+
+    // @ts-ignore
+    transaction(() => (o.qux2 = 7));
+    assert.equal(sb.mock.callCount(), 3);
+
+    transaction(() => delete o.foo);
+    assert.equal(sb.mock.callCount(), 4);
+    assert.equal('foo' in o, false);
+    assert.equal(sb.mock.callCount(), 4);
+
+    transaction(() => (o.foo = undefined));
+    assert.equal(sb.mock.callCount(), 5);
+    assert.equal(o.foo, undefined);
+    assert.equal('foo' in o, true);
+
+    // @ts-ignore
+    transaction(() => (o.foo = true));
+    assert.equal(sb.mock.callCount(), 5);
+    assert.equal(o.foo, true);
+    assert.equal('foo' in o, true);
+  });
+  // same as previous
   // test(`supports reacting to own keys deep [solid]`, (ctx) => {
   //   const o = makeObservable({ value: { foo: 1, bar: 2, baz: 3 } });
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     Object.keys(o.value);
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.value.qux = 4;
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   //
   //   o.value.foo = 2;
   //   o.value.bar = 3;
   //   o.value.baz = 4;
   //   o.value.qux = 5;
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   //
   //   o.value.qux = 5;
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   //
   //   o.value.qux2 = 5;
   //   execute();
-  //   assert.equal(calls).toBe(3);
+  //   assert.equal(calls, 3);
   //
   //   delete o.value.foo;
   //   execute();
-  //   assert.equal(calls).toBe(4);
-  //   assert.equal('foo' in o.value).toBe(false);
-  //   assert.equal(calls).toBe(4);
+  //   assert.equal(calls, 4);
+  //   assert.equal('foo' in o.value, false);
+  //   assert.equal(calls, 4);
   //
   //   o.value.foo = undefined;
   //   execute();
-  //   assert.equal(calls).toBe(5);
-  //   assert.equal(o.value.foo).toBe(undefined);
-  //   assert.equal('foo' in o.value).toBe(true);
+  //   assert.equal(calls, 5);
+  //   assert.equal(o.value.foo, undefined);
+  //   assert.equal('foo' in o.value, true);
   //
   //   o.value.foo = true;
   //   execute();
-  //   assert.equal(calls).toBe(5);
-  //   assert.equal(o.value.foo).toBe(true);
-  //   assert.equal('foo' in o.value).toBe(true);
+  //   assert.equal(calls, 5);
+  //   assert.equal(o.value.foo, true);
+  //   assert.equal('foo' in o.value, true);
   // });
-  //
-  // test(`supports reacting to properties read by a getter`, (ctx) => {
-  //   const o = makeObservable({
-  //     foo: 1,
-  //     bar: 2,
-  //     get fn() {
-  //       return this.foo + this.bar;
-  //     },
-  //   });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.fn;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.foo = 10;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal(o.fn).toBe(12);
-  //
-  //   o.bar = 20;
-  //   execute();
-  //   assert.equal(calls).toBe(3);
-  //   assert.equal(o.fn).toBe(30);
-  // });
-  //
-  // test(`supports reacting to properties read by a regular function`, (ctx) => {
-  //   const o = makeObservable({
-  //     foo: 1,
-  //     bar: 2,
-  //     fn() {
-  //       return this.foo + this.bar;
-  //     },
-  //   });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.fn();
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.foo = 10;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal(o.fn()).toBe(12);
-  //
-  //   o.bar = 20;
-  //   execute();
-  //   assert.equal(calls).toBe(3);
-  //   assert.equal(o.fn()).toBe(30);
-  // });
-  //
-  // test(`${
-  //   lib
-  // }supports reacting to properties read by a regular function, called via the call method`, (ctx) => {
-  //   const o = makeObservable({
-  //     foo: 1,
-  //     bar: 2,
-  //     fn() {
-  //       return this.foo + this.bar;
-  //     },
-  //   });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.fn.call(o);
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.foo = 10;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal(o.fn.call(o)).toBe(12);
-  //
-  //   o.bar = 20;
-  //   execute();
-  //   assert.equal(calls).toBe(3);
-  //   assert.equal(o.fn.call(o)).toBe(30);
-  // });
-  //
-  // test(`${
-  //   lib
-  // }supports reacting to properties read by a regular function, called via the apply method`, (ctx) => {
-  //   const o = makeObservable({
-  //     foo: 1,
-  //     bar: 2,
-  //     fn() {
-  //       return this.foo + this.bar;
-  //     },
-  //   });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.fn.apply(o);
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.foo = 10;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal(o.fn.apply(o)).toBe(12);
-  //
-  //   o.bar = 20;
-  //   execute();
-  //   assert.equal(calls).toBe(3);
-  //   assert.equal(o.fn.apply(o)).toBe(30);
-  // });
-  //
-  // test(`supports batching implicitly - unsupported`, (ctx) => {
-  //   batch(() => {
-  //     const o = makeObservable({ foo: 1, bar: 2 });
-  //
-  //     let calls = 0;
-  //
-  //     const execute = memo(() => {
-  //       calls += 1;
-  //       o.foo;
-  //       o.bar;
-  //     });
-  //     execute();
-  //     assert.equal(calls).toBe(1);
-  //
-  //     o.foo = 10;
-  //     o.bar = 20;
-  //     execute();
-  //     assert.equal(calls).toBe(2);
-  //
-  //     assert.equal(o.foo).toBe(10);
-  //     assert.equal(o.bar).toBe(20);
-  //   });
-  // });
-  //
-  // test(`supports batching setters automatically`, (ctx) => {
-  //   const o = makeObservable({
-  //     foo: 1,
-  //     bar: 2,
-  //     set fn(increment) {
-  //       this.foo += increment;
-  //       this.bar += increment;
-  //     },
-  //   });
-  //
-  //   let calls = 0;
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.foo;
-  //     o.bar;
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.fn = 1;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //
-  //   assert.equal(o.foo).toBe(2);
-  //   assert.equal(o.bar).toBe(3);
-  // });
-  //
-  // test(`supports batching deletions automatically Object.keys`, (ctx) => {
-  //   const o = makeObservable({ foo: 1, bar: 2 });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.foo;
-  //     if ('foo' in o) {
-  //     }
-  //     Object.keys(o);
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   delete o.foo;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal('foo' in o).toBe(false);
-  //   assert.equal(calls).toBe(2);
-  //
-  //   assert.equal('foo' in o).toBe(false);
-  //   assert.equal(calls).toBe(2);
-  // });
-  //
-  // test(`supports batching deletions automatically no Object.keys`, (ctx) => {
-  //   const o = makeObservable({ foo: 1, bar: 2 });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.foo;
-  //     if ('foo' in o) {
-  //     }
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   delete o.foo;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal('foo' in o).toBe(false);
-  //   assert.equal(calls).toBe(2);
-  //
-  //   assert.equal('foo' in o).toBe(false);
-  //   assert.equal(calls).toBe(2);
-  // });
-  //
-  // test(`supports batching additions automatically Object.keys`, (ctx) => {
-  //   const o = makeObservable({ bar: 2 });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.foo;
-  //     if ('foo' in o) {
-  //     }
-  //     Object.keys(o);
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.foo = 1;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  // });
-  //
-  // test(`supports batching additions automatically no Object.keys`, (ctx) => {
-  //   const o = makeObservable({ bar: 2 });
-  //
-  //   let calls = 0;
-  //
-  //   const execute = memo(() => {
-  //     calls += 1;
-  //     o.foo;
-  //     if ('foo' in o) {
-  //     }
-  //   });
-  //   execute();
-  //   assert.equal(calls).toBe(1);
-  //
-  //   o.foo = 1;
-  //   execute();
-  //   assert.equal(calls).toBe(2);
-  // });
-  //
+
+  test(`supports reacting to properties read by a getter`, (ctx) => {
+    const o = makeObservable({
+      foo: 1,
+      bar: 2,
+      get fn() {
+        return this.foo + this.bar;
+      },
+    });
+
+    const sb = mock.fn();
+
+    autorun(() => {
+      sb();
+      ctx.diagnostic(`${o.fn}`);
+    });
+
+    assert.equal(sb.mock.callCount(), 1);
+
+    transaction(() => (o.foo = 10));
+    assert.equal(sb.mock.callCount(), 2);
+    assert.equal(o.fn, 12);
+
+    transaction(() => (o.bar = 20));
+    assert.equal(sb.mock.callCount(), 3);
+    assert.equal(o.fn, 30);
+  });
+
+  test(`supports reacting to properties read by a regular function`, () => {
+    const o = makeObservable({
+      foo: 1,
+      bar: 2,
+      fn() {
+        return this.foo + this.bar;
+      },
+    });
+
+    const sb = mock.fn();
+
+    autorun(() => {
+      sb();
+      o.fn();
+    });
+
+    assert.equal(sb.mock.callCount(), 1);
+
+    transaction(() => (o.foo = 10));
+    assert.equal(sb.mock.callCount(), 2);
+    assert.equal(o.fn(), 12);
+
+    transaction(() => (o.bar = 20));
+    assert.equal(sb.mock.callCount(), 3);
+    assert.equal(o.fn(), 30);
+  });
+
+  test(`supports reacting to properties read by a regular function, called via the call method`, () => {
+    const o = makeObservable({
+      foo: 1,
+      bar: 2,
+      fn() {
+        return this.foo + this.bar;
+      },
+    });
+
+    let calls = 0;
+
+    autorun(() => {
+      calls += 1;
+      // eslint-disable-next-line no-useless-call
+      o.fn.call(o);
+    });
+    assert.equal(calls, 1);
+
+    transaction(() => (o.foo = 10));
+    assert.equal(calls, 2);
+    // eslint-disable-next-line no-useless-call
+    assert.equal(o.fn.call(o), 12);
+
+    transaction(() => (o.bar = 20));
+    assert.equal(calls, 3);
+    // eslint-disable-next-line no-useless-call
+    assert.equal(o.fn.call(o), 30);
+  });
+
+  test(`supports reacting to properties read by a regular function, called via the apply method`, () => {
+    const o = makeObservable({
+      foo: 1,
+      bar: 2,
+      fn() {
+        return this.foo + this.bar;
+      },
+    });
+
+    let calls = 0;
+
+    autorun(() => {
+      calls += 1;
+      o.fn.apply(o);
+    });
+    assert.equal(calls, 1);
+
+    transaction(() => (o.foo = 10));
+    assert.equal(calls, 2);
+    assert.equal(o.fn.apply(o), 12);
+
+    transaction(() => (o.bar = 20));
+    assert.equal(calls, 3);
+    assert.equal(o.fn.apply(o), 30);
+  });
+
+  test(`supports batching implicitly`, (ctx) => {
+    const o = makeObservable({ foo: 1, bar: 2 });
+
+    let calls = 0;
+
+    autorun(() => {
+      calls += 1;
+      ctx.diagnostic(`${o.foo + o.bar}`);
+    });
+
+    assert.equal(calls, 1);
+
+    o.foo = 10;
+    o.bar = 20;
+    assert.equal(o.foo, 10);
+    assert.equal(o.bar, 20);
+    assert.equal(calls, 2);
+  });
+
+  // kr-observable supports it for methods, need to support also this
+  test.todo(`supports batching setters automatically`, (ctx) => {
+    const o = makeObservable({
+      foo: 1,
+      bar: 2,
+      // eslint-disable-next-line accessor-pairs
+      set fn(increment: number) {
+        this.foo += increment;
+        this.bar += increment;
+      },
+    });
+
+    let calls = 0;
+    autorun(() => {
+      calls += 1;
+      ctx.diagnostic(`${o.foo + o.bar}`);
+    });
+
+    assert.equal(calls, 1);
+
+    transaction(() => (o.fn = 1));
+    assert.equal(o.foo, 2);
+    assert.equal(o.bar, 3);
+    assert.equal(calls, 2);
+  });
+
+  test(`supports batching deletions automatically Object.keys`, (ctx) => {
+    const o = makeObservable({ foo: 1, bar: 2 });
+
+    let calls = 0;
+
+    autorun(() => {
+      calls += 1;
+      if (o.foo) {
+        ctx.diagnostic(`${'foo' in o} ${Object.keys(o)}`);
+      }
+    });
+    assert.equal(calls, 1);
+
+    transaction(() => delete o.foo);
+    assert.equal(calls, 2);
+    assert.equal('foo' in o, false);
+    assert.equal(calls, 2);
+
+    assert.equal('foo' in o, false);
+    assert.equal(calls, 2);
+  });
+
+  test(`supports batching deletions automatically no Object.keys`, (ctx) => {
+    const o = makeObservable({ foo: 1, bar: 2 });
+
+    let calls = 0;
+
+    autorun(() => {
+      calls += 1;
+      if (o.foo) {
+        ctx.diagnostic(`${'foo' in o}`);
+      }
+    });
+    assert.equal(calls, 1);
+
+    transaction(() => delete o.foo);
+    assert.equal(calls, 2);
+    assert.equal('foo' in o, false);
+    assert.equal(calls, 2);
+
+    assert.equal('foo' in o, false);
+    assert.equal(calls, 2);
+  });
+
+  test(`supports batching additions automatically Object.keys`, (ctx) => {
+    const o = makeObservable({ bar: 2 });
+
+    let calls = 0;
+
+    autorun(() => {
+      calls += 1;
+      // @ts-ignore
+      if (o.foo) {
+        ctx.diagnostic(`${'foo' in o} ${Object.keys(o)}`);
+      }
+    });
+
+    assert.equal(calls, 1);
+
+    // @ts-ignore
+    transaction(() => (o.foo = 1));
+    assert.equal(calls, 2);
+  });
+
+  test(`supports batching additions automatically no Object.keys`, (ctx) => {
+    const o = makeObservable({ bar: 2 });
+
+    let calls = 0;
+
+    autorun(() => {
+      calls += 1;
+      // @ts-ignore
+      ctx.diagnostic(`${'foo' in o}, ${o.foo}`);
+    });
+
+    assert.equal(calls, 1);
+
+    // @ts-ignore
+    transaction(() => (o.foo = 1));
+    assert.equal(calls, 2);
+  });
+
   // test(`supports batching additions automatically no Object.keys, no reading`, (ctx) => {
   //   const o = makeObservable({ bar: 2 });
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     if ('foo' in o) {
   //     }
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.foo = 1;
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   // });
   //
   // test(`supports batching additions automatically new property `, (ctx) => {
@@ -2748,16 +2051,16 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o.foo;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.foo = 1;
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   // });
   //
   // test(`supports reacting to changes on custom classes`, (ctx) => {
@@ -2793,15 +2096,15 @@ describe('Big test', () => {
   //   });
   //   execute1(), execute2();
   //
-  //   assert.equal(calls).toBe('fb');
+  //   assert.equal(calls, 'fb');
   //
   //   foo.foo += 1;
   //   execute1(), execute2();
-  //   assert.equal(calls).toBe('fbf');
+  //   assert.equal(calls, 'fbf');
   //
   //   bar.bar += 1;
   //   execute1(), execute2();
-  //   assert.equal(calls).toBe('fbfb');
+  //   assert.equal(calls, 'fbfb');
   // });
   //
   // test(`${
@@ -2811,25 +2114,25 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     if ('value' in o) {
   //     }
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   delete o.value;
   //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal('value' in o).toBe(false);
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
+  //   assert.equal('value' in o, false);
+  //   assert.equal(calls, 2);
   //
   //   delete o.value;
   //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal('value' in o).toBe(false);
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
+  //   assert.equal('value' in o, false);
+  //   assert.equal(calls, 2);
   // });
   //
   // test(`${
@@ -2839,25 +2142,25 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     if ('deep' in o.value) {
   //     }
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   delete o.value.deep;
   //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal('deep' in o.value).toBe(false);
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
+  //   assert.equal('deep' in o.value, false);
+  //   assert.equal(calls, 2);
   //
   //   delete o.value.deep;
   //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal('deep' in o.value).toBe(false);
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
+  //   assert.equal('deep' in o.value, false);
+  //   assert.equal(calls, 2);
   // });
   //
   // test(`supports reacting to property checks, adding [solid]`, (ctx) => {
@@ -2865,21 +2168,21 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     if ('value' in o) {
   //     }
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.value = undefined;
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   //
   //   o.value = undefined;
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   // });
   //
   // test(`supports reacting to property checks, adding deep [solid]`, (ctx) => {
@@ -2887,21 +2190,21 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     if ('deep' in o.value) {
   //     }
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.value.deep = undefined;
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   //
   //   o.value.deep = undefined;
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   // });
   //
   // test(`survives reading a value inside a discarded root`, (ctx) => {
@@ -2919,40 +2222,40 @@ describe('Big test', () => {
   //     dispose();
   //   });
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //
   //     o.value;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.value = 321;
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   // });
   //
   // test(`does nothing for primitives`, (ctx) => {
   //   const o = makeObservable({ foo: 123 });
-  //   assert.equal(o.foo).toBe(123);
+  //   assert.equal(o.foo, 123);
   //
   //   o.foo = 321;
-  //   assert.equal(o.foo).toBe(321);
+  //   assert.equal(o.foo, 321);
   //
   //   o.foo = undefined;
-  //   assert.equal(o.foo).toBe(undefined);
+  //   assert.equal(o.foo, undefined);
   //
   //   o.foo = null;
-  //   assert.equal(o.foo).toBe(null);
+  //   assert.equal(o.foo, null);
   //
   //   o.foo = 0;
-  //   assert.equal(o.foo).toBe(0);
+  //   assert.equal(o.foo, 0);
   //
   //   o.foo = '';
-  //   assert.equal(o.foo).toBe('');
+  //   assert.equal(o.foo, '');
   //
   //   o.foo = 'string';
-  //   assert.equal(o.foo).toBe('string');
+  //   assert.equal(o.foo, 'string');
   //
   //   o.foo = [true];
   //   assert.equal(o.foo).toEqual([true]);
@@ -2964,22 +2267,22 @@ describe('Big test', () => {
   //   assert.equal(o.foo).toEqual([true]);
   //
   //   o.foo = true;
-  //   assert.equal(o.foo).toBe(true);
+  //   assert.equal(o.foo, true);
   //
   //   o.foo = false;
-  //   assert.equal(o.foo).toBe(false);
+  //   assert.equal(o.foo, false);
   //
   //   o.foo = Infinity;
-  //   assert.equal(o.foo).toBe(Infinity);
+  //   assert.equal(o.foo, Infinity);
   //
   //   o.foo = Infinity;
-  //   assert.equal(o.foo).toBe(Infinity);
+  //   assert.equal(o.foo, Infinity);
   //
   //   o.foo = NaN;
   //   assert.equal(Object.is(o.foo, NaN)).toBe(true);
   //
   //   o.foo = 1;
-  //   assert.equal(o.foo).toBe(1);
+  //   assert.equal(o.foo, 1);
   // });
   //
   // test(`can mutate object returned by getter [oby]`, (ctx) => {
@@ -2989,13 +2292,13 @@ describe('Big test', () => {
   //     },
   //     set greeting(val) {},
   //   });
-  //   assert.equal(result.greeting.greet.deep).toBe('hi, quack');
+  //   assert.equal(result.greeting.greet.deep, 'hi, quack');
   //
   //   result.greeting.greet.deep = undefined;
-  //   assert.equal(result.greeting.greet.deep).toBe('hi, quack');
+  //   assert.equal(result.greeting.greet.deep, 'hi, quack');
   //
   //   const tmp1 = result.greeting;
-  //   assert.equal(tmp1.greet.deep).toBe('hi, quack');
+  //   assert.equal(tmp1.greet.deep, 'hi, quack');
   //
   //   testValues(
   //     expect,
@@ -3006,7 +2309,7 @@ describe('Big test', () => {
   //   );
   //
   //   const tmp2 = result.greeting.greet;
-  //   assert.equal(tmp2.deep).toBe('hi, quack');
+  //   assert.equal(tmp2.deep, 'hi, quack');
   //
   //   testValues(
   //     expect,
@@ -3022,10 +2325,10 @@ describe('Big test', () => {
   // test(`object.keys`, (ctx) => {
   //   const original = { foo: 1 };
   //   const result = makeObservable(original);
-  //   assert.equal(result.foo).toBe(1);
+  //   assert.equal(result.foo, 1);
   //   assert.equal(result).not.toBe(original);
   //
-  //   assert.equal('foo' in result).toBe(true);
+  //   assert.equal('foo' in result, true);
   //
   //   assert.equal(Object.keys(result)).toEqual(['foo']);
   // });
@@ -3035,13 +2338,13 @@ describe('Big test', () => {
   //   const observed = makeObservable(original);
   //   // set
   //   observed.bar = 1;
-  //   assert.equal(observed.bar).toBe(1);
-  //   assert.equal(original.bar).toBe(1);
+  //   assert.equal(observed.bar, 1);
+  //   assert.equal(original.bar, 1);
   //
   //   // delete
   //   delete observed.foo;
-  //   assert.equal('foo' in observed).toBe(false);
-  //   assert.equal('foo' in original).toBe(false);
+  //   assert.equal('foo' in observed, false);
+  //   assert.equal('foo' in original, false);
   // });
   //
   // test(`original value change should reflect in observed value (Object)`, (ctx) => {
@@ -3051,13 +2354,13 @@ describe('Big test', () => {
   //
   //   // set
   //   original.bar = 1;
-  //   assert.equal(original.bar).toBe(1);
-  //   assert.equal(observed.bar).toBe(1);
+  //   assert.equal(original.bar, 1);
+  //   assert.equal(observed.bar, 1);
   //
   //   // delete
   //   delete original.foo;
-  //   assert.equal('foo' in original).toBe(false);
-  //   assert.equal('foo' in observed).toBe(false);
+  //   assert.equal('foo' in original, false);
+  //   assert.equal('foo' in observed, false);
   // });
   //
   // test(`setting a property with an unobserved value should wrap with reactive`, (ctx) => {
@@ -3067,30 +2370,30 @@ describe('Big test', () => {
   //   assert.equal(observed.foo).not.toBe(raw);
   //
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls++;
   //     observed.foo;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   observed.foo = false;
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   // });
   //
   // test(`observing already observed value should return same Proxy`, (ctx) => {
   //   const original = { foo: 1 };
   //   const observed = makeObservable(original);
   //   const observed2 = makeObservable(observed);
-  //   assert.equal(observed2).toBe(observed);
+  //   assert.equal(observed2, observed);
   // });
   //
   // test(`observing the same value multiple times should return same Proxy`, (ctx) => {
   //   const original = { foo: 1 };
   //   const observed = makeObservable(original);
   //   const observed2 = makeObservable(original);
-  //   assert.equal(observed).toBe(observed2);
+  //   assert.equal(observed, observed2);
   // });
   //
   // // #1246
@@ -3098,27 +2401,27 @@ describe('Big test', () => {
   //   const observed = makeObservable({ foo: 1 });
   //   const original = Object.create(observed);
   //   let dummy;
-  //   const execute = memo(() => (dummy = original.foo));
+  //   autorun(() => (dummy = original.foo));
   //   execute();
-  //   assert.equal(dummy).toBe(1);
+  //   assert.equal(dummy, 1);
   //
   //   observed.foo = 2;
   //   execute();
-  //   assert.equal(dummy).toBe(2);
-  //   assert.equal(observed.foo).toBe(2);
-  //   assert.equal(original.foo).toBe(2);
+  //   assert.equal(dummy, 2);
+  //   assert.equal(observed.foo, 2);
+  //   assert.equal(original.foo, 2);
   //
   //   original.foo = 3;
   //   execute();
-  //   assert.equal(dummy).toBe(3);
-  //   assert.equal(observed.foo).toBe(3);
-  //   assert.equal(original.foo).toBe(3);
+  //   assert.equal(dummy, 3);
+  //   assert.equal(observed.foo, 3);
+  //   assert.equal(original.foo, 3);
   //
   //   original.foo = 4;
   //   execute();
-  //   assert.equal(dummy).toBe(4);
-  //   assert.equal(observed.foo).toBe(4);
-  //   assert.equal(original.foo).toBe(4);
+  //   assert.equal(dummy, 4);
+  //   assert.equal(observed.foo, 4);
+  //   assert.equal(original.foo, 4);
   // });
   //
   // test(`should not observe non-extensible objects [solid]`, (ctx) => {
@@ -3163,9 +2466,9 @@ describe('Big test', () => {
   //         console.error("shouldn't have failed to mutate value of", key);
   //       }
   //       // check the value actually changed [engine]
-  //       assert.equal(testObj[key].a).toBe(2);
+  //       assert.equal(testObj[key].a, 2);
   //       // check the value actually changed
-  //       assert.equal(makeObservableObj[key].a).toBe(2);
+  //       assert.equal(makeObservableObj[key].a, 2);
   //     } catch (e) {
   //       let fail = false;
   //       try {
@@ -3176,8 +2479,8 @@ describe('Big test', () => {
   //         console.error("shouldn't have mutated value of", key);
   //       }
   //     }
-  //     assert.equal(makeObservableObj[key].a).toBe(testObj[key].a);
-  //     assert.equal('a' in makeObservableObj[key]).toBe('a' in testObj[key]);
+  //     assert.equal(makeObservableObj[key].a, testObj[key].a);
+  //     assert.equal('a' in makeObservableObj[key], 'a' in testObj[key]);
   //
   //     // delete value
   //     createObjects();
@@ -3189,9 +2492,9 @@ describe('Big test', () => {
   //         console.error("shouldn't have deleted property of", key);
   //       }
   //       // check the value actually changed [engine]
-  //       assert.equal('a' in testObj[key]).toBe(false);
+  //       assert.equal('a' in testObj[key], false);
   //       // check the value actually changed
-  //       assert.equal('a' in makeObservableObj[key]).toBe(false);
+  //       assert.equal('a' in makeObservableObj[key], false);
   //     } catch (e) {
   //       let fail = false;
   //       try {
@@ -3202,8 +2505,8 @@ describe('Big test', () => {
   //         console.error("shouldn't have deleted property of", key);
   //       }
   //     }
-  //     assert.equal(makeObservableObj[key].a).toBe(testObj[key].a);
-  //     assert.equal('a' in makeObservableObj[key]).toBe('a' in testObj[key]);
+  //     assert.equal(makeObservableObj[key].a, testObj[key].a);
+  //     assert.equal('a' in makeObservableObj[key], 'a' in testObj[key]);
   //
   //     // defineProperty
   //     createObjects();
@@ -3228,8 +2531,8 @@ describe('Big test', () => {
   //         console.error("shouldn't have mutated", key);
   //       }
   //     }
-  //     assert.equal(makeObservableObj[key].ohai).toBe(testObj[key].ohai);
-  //     assert.equal('ohai' in makeObservableObj[key]).toBe('ohai' in testObj[key]);
+  //     assert.equal(makeObservableObj[key].ohai, testObj[key].ohai);
+  //     assert.equal('ohai' in makeObservableObj[key], 'ohai' in testObj[key]);
   //
   //     // setPrototypeOf
   //     createObjects();
@@ -3284,7 +2587,7 @@ describe('Big test', () => {
   //   const obj3 = makeObservable(obj1);
   //   const obj4 = makeObservable(obj2);
   //
-  //   assert.equal(obj1 === obj2 && obj2 === obj3 && obj3 === obj4).toBe(true);
+  //   assert.equal(obj1 === obj2 && obj2 === obj3 && obj3 === obj4, true);
   // });
   //
   // test(`makeObservable identity nested`, (ctx) => {
@@ -3294,10 +2597,10 @@ describe('Big test', () => {
   //   const obj3 = makeObservable({ value: obj1 });
   //   const obj4 = makeObservable({ value: obj2 });
   //
-  //   assert.equal(obj1.value === obj2.value).toBe(true);
-  //   assert.equal(obj2.value === obj3.value.value).toBe(true);
-  //   assert.equal(obj3.value === obj1).toBe(true);
-  //   assert.equal(obj3.value.value === obj4.value.value).toBe(true);
+  //   assert.equal(obj1.value === obj2.value, true);
+  //   assert.equal(obj2.value === obj3.value.value, true);
+  //   assert.equal(obj3.value === obj1, true);
+  //   assert.equal(obj3.value.value === obj4.value.value, true);
   // });
   //
   // test(`should observe basic properties`, (ctx) => {
@@ -3305,18 +2608,18 @@ describe('Big test', () => {
   //   const counter = makeObservable({ num: 0 });
   //
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     dummy = counter.num;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
-  //   assert.equal(dummy).toBe(0);
+  //   assert.equal(calls, 1);
+  //   assert.equal(dummy, 0);
   //
   //   counter.num = 7;
   //   execute();
-  //   assert.equal(dummy).toBe(7);
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(dummy, 7);
+  //   assert.equal(calls, 2);
   // });
   //
   // test(`should observe multiple properties`, (ctx) => {
@@ -3324,19 +2627,19 @@ describe('Big test', () => {
   //     let dummy;
   //     const counter = makeObservable({ num1: 0, num2: 0 });
   //     let calls = 0;
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       calls += 1;
   //       dummy = counter.num1 + counter.num1 + counter.num2;
   //     });
   //     execute();
-  //     assert.equal(calls).toBe(1);
-  //     assert.equal(dummy).toBe(0);
+  //     assert.equal(calls, 1);
+  //     assert.equal(dummy, 0);
   //
   //     counter.num1 = counter.num2 = 7;
   //     execute();
-  //     assert.equal(dummy).toBe(21);
+  //     assert.equal(dummy, 21);
   //     // fabio implementation of memo is clever
-  //     assert.equal(calls).toBe(2);
+  //     assert.equal(calls, 2);
   //   });
   // });
   //
@@ -3348,54 +2651,54 @@ describe('Big test', () => {
   //   const execute2 = memo(() => (dummy2 = counter.num));
   //   execute1(), execute2();
   //
-  //   assert.equal(dummy1).toBe(0);
-  //   assert.equal(dummy2).toBe(0);
+  //   assert.equal(dummy1, 0);
+  //   assert.equal(dummy2, 0);
   //   counter.num++;
   //   execute1(), execute2();
-  //   assert.equal(dummy1).toBe(1);
-  //   assert.equal(dummy2).toBe(1);
+  //   assert.equal(dummy1, 1);
+  //   assert.equal(dummy2, 1);
   // });
   //
   // test(`should observe nested properties`, (ctx) => {
   //   let dummy;
   //   const counter = makeObservable({ nested: { num: 0 } });
-  //   const execute = memo(() => (dummy = counter.nested.num));
+  //   autorun(() => (dummy = counter.nested.num));
   //   execute();
   //
-  //   assert.equal(dummy).toBe(0);
+  //   assert.equal(dummy, 0);
   //
   //   counter.nested.num = 8;
   //   execute();
-  //   assert.equal(dummy).toBe(8);
+  //   assert.equal(dummy, 8);
   // });
   //
   // test(`should observe delete operations`, (ctx) => {
   //   let dummy;
   //   const obj = makeObservable({ prop: 'value' });
-  //   const execute = memo(() => (dummy = obj.prop));
+  //   autorun(() => (dummy = obj.prop));
   //   execute();
   //
-  //   assert.equal(dummy).toBe('value');
+  //   assert.equal(dummy, 'value');
   //
   //   delete obj.prop;
   //   execute();
-  //   assert.equal(dummy).toBe(undefined);
+  //   assert.equal(dummy, undefined);
   // });
   //
   // test(`should observe has operations`, (ctx) => {
   //   let dummy;
   //   const obj = makeObservable({ prop: 'value' });
-  //   const execute = memo(() => (dummy = 'prop' in obj));
+  //   autorun(() => (dummy = 'prop' in obj));
   //   execute();
   //
-  //   assert.equal(dummy).toBe(true);
+  //   assert.equal(dummy, true);
   //
   //   delete obj.prop;
   //   execute();
-  //   assert.equal(dummy).toBe(false);
+  //   assert.equal(dummy, false);
   //   obj.prop = 12;
   //   execute();
-  //   assert.equal(dummy).toBe(true);
+  //   assert.equal(dummy, true);
   // });
   //
   // test(`should observe properties on the prototype chain [solid]`, (ctx) => {
@@ -3403,22 +2706,22 @@ describe('Big test', () => {
   //   const counter = makeObservable({ num: 0 });
   //   const parentCounter = makeObservable({ num: 2 });
   //   Object.setPrototypeOf(counter, parentCounter);
-  //   const execute = memo(() => (dummy = counter.num));
+  //   autorun(() => (dummy = counter.num));
   //   execute();
   //
-  //   assert.equal(dummy).toBe(0);
+  //   assert.equal(dummy, 0);
   //
   //   delete counter.num;
   //   execute();
-  //   assert.equal(dummy).toBe(2);
+  //   assert.equal(dummy, 2);
   //
   //   parentCounter.num = 4;
   //   execute();
-  //   assert.equal(dummy).toBe(4);
+  //   assert.equal(dummy, 4);
   //
   //   counter.num = 3;
   //   execute();
-  //   assert.equal(dummy).toBe(3);
+  //   assert.equal(dummy, 3);
   // });
   //
   // test(`should observe has operations on the prototype chain`, (ctx) => {
@@ -3426,22 +2729,22 @@ describe('Big test', () => {
   //   const counter = makeObservable({ num: 0 });
   //   const parentCounter = makeObservable({ num: 2 });
   //   Object.setPrototypeOf(counter, parentCounter);
-  //   const execute = memo(() => (dummy = 'num' in counter));
+  //   autorun(() => (dummy = 'num' in counter));
   //   execute();
   //
-  //   assert.equal(dummy).toBe(true);
+  //   assert.equal(dummy, true);
   //
   //   delete counter.num;
   //   execute();
-  //   assert.equal(dummy).toBe(true);
+  //   assert.equal(dummy, true);
   //
   //   delete parentCounter.num;
   //   execute();
-  //   assert.equal(dummy).toBe(false);
+  //   assert.equal(dummy, false);
   //
   //   counter.num = 3;
   //   execute();
-  //   assert.equal(dummy).toBe(true);
+  //   assert.equal(dummy, true);
   // });
   //
   // test(`prototype change [oby]`, (ctx) => {
@@ -3462,61 +2765,61 @@ describe('Big test', () => {
   //   const execute2 = memo(() => (parentDummy = parent.prop));
   //   execute1(), execute2();
   //
-  //   assert.equal(dummy).toBe(undefined);
-  //   assert.equal(parentDummy).toBe(undefined);
+  //   assert.equal(dummy, undefined);
+  //   assert.equal(parentDummy, undefined);
   //
   //   obj.prop = 4;
   //   execute1(), execute2();
-  //   assert.equal(obj.prop).toBe(4);
-  //   assert.equal(dummy).toBe(4);
+  //   assert.equal(obj.prop, 4);
+  //   assert.equal(dummy, 4);
   //
   //   parent.prop = 2;
   //   execute1(), execute2();
-  //   assert.equal(obj.prop).toBe(2);
-  //   assert.equal(dummy).toBe(2);
-  //   assert.equal(parentDummy).toBe(2);
-  //   assert.equal(parent.prop).toBe(2);
+  //   assert.equal(obj.prop, 2);
+  //   assert.equal(dummy, 2);
+  //   assert.equal(parentDummy, 2);
+  //   assert.equal(parent.prop, 2);
   // });
   //
   // test(`should observe function call chains`, (ctx) => {
   //   let dummy;
   //   const counter = makeObservable({ num: 0 });
-  //   const execute = memo(() => (dummy = getNum()));
+  //   autorun(() => (dummy = getNum()));
   //   execute();
   //
   //   function getNum() {
   //     return counter.num;
   //   }
   //
-  //   assert.equal(dummy).toBe(0);
+  //   assert.equal(dummy, 0);
   //
   //   counter.num = 2;
   //   execute();
-  //   assert.equal(dummy).toBe(2);
+  //   assert.equal(dummy, 2);
   // });
   //
   // test(`should observe iteration`, (ctx) => {
   //   let dummy;
   //   const list = makeObservable({ value: 'Hello' });
-  //   const execute = memo(() => (dummy = list.value));
+  //   autorun(() => (dummy = list.value));
   //   execute();
   //
-  //   assert.equal(dummy).toBe('Hello');
+  //   assert.equal(dummy, 'Hello');
   //
   //   list.value += ' World!';
   //   execute();
-  //   assert.equal(dummy).toBe('Hello World!');
+  //   assert.equal(dummy, 'Hello World!');
   //
   //   list.value = list.value.replace('Hello ', '');
   //   execute();
-  //   assert.equal(dummy).toBe('World!');
+  //   assert.equal(dummy, 'World!');
   // });
   //
   // test(`should observe enumeration`, (ctx) => {
   //   const numbers = makeObservable({ num1: 3 });
   //
   //   let sum = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     sum = 0;
   //     for (const key in numbers) {
   //       sum += numbers[key];
@@ -3524,15 +2827,15 @@ describe('Big test', () => {
   //   });
   //   execute();
   //
-  //   assert.equal(sum).toBe(3);
+  //   assert.equal(sum, 3);
   //
   //   numbers.num2 = 4;
   //   execute();
-  //   assert.equal(sum).toBe(7);
+  //   assert.equal(sum, 7);
   //
   //   delete numbers.num1;
   //   execute();
-  //   assert.equal(sum).toBe(4);
+  //   assert.equal(sum, 4);
   // });
   //
   // test(`should observe symbol keyed properties`, (ctx) => {
@@ -3557,35 +2860,35 @@ describe('Big test', () => {
   //   });
   //   execute1(), execute2();
   //
-  //   assert.equal(calls1).toBe(1);
-  //   assert.equal(calls2).toBe(1);
+  //   assert.equal(calls1, 1);
+  //   assert.equal(calls2, 1);
   //
-  //   assert.equal(dummy).toBe('value');
-  //   assert.equal(hasDummy).toBe(true);
+  //   assert.equal(dummy, 'value');
+  //   assert.equal(hasDummy, true);
   //
-  //   assert.equal(calls1).toBe(1);
-  //   assert.equal(calls2).toBe(1);
+  //   assert.equal(calls1, 1);
+  //   assert.equal(calls2, 1);
   //
   //   obj[key] = 'newValue';
   //   execute1(), execute2();
   //
-  //   assert.equal(calls1).toBe(2);
-  //   assert.equal(calls2).toBe(1);
+  //   assert.equal(calls1, 2);
+  //   assert.equal(calls2, 1);
   //
-  //   assert.equal(dummy).toBe('newValue');
-  //   assert.equal(hasDummy).toBe(true);
+  //   assert.equal(dummy, 'newValue');
+  //   assert.equal(hasDummy, true);
   //
-  //   assert.equal(calls1).toBe(2);
-  //   assert.equal(calls2).toBe(1);
+  //   assert.equal(calls1, 2);
+  //   assert.equal(calls2, 1);
   //
   //   delete obj[key];
   //   execute1(), execute2();
   //
-  //   assert.equal(calls1).toBe(3);
-  //   assert.equal(calls2).toBe(2);
+  //   assert.equal(calls1, 3);
+  //   assert.equal(calls2, 2);
   //
-  //   assert.equal(dummy).toBe(undefined);
-  //   assert.equal(hasDummy).toBe(false);
+  //   assert.equal(dummy, undefined);
+  //   assert.equal(hasDummy, false);
   // });
   //
   // test(`should observe function valued properties`, (ctx) => {
@@ -3594,18 +2897,18 @@ describe('Big test', () => {
   //
   //   let dummy;
   //   const obj = makeObservable({ func: oldFunc });
-  //   const execute = memo(() => (dummy = obj.func));
+  //   autorun(() => (dummy = obj.func));
   //   execute();
   //   if (lib === 'pota: ') {
-  //     assert.equal(typeof dummy).toBe('function');
+  //     assert.equal(typeof dummy, 'function');
   //     obj.func = newFunc;
   //     execute();
-  //     assert.equal(typeof obj.func).toBe('function');
+  //     assert.equal(typeof obj.func, 'function');
   //   } else {
-  //     assert.equal(dummy).toBe(oldFunc);
+  //     assert.equal(dummy, oldFunc);
   //     obj.func = newFunc;
   //     execute();
-  //     assert.equal(dummy).toBe(newFunc);
+  //     assert.equal(dummy, newFunc);
   //   }
   // });
   //
@@ -3618,15 +2921,15 @@ describe('Big test', () => {
   //   });
   //
   //   let dummy;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     dummy = obj.b;
   //   });
   //   execute();
-  //   assert.equal(dummy).toBe(1);
+  //   assert.equal(dummy, 1);
   //
   //   obj.a++;
   //   execute();
-  //   assert.equal(dummy).toBe(2);
+  //   assert.equal(dummy, 2);
   // });
   //
   // test(`should observe methods relying on this`, (ctx) => {
@@ -3638,15 +2941,15 @@ describe('Big test', () => {
   //   });
   //
   //   let dummy;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     dummy = obj.b();
   //   });
   //   execute();
-  //   assert.equal(dummy).toBe(1);
+  //   assert.equal(dummy, 1);
   //
   //   obj.a++;
   //   execute();
-  //   assert.equal(dummy).toBe(2);
+  //   assert.equal(dummy, 2);
   // });
   //
   // test(`should not observe set operations without a value change`, (ctx) => {
@@ -3666,30 +2969,30 @@ describe('Big test', () => {
   //     hasDummy = 'prop' in obj;
   //   });
   //   execute2();
-  //   assert.equal(calls1).toBe(1);
-  //   assert.equal(calls2).toBe(1);
+  //   assert.equal(calls1, 1);
+  //   assert.equal(calls2, 1);
   //
-  //   assert.equal(getDummy).toBe('value');
-  //   assert.equal(hasDummy).toBe(true);
+  //   assert.equal(getDummy, 'value');
+  //   assert.equal(hasDummy, true);
   //
   //   obj.prop = 'value';
   //   execute1(), execute2();
   //
-  //   assert.equal(calls1).toBe(1);
-  //   assert.equal(calls2).toBe(1);
-  //   assert.equal(getDummy).toBe('value');
-  //   assert.equal(hasDummy).toBe(true);
+  //   assert.equal(calls1, 1);
+  //   assert.equal(calls2, 1);
+  //   assert.equal(getDummy, 'value');
+  //   assert.equal(hasDummy, true);
   // });
   //
   // test(`should cut the loop`, (ctx) => {
   //   const counter = makeObservable({ num: 0 });
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     if (counter.num < 10) {
   //       counter.num++;
   //     }
   //   });
   //   execute();
-  //   assert.equal(counter.num).toBe(10);
+  //   assert.equal(counter.num, 10);
   // });
   //
   // test(`${
@@ -3699,31 +3002,31 @@ describe('Big test', () => {
   //   const obj = makeObservable({ prop: 'value', run: true });
   //
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls++;
   //     dummy = obj.run ? obj.prop : 'other';
   //   });
   //   execute();
   //
-  //   assert.equal(dummy).toBe('value');
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(dummy, 'value');
+  //   assert.equal(calls, 1);
   //
   //   obj.run = false;
   //   execute();
-  //   assert.equal(dummy).toBe('other');
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(dummy, 'other');
+  //   assert.equal(calls, 2);
   //
   //   obj.prop = 'value2';
   //   execute();
-  //   assert.equal(dummy).toBe('other');
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(dummy, 'other');
+  //   assert.equal(calls, 2);
   // });
   //
   // test(`should not run multiple times for a single mutation`, (ctx) => {
   //   let dummy;
   //   const obj = makeObservable({});
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls++;
   //     for (const key in obj) {
   //       dummy = obj[key];
@@ -3731,26 +3034,26 @@ describe('Big test', () => {
   //     dummy = obj.prop;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   obj.prop = 16;
   //   execute();
   //
-  //   assert.equal(dummy).toBe(16);
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(dummy, 16);
+  //   assert.equal(calls, 2);
   // });
   //
   // test(`should observe json methods`, (ctx) => {
   //   let dummy = {};
   //   const obj = makeObservable({});
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     dummy = JSON.parse(JSON.stringify(obj));
   //   });
   //   execute();
   //
   //   obj.a = 1;
   //   execute();
-  //   assert.equal(dummy.a).toBe(1);
+  //   assert.equal(dummy.a, 1);
   // });
   //
   // test(`should observe class method invocations`, (ctx) => {
@@ -3765,15 +3068,15 @@ describe('Big test', () => {
   //   }
   //   const model = makeObservable(new Model());
   //   let dummy;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     dummy = model.count;
   //   });
   //   execute();
-  //   assert.equal(dummy).toBe(0);
+  //   assert.equal(dummy, 0);
   //
   //   model.inc();
   //   execute();
-  //   assert.equal(dummy).toBe(1);
+  //   assert.equal(dummy, 1);
   // });
   //
   // test(`${
@@ -3783,16 +3086,16 @@ describe('Big test', () => {
   //     foo: NaN,
   //   });
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls++;
   //     obj.foo;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   obj.foo = NaN;
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   // });
   //
   // test(`should not be triggered when set with the same proxy [oby]`, (ctx) => {
@@ -3800,16 +3103,16 @@ describe('Big test', () => {
   //   const observed = makeObservable({ obj });
   //
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls++;
   //     observed.obj;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   observed.obj = obj;
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   // });
   //
   // test(`should return updated value`, (ctx) => {
@@ -3824,16 +3127,16 @@ describe('Big test', () => {
   //   const value = makeObservable({});
   //   const cValue = memo(() => value.foo);
   //   let dummy;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     dummy = cValue();
   //   });
   //   execute();
   //
-  //   assert.equal(dummy).toBe(undefined);
+  //   assert.equal(dummy, undefined);
   //
   //   value.foo = 1;
   //   execute();
-  //   assert.equal(dummy).toBe(1);
+  //   assert.equal(dummy, 1);
   // });
   //
   // test(`should work when chained`, (ctx) => {
@@ -3863,21 +3166,21 @@ describe('Big test', () => {
   //   });
   //
   //   let dummy;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     dummy = c2();
   //   });
   //   execute();
   //
-  //   assert.equal(dummy).toBe(1);
-  //   assert.equal(calls1).toBe(1);
-  //   assert.equal(calls2).toBe(1);
+  //   assert.equal(dummy, 1);
+  //   assert.equal(calls1, 1);
+  //   assert.equal(calls2, 1);
   //
   //   value.foo++;
   //   execute();
-  //   assert.equal(dummy).toBe(2);
+  //   assert.equal(dummy, 2);
   //   // should not result in duplicate calls
-  //   assert.equal(calls1).toBe(2);
-  //   assert.equal(calls2).toBe(2);
+  //   assert.equal(calls1, 2);
+  //   assert.equal(calls2, 2);
   // });
   //
   // test(`should trigger effect when chained (mixed invocations)`, (ctx) => {
@@ -3896,22 +3199,22 @@ describe('Big test', () => {
   //   });
   //
   //   let dummy;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     dummy = c1() + c2();
   //   });
   //   execute();
-  //   assert.equal(dummy).toBe(1);
+  //   assert.equal(dummy, 1);
   //
-  //   assert.equal(calls1).toBe(1);
-  //   assert.equal(calls2).toBe(1);
+  //   assert.equal(calls1, 1);
+  //   assert.equal(calls2, 1);
   //
   //   value.foo++;
   //   execute();
   //
-  //   assert.equal(dummy).toBe(3);
+  //   assert.equal(dummy, 3);
   //   // should not result in duplicate calls
-  //   assert.equal(calls1).toBe(2);
-  //   assert.equal(calls2).toBe(2);
+  //   assert.equal(calls1, 2);
+  //   assert.equal(calls2, 2);
   // });
   //
   // test(`should avoid infinite loops with other effects`, (ctx) => {
@@ -3926,8 +3229,8 @@ describe('Big test', () => {
   //       nums.num1 = nums.num2;
   //     });
   //     execute1();
-  //     assert.equal(nums.num1).toBe(1);
-  //     assert.equal(nums.num2).toBe(1);
+  //     assert.equal(nums.num1, 1);
+  //     assert.equal(nums.num2, 1);
   //
   //     const execute2 = memo(() => {
   //       calls2++;
@@ -3935,27 +3238,27 @@ describe('Big test', () => {
   //     });
   //     execute1(), execute2();
   //
-  //     assert.equal(nums.num1).toBe(1);
-  //     assert.equal(nums.num2).toBe(1);
-  //     assert.equal(calls1).toBe(1);
-  //     assert.equal(calls2).toBe(1);
+  //     assert.equal(nums.num1, 1);
+  //     assert.equal(nums.num2, 1);
+  //     assert.equal(calls1, 1);
+  //     assert.equal(calls2, 1);
   //
   //     nums.num2 = 4;
   //     execute1(), execute2();
   //
-  //     assert.equal(nums.num1).toBe(4);
-  //     assert.equal(nums.num2).toBe(4);
-  //     assert.equal(calls1).toBe(2);
-  //     assert.equal(calls2).toBe(2);
+  //     assert.equal(nums.num1, 4);
+  //     assert.equal(nums.num2, 4);
+  //     assert.equal(calls1, 2);
+  //     assert.equal(calls2, 2);
   //
   //     nums.num1 = 10;
   //     execute1(), execute2();
   //
-  //     assert.equal(nums.num1).toBe(10);
-  //     assert.equal(nums.num2).toBe(10);
+  //     assert.equal(nums.num1, 10);
+  //     assert.equal(nums.num2, 10);
   //     // this is just implementation specific, but shouldnt run more than 3 times
-  //     assert.equal(calls1).toBe(2);
-  //     assert.equal(calls2).toBe(3);
+  //     assert.equal(calls1, 2);
+  //     assert.equal(calls2, 3);
   //   });
   // });
   //
@@ -3966,21 +3269,21 @@ describe('Big test', () => {
   //   const user = Object.create(original);
   //
   //   let dummy;
-  //   const execute = memo(() => (dummy = user.foo));
+  //   autorun(() => (dummy = user.foo));
   //   execute();
-  //   assert.equal(dummy).toBe(1);
+  //   assert.equal(dummy, 1);
   //
   //   original.foo = 2;
   //   execute();
-  //   assert.equal(dummy).toBe(2);
+  //   assert.equal(dummy, 2);
   //
   //   user.foo = 3;
   //   execute();
-  //   assert.equal(dummy).toBe(3);
+  //   assert.equal(dummy, 3);
   //
   //   user.foo = 4;
   //   execute();
-  //   assert.equal(dummy).toBe(4);
+  //   assert.equal(dummy, 4);
   // });
   //
   // /** ARRAY */
@@ -3989,8 +3292,8 @@ describe('Big test', () => {
   //   const source = [{ cat: 'quack' }];
   //   const obj = makeObservable(source);
   //
-  //   assert.equal(source[0].cat).toBe('quack');
-  //   assert.equal(obj[0].cat).toBe('quack');
+  //   assert.equal(source[0].cat, 'quack');
+  //   assert.equal(obj[0].cat, 'quack');
   // });
   //
   // test(`array: functions`, (ctx) => {
@@ -4036,12 +3339,12 @@ describe('Big test', () => {
   //   const source = [{ cat: 'quack' }];
   //   const result = makeObservable(source);
   //
-  //   assert.equal(source[0].cat).toBe('quack');
-  //   assert.equal(result[0].cat).toBe('quack');
+  //   assert.equal(source[0].cat, 'quack');
+  //   assert.equal(result[0].cat, 'quack');
   //
   //   result[0].cat = 'murci';
-  //   assert.equal(source[0].cat).toBe('murci');
-  //   assert.equal(result[0].cat).toBe('murci');
+  //   assert.equal(source[0].cat, 'murci');
+  //   assert.equal(result[0].cat, 'murci');
   // });
   //
   // test(`array: mutation: array todos`, (ctx) => {
@@ -4050,37 +3353,37 @@ describe('Big test', () => {
   //     { id: 2, title: 'murci', done: false },
   //   ]);
   //
-  //   assert.equal(todos[1].done).toBe(false);
+  //   assert.equal(todos[1].done, false);
   //   todos[1].done = Infinity;
-  //   assert.equal(todos[1].done).toBe(Infinity);
+  //   assert.equal(todos[1].done, Infinity);
   //
-  //   assert.equal(todos.length).toBe(2);
+  //   assert.equal(todos.length, 2);
   //   todos.push({ id: 3, title: 'mishu', done: false });
-  //   assert.equal(todos.length).toBe(3);
+  //   assert.equal(todos.length, 3);
   //
-  //   assert.equal(todos[1].done).toBe(Infinity);
+  //   assert.equal(todos[1].done, Infinity);
   //   assert.equal(Array.isArray(todos)).toBe(true);
-  //   assert.equal(todos[0].title).toBe('quack');
-  //   assert.equal(todos[1].title).toBe('murci');
-  //   assert.equal(todos[2].title).toBe('mishu');
+  //   assert.equal(todos[0].title, 'quack');
+  //   assert.equal(todos[1].title, 'murci');
+  //   assert.equal(todos[2].title, 'mishu');
   // });
   //
   // test(`array: mutation: array batch`, (ctx) => {
   //   const result = makeObservable([1, 2, 3]);
   //   batch(() => {
-  //     assert.equal(result.length).toBe(3);
+  //     assert.equal(result.length, 3);
   //     const move = result.splice(1, 1);
-  //     assert.equal(result.length).toBe(2);
+  //     assert.equal(result.length, 2);
   //     result.splice(0, 0, ...move);
-  //     assert.equal(result.length).toBe(3);
+  //     assert.equal(result.length, 3);
   //     assert.equal(result).toEqual([2, 1, 3]);
   //     result.push(4);
-  //     assert.equal(result.length).toBe(4);
+  //     assert.equal(result.length, 4);
   //     assert.equal(result).toEqual([2, 1, 3, 4]);
   //   });
-  //   assert.equal(result.length).toBe(4);
+  //   assert.equal(result.length, 4);
   //   assert.equal(result.pop()).toBe(4);
-  //   assert.equal(result.length).toBe(3);
+  //   assert.equal(result.length, 3);
   //   assert.equal(result).toEqual([2, 1, 3]);
   // });
   //
@@ -4093,10 +3396,10 @@ describe('Big test', () => {
   //       },
   //     },
   //   ]);
-  //   assert.equal(result[0].greeting).toBe('hi, quack');
+  //   assert.equal(result[0].greeting, 'hi, quack');
   //
   //   result[0].cat = 'mishu';
-  //   assert.equal(result[0].greeting).toBe('hi, mishu');
+  //   assert.equal(result[0].greeting, 'hi, mishu');
   // });
   //
   // test(`array: getter/setters: class in array`, (ctx) => {
@@ -4113,10 +3416,10 @@ describe('Big test', () => {
   //     }
   //   }
   //   const result = makeObservable([new Cat()]);
-  //   assert.equal(result[0].greeting).toBe('hi, quack');
+  //   assert.equal(result[0].greeting, 'hi, quack');
   //
   //   result[0].name = 'mishu';
-  //   assert.equal(result[0].greeting).toBe('hi, mishu');
+  //   assert.equal(result[0].greeting, 'hi, mishu');
   // });
   //
   // test(`array: supports wrapping a deep array inside a plain object`, (ctx) => {
@@ -4124,17 +3427,17 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o.value[0];
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.value[0] = 3;
   //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal(o.value[0]).toBe(3);
+  //   assert.equal(calls, 2);
+  //   assert.equal(o.value[0], 3);
   //
   //   testValues(
   //     expect,
@@ -4150,17 +3453,17 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o[0];
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o[0] = 3;
   //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal(o[0]).toBe(3);
+  //   assert.equal(calls, 2);
+  //   assert.equal(o[0], 3);
   //
   //   testValues(
   //     expect,
@@ -4176,17 +3479,17 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o[0][0];
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o[0][0] = 3;
   //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal(o[0][0]).toBe(3);
+  //   assert.equal(calls, 2);
+  //   assert.equal(o[0][0], 3);
   //
   //   testValues(
   //     expect,
@@ -4202,17 +3505,17 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o[0].lala;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o[0].lala = 3;
   //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal(o[0].lala).toBe(3);
+  //   assert.equal(calls, 2);
+  //   assert.equal(o[0].lala, 3);
   //
   //   testValues(
   //     expect,
@@ -4230,17 +3533,17 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o.value.length;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
-  //   assert.equal(o.value.length).toBe(1);
+  //   assert.equal(calls, 1);
+  //   assert.equal(o.value.length, 1);
   //
   //   o.value.splice(0, 1, 1);
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   // });
   //
   // test(`array: should make Array reactive`, (ctx) => {
@@ -4249,25 +3552,25 @@ describe('Big test', () => {
   //   assert.equal(observed).not.toBe(original);
   //
   //   // get
-  //   assert.equal(observed[0].foo).toBe(1);
+  //   assert.equal(observed[0].foo, 1);
   //
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls++;
   //     observed[0].foo;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
-  //   assert.equal(observed[0].foo).toBe(1);
+  //   assert.equal(observed[0].foo, 1);
   //
   //   observed[0].foo = 2;
   //   execute();
-  //   assert.equal(observed[0].foo).toBe(2);
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(observed[0].foo, 2);
+  //   assert.equal(calls, 2);
   //
   //   // has
-  //   assert.equal(0 in observed).toBe(true);
+  //   assert.equal(0 in observed, true);
   //   // ownKeys
   //   assert.equal(Object.keys(observed)).toEqual(['0']);
   // });
@@ -4297,26 +3600,26 @@ describe('Big test', () => {
   //   const original = [{ foo: 1 }];
   //   const result = makeObservable(original);
   //   const clone = result.slice();
-  //   assert.equal(clone[0]).toBe(result[0]);
-  //   assert.equal(clone[0]).toBe(original[0]);
+  //   assert.equal(clone[0], result[0]);
+  //   assert.equal(clone[0], original[0]);
   //   assert.equal(clone).not.toBe(result);
   //
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls++;
   //     clone[0].foo;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
-  //   assert.equal(clone[0].foo).toBe(1);
+  //   assert.equal(clone[0].foo, 1);
   //
   //   clone[0].foo = 2;
   //   execute();
-  //   assert.equal(clone[0].foo).toBe(2);
-  //   assert.equal(result[0].foo).toBe(2);
-  //   assert.equal(original[0].foo).toBe(2);
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(clone[0].foo, 2);
+  //   assert.equal(result[0].foo, 2);
+  //   assert.equal(original[0].foo, 2);
+  //   assert.equal(calls, 2);
   // });
   //
   // test(`array: makeObservable identity`, (ctx) => {
@@ -4326,7 +3629,7 @@ describe('Big test', () => {
   //   const obj3 = makeObservable(obj1);
   //   const obj4 = makeObservable(obj2);
   //
-  //   assert.equal(obj1 === obj2 && obj2 === obj3 && obj3 === obj4).toBe(true);
+  //   assert.equal(obj1 === obj2 && obj2 === obj3 && obj3 === obj4, true);
   // });
   //
   // test(`array: makeObservable identity nested`, (ctx) => {
@@ -4336,10 +3639,10 @@ describe('Big test', () => {
   //   const obj3 = makeObservable({ value: obj1 });
   //   const obj4 = makeObservable({ value: obj2 });
   //
-  //   assert.equal(obj1.value === obj2.value).toBe(true);
-  //   assert.equal(obj2.value === obj3.value.value).toBe(true);
-  //   assert.equal(obj3.value === obj1).toBe(true);
-  //   assert.equal(obj3.value.value === obj4.value.value).toBe(true);
+  //   assert.equal(obj1.value === obj2.value, true);
+  //   assert.equal(obj2.value === obj3.value.value, true);
+  //   assert.equal(obj3.value === obj1, true);
+  //   assert.equal(obj3.value.value === obj4.value.value, true);
   // });
   //
   // class Sub3 extends Array {
@@ -4366,9 +3669,9 @@ describe('Big test', () => {
   //   const observed = makeObservable(subArray);
   //
   //   subArray.push(7);
-  //   assert.equal(subArray.lastPushed).toBe(7);
+  //   assert.equal(subArray.lastPushed, 7);
   //   observed.push(9);
-  //   assert.equal(observed.lastPushed).toBe(9);
+  //   assert.equal(observed.lastPushed, 9);
   // });
   //
   // test(`array: calls correct identity-sensitive method on Array subclass`, (ctx) => {
@@ -4377,15 +3680,15 @@ describe('Big test', () => {
   //   let index;
   //
   //   index = subArray.indexOf(4);
-  //   assert.equal(index).toBe(0);
-  //   assert.equal(subArray.lastSearched).toBe(4);
+  //   assert.equal(index, 0);
+  //   assert.equal(subArray.lastSearched, 4);
   //
   //   index = observed.indexOf(6);
-  //   assert.equal(index).toBe(2);
-  //   assert.equal(observed.lastSearched).toBe(6);
+  //   assert.equal(index, 2);
+  //   assert.equal(observed.lastSearched, 6);
   //
   //   assert.equal(makeObservable(observed)).toBe(makeObservable(subArray));
-  //   assert.equal(observed).toBe(makeObservable(subArray));
+  //   assert.equal(observed, makeObservable(subArray));
   //   assert.equal(makeObservable(observed).slice()).not.toBe(makeObservable(subArray).slice());
   // });
   //
@@ -4408,7 +3711,7 @@ describe('Big test', () => {
   //   execute1();
   //   execute2();
   //
-  //   assert.equal(ret1).toBe(ret2);
+  //   assert.equal(ret1, ret2);
   // });
   //
   // test(`${
@@ -4493,22 +3796,22 @@ describe('Big test', () => {
   //   assert.equal(o.deep.value).toEqual(obj1);
   //
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o.deep.value;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.deep.value = obj2;
   //   execute();
   //   assert.equal(o.deep.value).toEqual(obj2);
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   //
   //   o.deep.value = obj1;
   //   execute();
   //   assert.equal(o.deep.value).toEqual(obj1);
-  //   assert.equal(calls).toBe(3);
+  //   assert.equal(calls, 3);
   //
   //   testValues(
   //     expect,
@@ -4523,7 +3826,7 @@ describe('Big test', () => {
   //   const result = makeObservable([]);
   //
   //   let read = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     read++;
   //     if (read < 100) {
   //       result.length;
@@ -4533,7 +3836,7 @@ describe('Big test', () => {
   //     return read;
   //   });
   //   execute();
-  //   assert.equal(read).toBe(100);
+  //   assert.equal(read, 100);
   // });
   //
   // test(`array: mutating array length`, (ctx) => {
@@ -4560,67 +3863,67 @@ describe('Big test', () => {
   //   });
   //   execute1(), execute2(), execute3();
   //
-  //   assert.equal(result.length).toBe(1);
-  //   assert.equal(result[40]).toBe(undefined);
-  //   assert.equal(result[2]).toBe(undefined);
-  //   assert.equal(result[0]).toBe(69);
+  //   assert.equal(result.length, 1);
+  //   assert.equal(result[40], undefined);
+  //   assert.equal(result[2], undefined);
+  //   assert.equal(result[0], 69);
   //
-  //   assert.equal(calls).toBe(1);
-  //   assert.equal(calls2).toBe(1);
-  //   assert.equal(calls3).toBe(1);
+  //   assert.equal(calls, 1);
+  //   assert.equal(calls2, 1);
+  //   assert.equal(calls3, 1);
   //
   //   result.length = 45;
   //   execute1(), execute2(), execute3();
   //
-  //   assert.equal(result.length).toBe(45);
-  //   assert.equal(calls).toBe(1);
-  //   assert.equal(calls2).toBe(1);
-  //   assert.equal(calls3).toBe(2);
+  //   assert.equal(result.length, 45);
+  //   assert.equal(calls, 1);
+  //   assert.equal(calls2, 1);
+  //   assert.equal(calls3, 2);
   //
   //   result[40] = true;
   //   execute1(), execute2(), execute3();
   //
-  //   assert.equal(result[40]).toBe(true);
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal(calls2).toBe(1);
-  //   assert.equal(calls3).toBe(2);
+  //   assert.equal(result[40], true);
+  //   assert.equal(calls, 2);
+  //   assert.equal(calls2, 1);
+  //   assert.equal(calls3, 2);
   //
   //   result[41] = true;
   //   execute1(), execute2(), execute3();
   //
-  //   assert.equal(result[41]).toBe(true);
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal(calls2).toBe(1);
-  //   assert.equal(calls3).toBe(2);
+  //   assert.equal(result[41], true);
+  //   assert.equal(calls, 2);
+  //   assert.equal(calls2, 1);
+  //   assert.equal(calls3, 2);
   //
   //   result[2] = true;
   //   execute1(), execute2(), execute3();
   //
-  //   assert.equal(result[2]).toBe(true);
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal(calls2).toBe(2);
-  //   assert.equal(calls3).toBe(2);
+  //   assert.equal(result[2], true);
+  //   assert.equal(calls, 2);
+  //   assert.equal(calls2, 2);
+  //   assert.equal(calls3, 2);
   //
   //   result.push();
   //   execute1(), execute2(), execute3();
   //
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal(calls2).toBe(2);
-  //   assert.equal(calls3).toBe(2);
+  //   assert.equal(calls, 2);
+  //   assert.equal(calls2, 2);
+  //   assert.equal(calls3, 2);
   //
   //   result.unshift();
   //   execute1(), execute2(), execute3();
   //
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal(calls2).toBe(2);
-  //   assert.equal(calls3).toBe(2);
+  //   assert.equal(calls, 2);
+  //   assert.equal(calls2, 2);
+  //   assert.equal(calls3, 2);
   //
   //   result.push(1);
   //   execute1(), execute2(), execute3();
   //
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal(calls2).toBe(2);
-  //   assert.equal(calls3).toBe(3);
+  //   assert.equal(calls, 2);
+  //   assert.equal(calls2, 2);
+  //   assert.equal(calls3, 3);
   // });
   //
   // test(`array: pushing in two separated effects doesnt loop [solid, oby]`, (ctx) => {
@@ -4643,7 +3946,7 @@ describe('Big test', () => {
   //   const result = makeObservable([{ username: 'lala' }]);
   //
   //   let called = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     try {
   //       result[0].username;
   //     } catch (e) {}
@@ -4651,92 +3954,92 @@ describe('Big test', () => {
   //   });
   //   execute();
   //
-  //   assert.equal(result[0].username).toBe('lala');
-  //   assert.equal(called).toBe(1);
+  //   assert.equal(result[0].username, 'lala');
+  //   assert.equal(called, 1);
   //
   //   result[0].username = 'lala2';
   //   execute();
-  //   assert.equal(result[0].username).toBe('lala2');
-  //   assert.equal(called).toBe(2);
+  //   assert.equal(result[0].username, 'lala2');
+  //   assert.equal(called, 2);
   //
   //   // setting to same value
   //   result[0].username = 'lala2';
   //   execute();
   //
-  //   assert.equal(result[0].username).toBe('lala2');
-  //   assert.equal(called).toBe(2);
+  //   assert.equal(result[0].username, 'lala2');
+  //   assert.equal(called, 2);
   //
   //   result.pop();
   //   execute();
-  //   assert.equal(called).toBe(3);
-  //   assert.equal(result.length).toBe(0);
+  //   assert.equal(called, 3);
+  //   assert.equal(result.length, 0);
   //
   //   result.push({ username: 'lala2' });
   //   execute();
-  //   assert.equal(called).toBe(4);
+  //   assert.equal(called, 4);
   //
   //   result.push({ username: 'lala3' });
   //   execute();
-  //   assert.equal(called).toBe(4);
+  //   assert.equal(called, 4);
   //
   //   result.push({ username: 'lala4' });
   //   execute();
-  //   assert.equal(called).toBe(4);
+  //   assert.equal(called, 4);
   //
   //   result[0].username = 'lala5';
   //   execute();
-  //   assert.equal(called).toBe(5);
+  //   assert.equal(called, 5);
   // });
   //
   // test(`array: track: array functions read vs write`, (ctx) => {
   //   const result = makeObservable([1]);
   //
   //   let called = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     JSON.stringify(result);
   //     called++;
   //   });
   //   execute();
   //
-  //   assert.equal(result[0]).toBe(1);
-  //   assert.equal(called).toBe(1);
+  //   assert.equal(result[0], 1);
+  //   assert.equal(called, 1);
   //
   //   result.filter((i) => i % 2);
   //   execute();
-  //   assert.equal(called).toBe(1);
+  //   assert.equal(called, 1);
   //
   //   result.filter((i) => i % 2);
   //   execute();
-  //   assert.equal(called).toBe(1);
+  //   assert.equal(called, 1);
   //
   //   result.push(2);
   //   execute();
-  //   assert.equal(called).toBe(2);
+  //   assert.equal(called, 2);
   // });
   //
   // test(`array: track: array functions read`, (ctx) => {
   //   const result = makeObservable([1]);
   //
   //   let called = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     result.filter((i) => i % 2);
   //     called++;
   //   });
   //   execute();
-  //   assert.equal(result[0]).toBe(1);
-  //   assert.equal(called).toBe(1);
+  //   assert.equal(result[0], 1);
+  //   assert.equal(called, 1);
   //
   //   result.push(2);
   //   execute();
-  //   assert.equal(called).toBe(2);
+  //   assert.equal(called, 2);
   //
   //   result.push(3);
   //   execute();
-  //   assert.equal(called).toBe(3);
+  //   assert.equal(called, 3);
   //
   //   result.push(4);
   //   execute();
-  //   assert.equal(called).toBe(4);
+  //   assert.equal(called, 4);
   // });
   //
   // test(`${
@@ -4746,16 +4049,16 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o[0];
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o[0] = o[0];
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   testValues(
   //     expect,
@@ -4771,36 +4074,36 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o.value.length;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
-  //   assert.equal(o.value.length).toBe(1);
+  //   assert.equal(calls, 1);
+  //   assert.equal(o.value.length, 1);
   //
   //   o.value.pop();
   //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal(o.value.length).toBe(0);
+  //   assert.equal(calls, 2);
+  //   assert.equal(o.value.length, 0);
   // });
   // test(`array: supports reacting when array length is set explicity`, (ctx) => {
   //   const o = makeObservable({ value: [0] });
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o.value.length;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
-  //   assert.equal(o.value.length).toBe(1);
+  //   assert.equal(calls, 1);
+  //   assert.equal(o.value.length, 1);
   //
   //   o.value.length = 0;
   //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal(o.value.length).toBe(0);
+  //   assert.equal(calls, 2);
+  //   assert.equal(o.value.length, 0);
   // });
   //
   // test(`${
@@ -4810,20 +4113,20 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o.value[0];
   //     o.value[1];
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
-  //   assert.equal(o.value.length).toBe(2);
+  //   assert.equal(calls, 1);
+  //   assert.equal(o.value.length, 2);
   //
   //   o.value.length = 0;
   //   execute();
-  //   assert.equal(calls).toBe(2);
-  //   assert.equal(o.value.length).toBe(0);
-  //   assert.equal(o.value[0]).toBe(undefined);
+  //   assert.equal(calls, 2);
+  //   assert.equal(o.value.length, 0);
+  //   assert.equal(o.value[0], undefined);
   // });
   //
   // test(`array: supports not reacting when array reading function is called `, (ctx) => {
@@ -4831,20 +4134,20 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o.value;
   //     o.value[0];
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
-  //   assert.equal(o.value.length).toBe(2);
+  //   assert.equal(calls, 1);
+  //   assert.equal(o.value.length, 2);
   //
   //   o.value.filter(() => {});
   //   execute();
   //
-  //   assert.equal(calls).toBe(1);
-  //   assert.equal(o.value.length).toBe(2);
+  //   assert.equal(calls, 1);
+  //   assert.equal(o.value.length, 2);
   // });
   //
   // test(`array: supports not reacting when array writing function is called `, (ctx) => {
@@ -4852,19 +4155,19 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o.value[0];
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
-  //   assert.equal(o.value.length).toBe(2);
+  //   assert.equal(calls, 1);
+  //   assert.equal(o.value.length, 2);
   //
   //   o.value.push(2);
   //   execute();
   //
-  //   assert.equal(calls).toBe(1);
-  //   assert.equal(o.value.length).toBe(3);
+  //   assert.equal(calls, 1);
+  //   assert.equal(o.value.length, 3);
   // });
   //
   // test(`array: supports reacting to changes in deep arrays`, (ctx) => {
@@ -4872,24 +4175,24 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o.value.length;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.value.pop();
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   //
   //   o.value.pop();
   //   execute();
-  //   assert.equal(calls).toBe(3);
+  //   assert.equal(calls, 3);
   //
   //   o.value.push(1);
   //   execute();
-  //   assert.equal(calls).toBe(4);
+  //   assert.equal(calls, 4);
   // });
   //
   // test(`array: supports not reacting to no-changes in deep arrays`, (ctx) => {
@@ -4897,24 +4200,24 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o.value.length;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.value.filter(() => {});
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.value.filter(() => {});
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.value.push(1);
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   // });
   //
   // test(`array: supports reacting to changes in top-level arrays`, (ctx) => {
@@ -4922,28 +4225,28 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o.length;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.pop();
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   //
   //   o.pop();
   //   execute();
-  //   assert.equal(calls).toBe(3);
+  //   assert.equal(calls, 3);
   //
   //   o.push(1);
   //   execute();
-  //   assert.equal(calls).toBe(4);
+  //   assert.equal(calls, 4);
   //
   //   o[0] = true;
   //   execute();
-  //   assert.equal(calls).toBe(4);
+  //   assert.equal(calls, 4);
   // });
   //
   // test(`array: supports not reacting to changes in top-level arrays`, (ctx) => {
@@ -4951,32 +4254,32 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o.length;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.filter(() => {});
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.filter(() => {});
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.push(3);
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   //
   //   o.push(4);
   //   execute();
-  //   assert.equal(calls).toBe(3);
+  //   assert.equal(calls, 3);
   //
   //   o[0] = false;
   //   execute();
-  //   assert.equal(calls).toBe(3);
+  //   assert.equal(calls, 3);
   // });
   //
   // test(`array: supports reacting to changes at a specific index in deep arrays`, (ctx) => {
@@ -4984,36 +4287,36 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o.value[0];
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.value.pop();
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.value.push(10);
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.value[0] = 123;
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   //
   //   o.value.unshift(1);
   //   execute();
-  //   assert.equal(calls).toBe(3);
+  //   assert.equal(calls, 3);
   //
   //   o.value.unshift(1);
   //   execute();
-  //   assert.equal(calls).toBe(3);
+  //   assert.equal(calls, 3);
   //
   //   o.value.unshift(2);
   //   execute();
-  //   assert.equal(calls).toBe(4);
+  //   assert.equal(calls, 4);
   // });
   //
   // test(`${
@@ -5023,36 +4326,36 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o[0];
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.pop();
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.push(10);
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o[0] = 123;
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   //
   //   o.unshift(1);
   //   execute();
-  //   assert.equal(calls).toBe(3);
+  //   assert.equal(calls, 3);
   //
   //   o.unshift(1);
   //   execute();
-  //   assert.equal(calls).toBe(3);
+  //   assert.equal(calls, 3);
   //
   //   o.unshift(2);
   //   execute();
-  //   assert.equal(calls).toBe(4);
+  //   assert.equal(calls, 4);
   // });
   //
   // test(`array: supports batching array methods automatically`, (ctx) => {
@@ -5060,19 +4363,19 @@ describe('Big test', () => {
   //
   //   let calls = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls += 1;
   //     o.value.forEach(() => {});
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   o.value.forEach((value, index) => {
   //     // console.log(o.value)
   //     o.value[index] = value * 2;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   // });
   //
   // test(`array: treats number and string properties the same way`, (ctx) => {
@@ -5092,18 +4395,18 @@ describe('Big test', () => {
   //   });
   //   execute1(), execute2();
   //
-  //   assert.equal(callsNumber).toBe(1);
-  //   assert.equal(callsString).toBe(1);
+  //   assert.equal(callsNumber, 1);
+  //   assert.equal(callsString, 1);
   //
   //   o[0] = 1;
   //   execute1(), execute2();
-  //   assert.equal(callsNumber).toBe(2);
-  //   assert.equal(callsString).toBe(2);
+  //   assert.equal(callsNumber, 2);
+  //   assert.equal(callsString, 2);
   //
   //   o['0'] = 2;
   //   execute1(), execute2();
-  //   assert.equal(callsNumber).toBe(3);
-  //   assert.equal(callsString).toBe(3);
+  //   assert.equal(callsNumber, 3);
+  //   assert.equal(callsString, 3);
   // });
   //
   // test(`array: observed value should proxy mutations to original [solid, oby]`, (ctx) => {
@@ -5114,19 +4417,19 @@ describe('Big test', () => {
   //   const value = { baz: 3 };
   //   const result = makeObservable(value);
   //   observed[0] = value;
-  //   assert.equal(observed[0]).toBe(result);
+  //   assert.equal(observed[0], result);
   //   assert.equal(isProxy(observed[0])).toBe(true);
   //   assert.equal(original[0]).not.toBe(value);
   //
   //   // delete
   //   delete observed[0];
-  //   assert.equal(observed[0]).toBe(undefined);
-  //   assert.equal(original[0]).toBe(undefined);
+  //   assert.equal(observed[0], undefined);
+  //   assert.equal(original[0], undefined);
   //
   //   // mutating methods
   //   observed.push(value);
-  //   assert.equal(observed[2]).toBe(result);
-  //   assert.equal(original[2]).toBe(result);
+  //   assert.equal(observed[2], result);
+  //   assert.equal(original[2], result);
   // });
   //
   // test(`array: identity methods should work [solid, oby]`, (ctx) => {
@@ -5165,15 +4468,15 @@ describe('Big test', () => {
   //   const search = arr[0];
   //
   //   let index = -1;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     index = arr.indexOf(search);
   //   });
   //   execute();
-  //   assert.equal(index).toBe(0);
+  //   assert.equal(index, 0);
   //
   //   arr.reverse();
   //   execute();
-  //   assert.equal(index).toBe(1);
+  //   assert.equal(index, 1);
   //   /*
   //     console.log(
   //       arr,
@@ -5205,34 +4508,34 @@ describe('Big test', () => {
   //   const arr = makeObservable([1, 2, 3]);
   //
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls++;
   //     arr.length;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   delete arr[1];
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   // });
   //
   // test(`array: shift on Array should trigger dependency once`, (ctx) => {
   //   const arr = makeObservable([1, 2, 3]);
   //
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls++;
   //     for (let i = 0; i < arr.length; i++) {
   //       arr[i];
   //     }
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   arr.shift();
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   // });
   //
   // // #6018
@@ -5242,18 +4545,18 @@ describe('Big test', () => {
   //   const arr = makeObservable([1]);
   //
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls++;
   //     if (arr.length > 0) {
   //       arr.slice();
   //     }
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   arr.splice(0);
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   // });
   //
   // test(`${
@@ -5262,16 +4565,16 @@ describe('Big test', () => {
   //   const array = new Array(3);
   //   const observed = makeObservable(array);
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls++;
   //     observed.length;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   observed[1] = 1;
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   // });
   //
   // test(`${
@@ -5280,42 +4583,42 @@ describe('Big test', () => {
   //   const array = new Array(3);
   //   const observed = makeObservable(array);
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls++;
   //     observed.length;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   observed.x = 'x';
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   observed[-1] = 'x';
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   observed[NaN] = 'x';
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   // });
   //
   // // #2427
   // test(`array: track length on for ... in iteration`, (ctx) => {
   //   const array = makeObservable([1]);
   //   let length = '';
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     length = '';
   //     for (const key in array) {
   //       length += key;
   //     }
   //   });
   //   execute();
-  //   assert.equal(length).toBe('0');
+  //   assert.equal(length, '0');
   //
   //   array.push(1);
   //   execute();
-  //   assert.equal(length).toBe('01');
+  //   assert.equal(length, '01');
   // });
   //
   // // #9742
@@ -5323,75 +4626,75 @@ describe('Big test', () => {
   //   const array = makeObservable([]);
   //   const proxy = new Proxy(array, {});
   //   proxy.push(1);
-  //   assert.equal(array.length).toBe(1);
-  //   assert.equal(proxy.length).toBe(1);
+  //   assert.equal(array.length, 1);
+  //   assert.equal(proxy.length, 1);
   // });
   //
   // test(`array: should observe iteration`, (ctx) => {
   //   let dummy;
   //   const list = makeObservable(['Hello']);
-  //   const execute = memo(() => (dummy = list.join(' ')));
+  //   autorun(() => (dummy = list.join(' ')));
   //   execute();
   //
-  //   assert.equal(dummy).toBe('Hello');
+  //   assert.equal(dummy, 'Hello');
   //
   //   list.push('World!');
   //   execute();
-  //   assert.equal(dummy).toBe('Hello World!');
+  //   assert.equal(dummy, 'Hello World!');
   //
   //   list.shift();
   //   execute();
-  //   assert.equal(dummy).toBe('World!');
+  //   assert.equal(dummy, 'World!');
   // });
   //
   // test(`array: should observe implicit array length changes`, (ctx) => {
   //   let dummy;
   //   const list = makeObservable(['Hello']);
-  //   const execute = memo(() => (dummy = list.join(' ')));
+  //   autorun(() => (dummy = list.join(' ')));
   //   execute();
   //
-  //   assert.equal(dummy).toBe('Hello');
+  //   assert.equal(dummy, 'Hello');
   //
   //   list[1] = 'World!';
   //   execute();
-  //   assert.equal(dummy).toBe('Hello World!');
+  //   assert.equal(dummy, 'Hello World!');
   //
   //   list[3] = 'Hello!';
   //   execute();
-  //   assert.equal(dummy).toBe('Hello World!  Hello!');
+  //   assert.equal(dummy, 'Hello World!  Hello!');
   // });
   //
   // test(`array: should observe sparse array mutations`, (ctx) => {
   //   let dummy;
   //   const list = makeObservable([]);
   //   list[1] = 'World!';
-  //   const execute = memo(() => (dummy = list.join(' ')));
+  //   autorun(() => (dummy = list.join(' ')));
   //   execute();
-  //   assert.equal(dummy).toBe(' World!');
+  //   assert.equal(dummy, ' World!');
   //
   //   list[0] = 'Hello';
   //   execute();
-  //   assert.equal(dummy).toBe('Hello World!');
+  //   assert.equal(dummy, 'Hello World!');
   //
   //   list.pop();
   //   execute();
-  //   assert.equal(dummy).toBe('Hello');
+  //   assert.equal(dummy, 'Hello');
   // });
   //
   // test(`array: should not observe well-known symbol keyed properties`, (ctx) => {
   //   const key = Symbol.isConcatSpreadable;
   //   let dummy;
   //   const array = makeObservable([]);
-  //   const execute = memo(() => (dummy = array[key]));
+  //   autorun(() => (dummy = array[key]));
   //   execute();
   //
-  //   assert.equal(array[key]).toBe(undefined);
-  //   assert.equal(dummy).toBe(undefined);
+  //   assert.equal(array[key], undefined);
+  //   assert.equal(dummy, undefined);
   //
   //   array[key] = true;
   //   execute();
-  //   assert.equal(array[key]).toBe(true);
-  //   assert.equal(dummy).toBe(true);
+  //   assert.equal(array[key], true);
+  //   assert.equal(dummy, true);
   // });
   //
   // test(`${
@@ -5400,10 +4703,10 @@ describe('Big test', () => {
   //   const key = Symbol();
   //   let dummy;
   //   const array = makeObservable([1, 2, 3]);
-  //   const execute = memo(() => (dummy = array[key]));
+  //   autorun(() => (dummy = array[key]));
   //   execute();
   //
-  //   assert.equal(dummy).toBe(undefined);
+  //   assert.equal(dummy, undefined);
   //
   //   array.pop();
   //   execute();
@@ -5414,14 +4717,14 @@ describe('Big test', () => {
   //   array.splice(0, 1);
   //   execute();
   //
-  //   assert.equal(dummy).toBe(undefined);
+  //   assert.equal(dummy, undefined);
   //
   //   array[key] = 'value';
   //   execute();
   //
   //   array.length = 0;
   //   execute();
-  //   assert.equal(dummy).toBe('value');
+  //   assert.equal(dummy, 'value');
   // });
   //
   // test(`array: should trigger all effects when array length is set to 0`, (ctx) => {
@@ -5439,27 +4742,27 @@ describe('Big test', () => {
   //   });
   //   execute2();
   //
-  //   assert.equal(length).toBe(1);
-  //   assert.equal(a).toBe(1);
+  //   assert.equal(length, 1);
+  //   assert.equal(a, 1);
   //   // console.log(observed)
   //
   //   observed[1] = 2;
   //   execute1(), execute2();
   //
   //   // console.log(observed)
-  //   assert.equal(observed[1]).toBe(2);
-  //   assert.equal(observed.length).toBe(2);
-  //   assert.equal(length).toBe(2);
+  //   assert.equal(observed[1], 2);
+  //   assert.equal(observed.length, 2);
+  //   assert.equal(length, 2);
   //
   //   observed.unshift(3);
   //   execute1(), execute2();
-  //   assert.equal(length).toBe(3);
-  //   assert.equal(a).toBe(3);
+  //   assert.equal(length, 3);
+  //   assert.equal(a, 3);
   //
   //   observed.length = 0;
   //   execute1(), execute2();
-  //   assert.equal(length).toBe(0);
-  //   assert.equal(a).toBe(undefined);
+  //   assert.equal(length, 0);
+  //   assert.equal(a, undefined);
   // });
   //
   // test(`${
@@ -5481,55 +4784,55 @@ describe('Big test', () => {
   //
   //   let count = 0;
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     calls++;
   //     for (const key in obj) {
   //       count += obj.includes(obj[key]) ? 1 : 0;
   //     }
-  //     assert.equal(count).toBe(2);
+  //     assert.equal(count, 2);
   //
   //     for (const key in obj) {
   //       count += obj.indexOf(obj[key]) !== -1 ? 1 : 0;
   //     }
-  //     assert.equal(count).toBe(4);
+  //     assert.equal(count, 4);
   //
   //     for (const item of obj) {
   //       count += obj.includes(item) ? 1 : 0;
   //     }
-  //     assert.equal(count).toBe(6);
+  //     assert.equal(count, 6);
   //
   //     for (const item of obj) {
   //       count += obj.indexOf(item) !== -1 ? 1 : 0;
   //     }
-  //     assert.equal(count).toBe(8);
+  //     assert.equal(count, 8);
   //
   //     for (const item of obj.values()) {
   //       count += obj.includes(item) ? 1 : 0;
   //     }
-  //     assert.equal(count).toBe(10);
+  //     assert.equal(count, 10);
   //
   //     for (const item of obj.values()) {
   //       count += obj.indexOf(item) !== -1 ? 1 : 0;
   //     }
-  //     assert.equal(count).toBe(12);
+  //     assert.equal(count, 12);
   //
   //     for (const [k, item] of obj.entries()) {
   //       count += obj.includes(item) ? 1 : 0;
   //     }
-  //     assert.equal(count).toBe(14);
+  //     assert.equal(count, 14);
   //
   //     for (const [k, item] of obj.entries()) {
   //       count += obj.indexOf(item) !== -1 ? 1 : 0;
   //     }
-  //     assert.equal(count).toBe(16);
+  //     assert.equal(count, 16);
   //   });
   //   execute();
   //
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
-  //   assert.equal(count).toBe(16);
+  //   assert.equal(count, 16);
   //
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   // });
   //
   // test(`${
@@ -5549,9 +4852,9 @@ describe('Big test', () => {
   //       arr[key](2);
   //     });
   //     execute2();
-  //     assert.equal(arr.length).toBe(2);
-  //     assert.equal(calls1).toBe(1);
-  //     assert.equal(calls2).toBe(1);
+  //     assert.equal(arr.length, 2);
+  //     assert.equal(calls1, 1);
+  //     assert.equal(calls2, 1);
   //   });
   //   ['pop', 'shift'].forEach((key) => {
   //     const arr = makeObservable([1, 2, 3, 4]);
@@ -5567,9 +4870,9 @@ describe('Big test', () => {
   //       arr[key]();
   //     });
   //     execute2();
-  //     assert.equal(arr.length).toBe(2);
-  //     assert.equal(calls1).toBe(1);
-  //     assert.equal(calls2).toBe(1);
+  //     assert.equal(arr.length, 2);
+  //     assert.equal(calls1, 1);
+  //     assert.equal(calls2, 1);
   //   });
   // });
   //
@@ -5968,10 +5271,10 @@ describe('Big test', () => {
   //     const observed2 = makeObservable({ value: original });
   //     const observed3 = makeObservable([original]);
   //
-  //     assert.equal(original instanceof Map).toBe(true);
-  //     assert.equal(observed instanceof Map).toBe(true);
-  //     assert.equal(observed2.value instanceof Map).toBe(true);
-  //     assert.equal(observed3[0] instanceof Map).toBe(true);
+  //     assert.equal(original instanceof Map, true);
+  //     assert.equal(observed instanceof Map, true);
+  //     assert.equal(observed2.value instanceof Map, true);
+  //     assert.equal(observed3[0] instanceof Map, true);
   //
   //     assert.equal(isProxy(original)).toBe(false);
   //     assert.equal(isProxy(observed)).toBe(true);
@@ -5982,24 +5285,24 @@ describe('Big test', () => {
   //   test(`Map: should observe mutations`, (ctx) => {
   //     let dummy;
   //     const map = makeObservable(new Map());
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       dummy = map.get('key');
   //     });
   //     execute();
   //
-  //     assert.equal(dummy).toBe(undefined);
+  //     assert.equal(dummy, undefined);
   //     map.set('key', 'value');
   //     execute();
   //
-  //     assert.equal(dummy).toBe('value');
+  //     assert.equal(dummy, 'value');
   //     map.set('key', 'value2');
   //     execute();
   //
-  //     assert.equal(dummy).toBe('value2');
+  //     assert.equal(dummy, 'value2');
   //     map.delete('key');
   //     execute();
   //
-  //     assert.equal(dummy).toBe(undefined);
+  //     assert.equal(dummy, undefined);
   //   });
   //
   //   test(`Map: should observe mutations with observed value as key`, (ctx) => {
@@ -6007,50 +5310,50 @@ describe('Big test', () => {
   //     const key = makeObservable({});
   //     const value = makeObservable({});
   //     const map = makeObservable(new Map());
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       dummy = map.get(key);
   //     });
   //     execute();
   //
-  //     assert.equal(dummy).toBe(undefined);
+  //     assert.equal(dummy, undefined);
   //     map.set(key, value);
   //     execute();
   //
-  //     assert.equal(dummy).toBe(value);
+  //     assert.equal(dummy, value);
   //     map.delete(key);
   //     execute();
   //
-  //     assert.equal(dummy).toBe(undefined);
+  //     assert.equal(dummy, undefined);
   //   });
   //
   //   test(`Map: should observe size mutations`, (ctx) => {
   //     let dummy;
   //     const map = makeObservable(new Map());
-  //     const execute = memo(() => (dummy = map.size));
+  //     autorun(() => (dummy = map.size));
   //     execute();
   //
-  //     assert.equal(dummy).toBe(0);
+  //     assert.equal(dummy, 0);
   //
   //     map.set('key1', 'value');
   //     execute();
   //
   //     map.set('key2', 'value2');
   //     execute();
-  //     assert.equal(dummy).toBe(2);
+  //     assert.equal(dummy, 2);
   //
   //     map.delete('key1');
   //     execute();
-  //     assert.equal(dummy).toBe(1);
+  //     assert.equal(dummy, 1);
   //
   //     map.clear();
   //     execute();
-  //     assert.equal(dummy).toBe(0);
+  //     assert.equal(dummy, 0);
   //   });
   //
   //   test(`Map: should observe for of iteration`, (ctx) => {
   //     let dummy;
   //     const map = makeObservable(new Map());
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       dummy = 0;
   //       for (const [key, num] of map) {
   //         key;
@@ -6059,67 +5362,67 @@ describe('Big test', () => {
   //     });
   //     execute();
   //
-  //     assert.equal(dummy).toBe(0);
+  //     assert.equal(dummy, 0);
   //     map.set('key1', 3);
   //     execute();
   //
-  //     assert.equal(dummy).toBe(3);
+  //     assert.equal(dummy, 3);
   //     map.set('key2', 2);
   //     execute();
   //
-  //     assert.equal(dummy).toBe(5);
+  //     assert.equal(dummy, 5);
   //
   //     // iteration should track mutation of existing entries (#709)
   //     map.set('key1', 4);
   //     execute();
-  //     assert.equal(dummy).toBe(6);
+  //     assert.equal(dummy, 6);
   //
   //     map.delete('key1');
   //     execute();
-  //     assert.equal(dummy).toBe(2);
+  //     assert.equal(dummy, 2);
   //
   //     map.clear();
   //     execute();
-  //     assert.equal(dummy).toBe(0);
+  //     assert.equal(dummy, 0);
   //   });
   //
   //   test(`Map: should observe forEach iteration`, (ctx) => {
   //     let dummy;
   //     const map = makeObservable(new Map());
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       dummy = 0;
   //       map.forEach((num) => (dummy += num));
   //     });
   //     execute();
   //
-  //     assert.equal(dummy).toBe(0);
+  //     assert.equal(dummy, 0);
   //     map.set('key1', 3);
   //     execute();
   //
-  //     assert.equal(dummy).toBe(3);
+  //     assert.equal(dummy, 3);
   //     map.set('key2', 2);
   //     execute();
   //
-  //     assert.equal(dummy).toBe(5);
+  //     assert.equal(dummy, 5);
   //     // iteration should track mutation of existing entries (#709)
   //     map.set('key1', 4);
   //     execute();
   //
-  //     assert.equal(dummy).toBe(6);
+  //     assert.equal(dummy, 6);
   //     map.delete('key1');
   //     execute();
   //
-  //     assert.equal(dummy).toBe(2);
+  //     assert.equal(dummy, 2);
   //     map.clear();
   //     execute();
   //
-  //     assert.equal(dummy).toBe(0);
+  //     assert.equal(dummy, 0);
   //   });
   //
   //   test(`Map: should observe keys iteration`, (ctx) => {
   //     let dummy;
   //     const map = makeObservable(new Map());
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       dummy = 0;
   //       for (const key of map.keys()) {
   //         dummy += key;
@@ -6127,64 +5430,64 @@ describe('Big test', () => {
   //     });
   //     execute();
   //
-  //     assert.equal(dummy).toBe(0);
+  //     assert.equal(dummy, 0);
   //     map.set(3, 3);
   //     execute();
   //
-  //     assert.equal(dummy).toBe(3);
+  //     assert.equal(dummy, 3);
   //     map.set(2, 2);
   //     execute();
   //
-  //     assert.equal(dummy).toBe(5);
+  //     assert.equal(dummy, 5);
   //     map.delete(3);
   //     execute();
   //
-  //     assert.equal(dummy).toBe(2);
+  //     assert.equal(dummy, 2);
   //     map.clear();
   //     execute();
   //
-  //     assert.equal(dummy).toBe(0);
+  //     assert.equal(dummy, 0);
   //   });
   //
   //   test(`Map: should observe values iteration`, (ctx) => {
   //     let dummy;
   //     const map = makeObservable(new Map());
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       dummy = 0;
   //       for (const num of map.values()) {
   //         dummy += num;
   //       }
   //     });
   //     execute();
-  //     assert.equal(dummy).toBe(0);
+  //     assert.equal(dummy, 0);
   //
   //     map.set('key1', 3);
   //     execute();
-  //     assert.equal(dummy).toBe(3);
+  //     assert.equal(dummy, 3);
   //
   //     map.set('key2', 2);
   //     execute();
-  //     assert.equal(dummy).toBe(5);
+  //     assert.equal(dummy, 5);
   //
   //     // iteration should track mutation of existing entries (#709)
   //     map.set('key1', 4);
   //     execute();
-  //     assert.equal(dummy).toBe(6);
+  //     assert.equal(dummy, 6);
   //
   //     map.delete('key1');
   //     execute();
-  //     assert.equal(dummy).toBe(2);
+  //     assert.equal(dummy, 2);
   //
   //     map.clear();
   //     execute();
-  //     assert.equal(dummy).toBe(0);
+  //     assert.equal(dummy, 0);
   //   });
   //
   //   test(`Map: should observe entries iteration`, (ctx) => {
   //     let dummy;
   //     let dummy2;
   //     const map = makeObservable(new Map());
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       dummy = '';
   //       dummy2 = 0;
   //       for (const [key, num] of map.entries()) {
@@ -6194,112 +5497,112 @@ describe('Big test', () => {
   //     });
   //     execute();
   //
-  //     assert.equal(dummy).toBe('');
-  //     assert.equal(dummy2).toBe(0);
+  //     assert.equal(dummy, '');
+  //     assert.equal(dummy2, 0);
   //     map.set('key1', 3);
   //     execute();
   //
-  //     assert.equal(dummy).toBe('key1');
-  //     assert.equal(dummy2).toBe(3);
+  //     assert.equal(dummy, 'key1');
+  //     assert.equal(dummy2, 3);
   //     map.set('key2', 2);
   //     execute();
   //
-  //     assert.equal(dummy).toBe('key1key2');
-  //     assert.equal(dummy2).toBe(5);
+  //     assert.equal(dummy, 'key1key2');
+  //     assert.equal(dummy2, 5);
   //     // iteration should track mutation of existing entries (#709)
   //     map.set('key1', 4);
   //     execute();
   //
-  //     assert.equal(dummy).toBe('key1key2');
-  //     assert.equal(dummy2).toBe(6);
+  //     assert.equal(dummy, 'key1key2');
+  //     assert.equal(dummy2, 6);
   //     map.delete('key1');
   //     execute();
   //
-  //     assert.equal(dummy).toBe('key2');
-  //     assert.equal(dummy2).toBe(2);
+  //     assert.equal(dummy, 'key2');
+  //     assert.equal(dummy2, 2);
   //     map.clear();
   //     execute();
   //
-  //     assert.equal(dummy).toBe('');
-  //     assert.equal(dummy2).toBe(0);
+  //     assert.equal(dummy, '');
+  //     assert.equal(dummy2, 0);
   //   });
   //
   //   test(`Map: should be triggered by clearing`, (ctx) => {
   //     let dummy;
   //     const map = makeObservable(new Map());
-  //     const execute = memo(() => (dummy = map.get('key')));
+  //     autorun(() => (dummy = map.get('key')));
   //
-  //     assert.equal(dummy).toBe(undefined);
+  //     assert.equal(dummy, undefined);
   //     map.set('key', 3);
   //     execute();
   //
-  //     assert.equal(dummy).toBe(3);
+  //     assert.equal(dummy, 3);
   //     map.clear();
   //     execute();
   //
-  //     assert.equal(dummy).toBe(undefined);
+  //     assert.equal(dummy, undefined);
   //   });
   //
   //   test(`Map: should observe custom property mutations`, (ctx) => {
   //     let dummy;
   //     const map = makeObservable(new Map());
-  //     const execute = memo(() => (dummy = map.customProp));
+  //     autorun(() => (dummy = map.customProp));
   //     execute();
   //
-  //     assert.equal(dummy).toBe(undefined);
+  //     assert.equal(dummy, undefined);
   //     map.customProp = 'Hello World';
   //     execute();
   //
-  //     assert.equal(dummy).toBe('Hello World');
+  //     assert.equal(dummy, 'Hello World');
   //   });
   //
   //   test(`Map: should not observe non value changing mutations`, (ctx) => {
   //     let dummy;
   //     const map = makeObservable(new Map());
   //     let calls = 0;
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       calls++;
   //       dummy = map.get('key');
   //     });
   //     execute();
   //
-  //     assert.equal(dummy).toBe(undefined);
-  //     assert.equal(calls).toBe(1);
+  //     assert.equal(dummy, undefined);
+  //     assert.equal(calls, 1);
   //
   //     map.set('key', undefined);
   //     execute();
-  //     assert.equal(dummy).toBe(undefined);
-  //     assert.equal(calls).toBe(1);
+  //     assert.equal(dummy, undefined);
+  //     assert.equal(calls, 1);
   //
   //     map.set('key', 'value');
   //     execute();
-  //     assert.equal(dummy).toBe('value');
-  //     assert.equal(calls).toBe(2);
+  //     assert.equal(dummy, 'value');
+  //     assert.equal(calls, 2);
   //
   //     map.set('key', 'value');
   //     execute();
-  //     assert.equal(dummy).toBe('value');
-  //     assert.equal(calls).toBe(2);
+  //     assert.equal(dummy, 'value');
+  //     assert.equal(calls, 2);
   //
   //     map.set('key', undefined);
   //     execute();
-  //     assert.equal(dummy).toBe(undefined);
-  //     assert.equal(calls).toBe(3);
+  //     assert.equal(dummy, undefined);
+  //     assert.equal(calls, 3);
   //
   //     map.delete('key');
   //     execute();
-  //     assert.equal(dummy).toBe(undefined);
-  //     assert.equal(calls).toBe(3);
+  //     assert.equal(dummy, undefined);
+  //     assert.equal(calls, 3);
   //
   //     map.delete('key');
   //     execute();
-  //     assert.equal(dummy).toBe(undefined);
-  //     assert.equal(calls).toBe(3);
+  //     assert.equal(dummy, undefined);
+  //     assert.equal(calls, 3);
   //
   //     map.clear();
   //     execute();
-  //     assert.equal(dummy).toBe(undefined);
-  //     assert.equal(calls).toBe(3);
+  //     assert.equal(dummy, undefined);
+  //     assert.equal(calls, 3);
   //   });
   //
   //   test(`Map: should not pollute original Map with Proxies`, (ctx) => {
@@ -6324,19 +5627,19 @@ describe('Big test', () => {
   //     const observed = makeObservable(new Map());
   //     observed.set('key', { a: 1 });
   //     let dummy;
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       dummy = observed.get('key').a;
   //     });
   //     execute();
   //
   //     observed.get('key').a = 2;
-  //     assert.equal(dummy).toBe(2);
+  //     assert.equal(dummy, 2);
   //   });
   //
   //   test(`Map: should observe nested values in iterations (forEach)`, (ctx) => {
   //     const map = makeObservable(new Map([[1, { foo: 1 }]]));
   //     let dummy;
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       dummy = 0;
   //       map.forEach((value) => {
   //         dummy += value.foo;
@@ -6344,15 +5647,15 @@ describe('Big test', () => {
   //     });
   //     execute();
   //
-  //     assert.equal(dummy).toBe(1);
+  //     assert.equal(dummy, 1);
   //     map.get(1).foo++;
-  //     assert.equal(dummy).toBe(2);
+  //     assert.equal(dummy, 2);
   //   });
   //
   //   test(`Map: should observe nested values in iterations (values)`, (ctx) => {
   //     const map = makeObservable(new Map([[1, { foo: 1 }]]));
   //     let dummy;
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       dummy = 0;
   //       for (const value of map.values()) {
   //         dummy += value.foo;
@@ -6360,16 +5663,16 @@ describe('Big test', () => {
   //     });
   //     execute();
   //
-  //     assert.equal(dummy).toBe(1);
+  //     assert.equal(dummy, 1);
   //     map.get(1).foo++;
-  //     assert.equal(dummy).toBe(2);
+  //     assert.equal(dummy, 2);
   //   });
   //
   //   test(`Map: should observe nested values in iterations (entries)`, (ctx) => {
   //     const key = {};
   //     const map = makeObservable(new Map([[key, { foo: 1 }]]));
   //     let dummy;
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       dummy = 0;
   //       for (const [key, value] of map.entries()) {
   //         key;
@@ -6379,16 +5682,16 @@ describe('Big test', () => {
   //     });
   //     execute();
   //
-  //     assert.equal(dummy).toBe(1);
+  //     assert.equal(dummy, 1);
   //     map.get(key).foo++;
-  //     assert.equal(dummy).toBe(2);
+  //     assert.equal(dummy, 2);
   //   });
   //
   //   test(`Map: should observe nested values in iterations (for...of)`, (ctx) => {
   //     const key = {};
   //     const map = makeObservable(new Map([[key, { foo: 1 }]]));
   //     let dummy;
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       dummy = 0;
   //       for (const [key, value] of map) {
   //         key;
@@ -6398,9 +5701,9 @@ describe('Big test', () => {
   //     });
   //     execute();
   //
-  //     assert.equal(dummy).toBe(1);
+  //     assert.equal(dummy, 1);
   //     map.get(key).foo++;
-  //     assert.equal(dummy).toBe(2);
+  //     assert.equal(dummy, 2);
   //   });
   //
   //   test(`${
@@ -6408,7 +5711,7 @@ describe('Big test', () => {
   //   }Map: should not be trigger when the value and the old value both are NaN`, (ctx) => {
   //     const map = makeObservable(new Map([['foo', NaN]]));
   //     let calls = 0;
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       calls++;
   //       map.get('foo');
   //     });
@@ -6417,7 +5720,7 @@ describe('Big test', () => {
   //     map.set('foo', NaN);
   //     execute();
   //
-  //     assert.equal(calls).toBe(1);
+  //     assert.equal(calls, 1);
   //   });
   //
   //   test(`Map: should work with reactive keys in raw map`, (ctx) => {
@@ -6441,17 +5744,17 @@ describe('Big test', () => {
   //     const map = makeObservable(raw);
   //
   //     let dummy;
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       dummy = map.get(key);
   //     });
   //     execute();
   //
-  //     assert.equal(dummy).toBe(1);
+  //     assert.equal(dummy, 1);
   //
   //     map.set(key, 2);
   //     execute();
   //
-  //     assert.equal(dummy).toBe(2);
+  //     assert.equal(dummy, 2);
   //   });
   //
   //   test(`Map: should track deletion of reactive keys in raw map`, (ctx) => {
@@ -6461,17 +5764,17 @@ describe('Big test', () => {
   //     const map = makeObservable(raw);
   //
   //     let dummy;
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       dummy = map.has(key);
   //     });
   //     execute();
   //
-  //     assert.equal(dummy).toBe(true);
+  //     assert.equal(dummy, true);
   //
   //     map.delete(key);
   //     execute();
   //
-  //     assert.equal(dummy).toBe(false);
+  //     assert.equal(dummy, false);
   //   });
   //
   //   // #877
@@ -6479,7 +5782,7 @@ describe('Big test', () => {
   //     const map = makeObservable(new Map());
   //
   //     let calls = 0;
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       calls++;
   //       const keys = [];
   //       for (const key of map.keys()) {
@@ -6487,27 +5790,27 @@ describe('Big test', () => {
   //       }
   //     });
   //     execute();
-  //     assert.equal(calls).toBe(1);
+  //     assert.equal(calls, 1);
   //
   //     map.set('a', 0);
   //     execute();
-  //     assert.equal(calls).toBe(2);
+  //     assert.equal(calls, 2);
   //
   //     map.set('b', 0);
   //     execute();
-  //     assert.equal(calls).toBe(3);
+  //     assert.equal(calls, 3);
   //
   //     // keys didn't change, should not trigger
   //     map.set('b', 1);
   //     execute();
   //
-  //     assert.equal(calls).toBe(3);
+  //     assert.equal(calls, 3);
   //   });
   //
   //   test(`Map: should return proxy from Map.set call `, (ctx) => {
   //     const map = makeObservable(new Map());
   //     const result = map.set('a', 'a');
-  //     assert.equal(result).toBe(map);
+  //     assert.equal(result, map);
   //   });
   //
   //   test(`Map: observing subtypes of IterableCollections(Map, Set)`, (ctx) => {
@@ -6515,7 +5818,7 @@ describe('Big test', () => {
   //     class CustomMap extends Map {}
   //     const cmap = makeObservable(new CustomMap());
   //
-  //     assert.equal(cmap instanceof Map).toBe(true);
+  //     assert.equal(cmap instanceof Map, true);
   //
   //     const val = {};
   //     cmap.set('key', val);
@@ -6528,7 +5831,7 @@ describe('Big test', () => {
   //     class CustomMap extends Map {}
   //     const cmap = makeObservable({ value: new CustomMap() });
   //
-  //     assert.equal(cmap.value instanceof Map).toBe(true);
+  //     assert.equal(cmap.value instanceof Map, true);
   //
   //     const val = {};
   //     cmap.value.set('key', val);
@@ -6543,21 +5846,21 @@ describe('Big test', () => {
   //     const roM = m;
   //
   //     let calls = 0;
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       calls++;
   //       roM.get(key);
   //     });
   //     execute();
   //
-  //     assert.equal(calls).toBe(1);
+  //     assert.equal(calls, 1);
   //     m.set(key, 1);
   //     execute();
   //
-  //     assert.equal(calls).toBe(1);
+  //     assert.equal(calls, 1);
   //     m.set(key, 2);
   //     execute();
   //
-  //     assert.equal(calls).toBe(2);
+  //     assert.equal(calls, 2);
   //   });
   //
   //   // solid-primitives
@@ -6588,11 +5891,11 @@ describe('Big test', () => {
   //     assert.equal(map.delete(obj2)).toBe(true);
   //     assert.equal(map.has(obj2)).toBe(false);
   //
-  //     assert.equal(map.size).toBe(2);
+  //     assert.equal(map.size, 2);
   //     map.clear();
-  //     assert.equal(map.size).toBe(0);
+  //     assert.equal(map.size, 0);
   //
-  //     assert.equal(map instanceof Map).toBe(true);
+  //     assert.equal(map instanceof Map, true);
   //   });
   //
   //   test(`Map: has() is reactive`, (ctx) => {
@@ -6606,7 +5909,7 @@ describe('Big test', () => {
   //     );
   //
   //     const captured = [];
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       captured.push(map.has(2));
   //     });
   //     execute();
@@ -6646,31 +5949,31 @@ describe('Big test', () => {
   //
   //     let calls = 0;
   //     let dummy;
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       calls++;
   //       dummy = map.get(2);
   //     });
   //     execute();
   //
   //     map.set(4, {});
-  //     assert.equal(calls).toBe(1);
+  //     assert.equal(calls, 1);
   //
   //     map.delete(4);
-  //     assert.equal(calls).toBe(1);
+  //     assert.equal(calls, 1);
   //
   //     map.delete(2);
-  //     assert.equal(dummy).toBe(undefined);
-  //     assert.equal(calls).toBe(2);
+  //     assert.equal(dummy, undefined);
+  //     assert.equal(calls, 2);
   //
   //     map.set(2, obj4);
-  //     assert.equal(dummy).toBe(makeObservable(obj4));
+  //     assert.equal(dummy, makeObservable(obj4));
   //
   //     map.set(2, obj4);
-  //     assert.equal(calls).toBe(3);
+  //     assert.equal(calls, 3);
   //
   //     map.clear();
-  //     assert.equal(dummy).toBe(undefined);
-  //     assert.equal(calls).toBe(4);
+  //     assert.equal(dummy, undefined);
+  //     assert.equal(calls, 4);
   //   });
   //
   //   test(`Map: spread values is reactive`, (ctx) => {
@@ -6685,40 +5988,40 @@ describe('Big test', () => {
   //
   //     const captured = [];
   //
-  //     const execute = memo(() => captured.push([...map.values()]));
+  //     autorun(() => captured.push([...map.values()]));
   //     execute();
   //
-  //     assert.equal(captured.length).toBe(1);
+  //     assert.equal(captured.length, 1);
   //     assert.equal(captured[0]).toEqual(['b', 'c', 'd']);
   //
   //     map.set(4, 'e');
-  //     assert.equal(captured.length).toBe(2);
+  //     assert.equal(captured.length, 2);
   //     assert.equal(captured[1]).toEqual(['b', 'c', 'd', 'e']);
   //
   //     map.set(4, 'e');
-  //     assert.equal(captured.length).toBe(2);
+  //     assert.equal(captured.length, 2);
   //
   //     map.delete(4);
-  //     assert.equal(captured.length).toBe(3);
+  //     assert.equal(captured.length, 3);
   //     assert.equal(captured[2]).toEqual(['b', 'c', 'd']);
   //
   //     map.delete(2);
-  //     assert.equal(captured.length).toBe(4);
+  //     assert.equal(captured.length, 4);
   //     assert.equal(captured[3]).toEqual(['b', 'd']);
   //
   //     map.delete(2);
-  //     assert.equal(captured.length).toBe(4);
+  //     assert.equal(captured.length, 4);
   //
   //     map.set(2, 'a');
-  //     assert.equal(captured.length).toBe(5);
+  //     assert.equal(captured.length, 5);
   //     assert.equal(captured[4]).toEqual(['b', 'd', 'a']);
   //
   //     map.set(2, 'b');
-  //     assert.equal(captured.length).toBe(6);
+  //     assert.equal(captured.length, 6);
   //     assert.equal(captured[5]).toEqual(['b', 'd', 'b']);
   //
   //     map.clear();
-  //     assert.equal(captured.length).toBe(7);
+  //     assert.equal(captured.length, 7);
   //     assert.equal(captured[6]).toEqual([]);
   //   });
   //
@@ -6733,39 +6036,39 @@ describe('Big test', () => {
   //     );
   //
   //     const captured = [];
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       captured.push(map.size);
   //     });
   //     execute();
   //
-  //     assert.equal(captured.length).toBe(1);
-  //     assert.equal(captured[0]).toBe(3);
+  //     assert.equal(captured.length, 1);
+  //     assert.equal(captured[0], 3);
   //
   //     map.set(4, {});
-  //     assert.equal(captured.length).toBe(2);
-  //     assert.equal(captured[1]).toBe(4);
+  //     assert.equal(captured.length, 2);
+  //     assert.equal(captured[1], 4);
   //
   //     map.delete(4);
-  //     assert.equal(captured.length).toBe(3);
-  //     assert.equal(captured[2]).toBe(3);
+  //     assert.equal(captured.length, 3);
+  //     assert.equal(captured[2], 3);
   //
   //     map.delete(2);
-  //     assert.equal(captured.length).toBe(4);
-  //     assert.equal(captured[3]).toBe(2);
+  //     assert.equal(captured.length, 4);
+  //     assert.equal(captured[3], 2);
   //
   //     map.delete(2);
-  //     assert.equal(captured.length).toBe(4);
+  //     assert.equal(captured.length, 4);
   //
   //     map.set(2, {});
-  //     assert.equal(captured.length).toBe(5);
-  //     assert.equal(captured[4]).toBe(3);
+  //     assert.equal(captured.length, 5);
+  //     assert.equal(captured[4], 3);
   //
   //     map.set(2, {});
-  //     assert.equal(captured.length).toBe(5);
+  //     assert.equal(captured.length, 5);
   //
   //     map.clear();
-  //     assert.equal(captured.length).toBe(6);
-  //     assert.equal(captured[5]).toBe(0);
+  //     assert.equal(captured.length, 6);
+  //     assert.equal(captured[5], 0);
   //   });
   //
   //   test(`Map: .keys() is reactive`, (ctx) => {
@@ -6780,7 +6083,7 @@ describe('Big test', () => {
   //
   //     const captured = [];
   //
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       const run = [];
   //       for (const key of map.keys()) {
   //         run.push(key);
@@ -6790,17 +6093,17 @@ describe('Big test', () => {
   //     });
   //     execute();
   //
-  //     assert.equal(captured.length).toBe(1);
+  //     assert.equal(captured.length, 1);
   //     assert.equal(captured[0]).toEqual([1, 2, 3]);
   //
   //     map.set(1);
-  //     assert.equal(captured.length).toBe(1);
+  //     assert.equal(captured.length, 1);
   //
   //     map.set(5);
-  //     assert.equal(captured.length).toBe(1);
+  //     assert.equal(captured.length, 1);
   //
   //     map.delete(1);
-  //     assert.equal(captured.length).toBe(2);
+  //     assert.equal(captured.length, 2);
   //     assert.equal(captured[1]).toEqual([2, 3]);
   //   });
   //
@@ -6816,7 +6119,7 @@ describe('Big test', () => {
   //
   //     const captured = [];
   //
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       const run = [];
   //       let i = 0;
   //       for (const v of map.values()) {
@@ -6828,21 +6131,21 @@ describe('Big test', () => {
   //     });
   //     execute();
   //
-  //     assert.equal(captured.length).toBe(1);
+  //     assert.equal(captured.length, 1);
   //     assert.equal(captured[0]).toEqual(['a', 'b', 'c']);
   //
   //     map.set(1, 'e');
-  //     assert.equal(captured.length).toBe(2);
+  //     assert.equal(captured.length, 2);
   //     assert.equal(captured[1]).toEqual(['e', 'b', 'c']);
   //
   //     map.set(4, 'f');
-  //     assert.equal(captured.length).toBe(2);
+  //     assert.equal(captured.length, 2);
   //
   //     map.delete(4);
-  //     assert.equal(captured.length).toBe(2);
+  //     assert.equal(captured.length, 2);
   //
   //     map.delete(1);
-  //     assert.equal(captured.length).toBe(3);
+  //     assert.equal(captured.length, 3);
   //     assert.equal(captured[2]).toEqual(['b', 'c']);
   //   });
   //
@@ -6858,7 +6161,7 @@ describe('Big test', () => {
   //
   //     const captured = [];
   //
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       const run = [];
   //       let i = 0;
   //       for (const e of map.entries()) {
@@ -6870,7 +6173,7 @@ describe('Big test', () => {
   //     });
   //     execute();
   //
-  //     assert.equal(captured.length).toBe(1);
+  //     assert.equal(captured.length, 1);
   //     assert.equal(captured[0]).toEqual([
   //       [1, 'a'],
   //       [2, 'b'],
@@ -6878,7 +6181,7 @@ describe('Big test', () => {
   //     ]);
   //
   //     map.set(1, 'e');
-  //     assert.equal(captured.length).toBe(2);
+  //     assert.equal(captured.length, 2);
   //     assert.equal(captured[1]).toEqual([
   //       [1, 'e'],
   //       [2, 'b'],
@@ -6886,13 +6189,13 @@ describe('Big test', () => {
   //     ]);
   //
   //     map.set(4, 'f');
-  //     assert.equal(captured.length).toBe(2);
+  //     assert.equal(captured.length, 2);
   //
   //     map.delete(4);
-  //     assert.equal(captured.length).toBe(2);
+  //     assert.equal(captured.length, 2);
   //
   //     map.delete(1);
-  //     assert.equal(captured.length).toBe(3);
+  //     assert.equal(captured.length, 3);
   //     assert.equal(captured[2]).toEqual([
   //       [2, 'b'],
   //       [3, 'c'],
@@ -6911,7 +6214,7 @@ describe('Big test', () => {
   //
   //     const captured = [];
   //
-  //     const execute = memo(() => {
+  //     autorun(() => {
   //       const run = [];
   //       map.forEach((v, k) => {
   //         run.push([k, v]);
@@ -6920,7 +6223,7 @@ describe('Big test', () => {
   //     });
   //     execute();
   //
-  //     assert.equal(captured.length).toBe(1);
+  //     assert.equal(captured.length, 1);
   //     assert.equal(captured[0]).toEqual([
   //       [1, 'a'],
   //       [2, 'b'],
@@ -6929,7 +6232,7 @@ describe('Big test', () => {
   //     ]);
   //
   //     map.set(1, 'e');
-  //     assert.equal(captured.length).toBe(2);
+  //     assert.equal(captured.length, 2);
   //     assert.equal(captured[1]).toEqual([
   //       [1, 'e'],
   //       [2, 'b'],
@@ -6938,7 +6241,7 @@ describe('Big test', () => {
   //     ]);
   //
   //     map.delete(4);
-  //     assert.equal(captured.length).toBe(3);
+  //     assert.equal(captured.length, 3);
   //     assert.equal(captured[2]).toEqual([
   //       [1, 'e'],
   //       [2, 'b'],
@@ -6970,7 +6273,7 @@ describe('Big test', () => {
   //   const m = makeObservable(new Test());
   //
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     m.b;
   //     calls++;
   //   });
@@ -6982,23 +6285,23 @@ describe('Big test', () => {
   //   };
   //
   //   // initial
-  //   assert.equal(m.a).toBe(1);
-  //   assert.equal(m.b).toBe(4);
-  //   assert.equal(m.myA).toBe(1);
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(m.a, 1);
+  //   assert.equal(m.b, 4);
+  //   assert.equal(m.myA, 1);
+  //   assert.equal(calls, 1);
   //
   //   // incrementing
   //   increment();
-  //   assert.equal(m.a).toBe(2);
-  //   assert.equal(m.b).toBe(8);
-  //   assert.equal(m.myA).toBe(2);
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(m.a, 2);
+  //   assert.equal(m.b, 8);
+  //   assert.equal(m.myA, 2);
+  //   assert.equal(calls, 2);
   //
   //   increment();
-  //   assert.equal(m.a).toBe(3);
-  //   assert.equal(m.b).toBe(12);
-  //   assert.equal(m.myA).toBe(3);
-  //   assert.equal(calls).toBe(3);
+  //   assert.equal(m.a, 3);
+  //   assert.equal(m.b, 12);
+  //   assert.equal(m.myA, 3);
+  //   assert.equal(calls, 3);
   // });
   //
   // // misc
@@ -7041,28 +6344,28 @@ describe('Big test', () => {
   //   });
   //
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     result.lala;
   //     calls++;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   write(1);
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   result.lala = 1;
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   result.lala = 2;
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   //
   //   write(2);
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   // });
   //
   // test(`misc 2: reacts when its only a getter with an external write`, (ctx) => {
@@ -7076,20 +6379,20 @@ describe('Big test', () => {
   //   });
   //
   //   let calls = 0;
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     result.lala;
   //     calls++;
   //   });
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   write(1);
   //   execute();
-  //   assert.equal(calls).toBe(1);
+  //   assert.equal(calls, 1);
   //
   //   write(2);
   //   execute();
-  //   assert.equal(calls).toBe(2);
+  //   assert.equal(calls, 2);
   // });
   //
   // test(`misc 2: proxy invariants`, (ctx) => {
@@ -7106,9 +6409,9 @@ describe('Big test', () => {
   //   // if broken this will crash
   //   const result = makeObservable(o);
   //
-  //   assert.equal(result.test).toBe(o.test);
+  //   assert.equal(result.test, o.test);
   //
-  //   assert.equal(result.frozen).toBe(o.frozen);
+  //   assert.equal(result.frozen, o.frozen);
   // });
   //
   // test(`misc 2: can mutate child of frozen object 1`, (ctx) => {
@@ -7118,35 +6421,35 @@ describe('Big test', () => {
   //     })
   //   );
   //
-  //   assert.equal(source.user.name).toBe('John');
-  //   assert.equal(source.user.last).toBe('Snow');
+  //   assert.equal(source.user.name, 'John');
+  //   assert.equal(source.user.last, 'Snow');
   //
   //   let called = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     source.user.name;
   //     source.user.last;
   //     called++;
   //   });
   //   execute();
-  //   assert.equal(called).toBe(1);
+  //   assert.equal(called, 1);
   //
   //   source.user.name = 'quack';
   //   execute();
-  //   assert.equal(called).toBe(2);
+  //   assert.equal(called, 2);
   //
   //   source.user.last = 'murci';
   //   execute();
-  //   assert.equal(called).toBe(3);
+  //   assert.equal(called, 3);
   //
-  //   assert.equal(source.user.name).toBe('quack');
-  //   assert.equal(source.user.last).toBe('murci');
+  //   assert.equal(source.user.name, 'quack');
+  //   assert.equal(source.user.last, 'murci');
   //
   //   try {
   //     source.user = 'something else';
   //     // solid by design modifies frozen objects
   //     if (lib !== 'solid: ') {
-  //       assert.equal('frozen value to not be changed').toBe(true);
+  //       assert.equal('frozen value to not be changed', true);
   //     }
   //   } catch (e) {
   //     // this is expected to fail
@@ -7162,34 +6465,34 @@ describe('Big test', () => {
   //
   //   let called = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     called++;
   //
   //     source.data.user.name;
   //     source.data.user.last;
   //   });
   //   execute();
-  //   assert.equal(called).toBe(1);
+  //   assert.equal(called, 1);
   //
-  //   assert.equal(source.data.user.name).toBe('John');
-  //   assert.equal(source.data.user.last).toBe('Snow');
+  //   assert.equal(source.data.user.name, 'John');
+  //   assert.equal(source.data.user.last, 'Snow');
   //
   //   source.data.user.name = 'quack';
   //   execute();
-  //   assert.equal(called).toBe(2);
+  //   assert.equal(called, 2);
   //
   //   source.data.user.last = 'murci';
   //   execute();
-  //   assert.equal(called).toBe(3);
+  //   assert.equal(called, 3);
   //
-  //   assert.equal(source.data.user.name).toBe('quack');
-  //   assert.equal(source.data.user.last).toBe('murci');
+  //   assert.equal(source.data.user.name, 'quack');
+  //   assert.equal(source.data.user.last, 'murci');
   //
   //   try {
   //     source.data.user = 'something else';
   //     // solid by design modifies frozen objects
   //     if (lib !== 'solid: ') {
-  //       assert.equal('frozen value to not be changed').toBe(true);
+  //       assert.equal('frozen value to not be changed', true);
   //     }
   //   } catch (e) {
   //     // this is expected to fail
@@ -7207,34 +6510,34 @@ describe('Big test', () => {
   //
   //   let called = 0;
   //
-  //   const execute = memo(() => {
+  //   autorun(() => {
   //     called++;
   //
   //     source.data.user.store.name;
   //     source.data.user.store.last;
   //   });
   //   execute();
-  //   assert.equal(called).toBe(1);
+  //   assert.equal(called, 1);
   //
-  //   assert.equal(source.data.user.store.name).toBe('John');
-  //   assert.equal(source.data.user.store.last).toBe('Snow');
+  //   assert.equal(source.data.user.store.name, 'John');
+  //   assert.equal(source.data.user.store.last, 'Snow');
   //
   //   source.data.user.store.name = 'quack';
   //   execute();
-  //   assert.equal(called).toBe(2);
+  //   assert.equal(called, 2);
   //
   //   source.data.user.store.last = 'murci';
   //   execute();
-  //   assert.equal(called).toBe(3);
+  //   assert.equal(called, 3);
   //
-  //   assert.equal(source.data.user.store.name).toBe('quack');
-  //   assert.equal(source.data.user.store.last).toBe('murci');
+  //   assert.equal(source.data.user.store.name, 'quack');
+  //   assert.equal(source.data.user.store.last, 'murci');
   //
   //   try {
   //     source.data.user = 'something else';
   //     // solid by design modifies frozen objects
   //     if (lib !== 'solid: ') {
-  //       assert.equal('frozen value to not be changed').toBe(true);
+  //       assert.equal('frozen value to not be changed', true);
   //     }
   //   } catch (e) {
   //     // this is expected to fail
@@ -7326,11 +6629,11 @@ describe('Big test', () => {
   //         missing: 'soon',
   //       });
   //
-  //       assert.equal(state.data).toBe(2);
-  //       assert.equal(state.missing).toBe('soon');
+  //       assert.equal(state.data, 2);
+  //       assert.equal(state.missing, 'soon');
   //       replace(state, { data: 5 });
-  //       assert.equal(state.data).toBe(5);
-  //       assert.equal(state.missing).toBe(undefined);
+  //       assert.equal(state.data, 5);
+  //       assert.equal(state.missing, undefined);
   //       assert.equal(state).toEqual({ data: 5 });
   //     });
   //
@@ -7339,9 +6642,9 @@ describe('Big test', () => {
   //         missing: 'soon',
   //       });
   //
-  //       assert.equal(state.missing).toBe('soon');
+  //       assert.equal(state.missing, 'soon');
   //       replace(state, { missing: 5 });
-  //       assert.equal(state.missing).toBe(5);
+  //       assert.equal(state.missing, 5);
   //       assert.equal(state).toEqual({
   //         missing: 5,
   //       });
@@ -7349,11 +6652,11 @@ describe('Big test', () => {
   //
   //     test(`reconcile replace - array with nulls`, (ctx) => {
   //       const state = makeObservable([null, 'a']);
-  //       assert.equal(state[0]).toBe(null);
-  //       assert.equal(state[1]).toBe('a');
+  //       assert.equal(state[0], null);
+  //       assert.equal(state[1], 'a');
   //       replace(state, ['b', null]);
-  //       assert.equal(state[0]).toBe('b');
-  //       assert.equal(state[1]).toBe(null);
+  //       assert.equal(state[0], 'b');
+  //       assert.equal(state[1], null);
   //     });
   //
   //     test(`reconcile replace - a simple object on a nested path`, (ctx) => {
@@ -7366,27 +6669,27 @@ describe('Big test', () => {
   //           },
   //         },
   //       });
-  //       assert.equal(state.data.user.firstName).toBe('John');
-  //       assert.equal(state.data.user.lastName).toBe('Snow');
+  //       assert.equal(state.data.user.firstName, 'John');
+  //       assert.equal(state.data.user.lastName, 'Snow');
   //       replace(state.data.user, {
   //         firstName: 'Jake',
   //         middleName: 'R',
   //       });
-  //       assert.equal(state.data.user.firstName).toBe('Jake');
-  //       assert.equal(state.data.user.middleName).toBe('R');
-  //       assert.equal(state.data.user.lastName).toBe(undefined);
+  //       assert.equal(state.data.user.firstName, 'Jake');
+  //       assert.equal(state.data.user.middleName, 'R');
+  //       assert.equal(state.data.user.lastName, undefined);
   //     });
   //
   //     test(`${
   //       lib
   //     }reconcile replace - a simple object on a nested path with no prev state`, (ctx) => {
   //       const state = makeObservable({});
-  //       assert.equal(state.user).toBe(undefined);
+  //       assert.equal(state.user, undefined);
   //       replace(state, {
   //         user: { firstName: 'Jake', middleName: 'R' },
   //       });
-  //       assert.equal(state.user.firstName).toBe('Jake');
-  //       assert.equal(state.user.middleName).toBe('R');
+  //       assert.equal(state.user.firstName, 'Jake');
+  //       assert.equal(state.user.middleName, 'R');
   //     });
   //
   //     test(`reconcile replace - reorder a keyed array`, (ctx) => {
@@ -7440,19 +6743,19 @@ describe('Big test', () => {
   //           users: [{ ...JOHN }, { ...NED }, { ...BRANDON }],
   //         })
   //       );
-  //       assert.equal(state.users[0].id).toBe(1);
-  //       assert.equal(state.users[0].firstName).toBe('John');
-  //       assert.equal(state.users[1].id).toBe(2);
-  //       assert.equal(state.users[1].firstName).toBe('Ned');
-  //       assert.equal(state.users[2].id).toBe(3);
-  //       assert.equal(state.users[2].firstName).toBe('Brandon');
+  //       assert.equal(state.users[0].id, 1);
+  //       assert.equal(state.users[0].firstName, 'John');
+  //       assert.equal(state.users[1].id, 2);
+  //       assert.equal(state.users[1].firstName, 'Ned');
+  //       assert.equal(state.users[2].id, 3);
+  //       assert.equal(state.users[2].firstName, 'Brandon');
   //       replace(state.users, [{ ...NED }, { ...JOHN }, { ...BRANDON }]);
-  //       assert.equal(state.users[0].id).toBe(2);
-  //       assert.equal(state.users[0].firstName).toBe('Ned');
-  //       assert.equal(state.users[1].id).toBe(1);
-  //       assert.equal(state.users[1].firstName).toBe('John');
-  //       assert.equal(state.users[2].id).toBe(3);
-  //       assert.equal(state.users[2].firstName).toBe('Brandon');
+  //       assert.equal(state.users[0].id, 2);
+  //       assert.equal(state.users[0].firstName, 'Ned');
+  //       assert.equal(state.users[1].id, 1);
+  //       assert.equal(state.users[1].firstName, 'John');
+  //       assert.equal(state.users[2].id, 3);
+  //       assert.equal(state.users[2].firstName, 'Brandon');
   //     });
   //
   //     test(`reconcile replace - top level key mismatch`, (ctx) => {
@@ -7460,22 +6763,22 @@ describe('Big test', () => {
   //       const NED = { id: 2, firstName: 'Ned', lastName: 'Stark' };
   //
   //       const user = makeObservable(JOHN);
-  //       assert.equal(user.id).toBe(1);
-  //       assert.equal(user.firstName).toBe('John');
+  //       assert.equal(user.id, 1);
+  //       assert.equal(user.firstName, 'John');
   //       replace(user, NED);
-  //       assert.equal(user.id).toBe(2);
-  //       assert.equal(user.firstName).toBe('Ned');
+  //       assert.equal(user.id, 2);
+  //       assert.equal(user.firstName, 'Ned');
   //     });
   //     test(`reconcile replace - nested top level key mismatch`, (ctx) => {
   //       const JOHN = { id: 1, firstName: 'John', lastName: 'Snow' };
   //       const NED = { id: 2, firstName: 'Ned', lastName: 'Stark' };
   //
   //       const user = makeObservable({ user: JOHN });
-  //       assert.equal(user.user.id).toBe(1);
-  //       assert.equal(user.user.firstName).toBe('John');
+  //       assert.equal(user.user.id, 1);
+  //       assert.equal(user.user.firstName, 'John');
   //       replace(user.user, NED);
-  //       assert.equal(user.user.id).toBe(2);
-  //       assert.equal(user.user.firstName).toBe('Ned');
+  //       assert.equal(user.user.id, 2);
+  //       assert.equal(user.user.firstName, 'Ned');
   //     });
   //
   //     test(`reconcile replace - top level key missing`, (ctx) => {
@@ -7484,8 +6787,8 @@ describe('Big test', () => {
   //         value: 'value',
   //       });
   //       replace(store, {});
-  //       assert.equal(store.id).toBe(undefined);
-  //       assert.equal(store.value).toBe(undefined);
+  //       assert.equal(store.id, undefined);
+  //       assert.equal(store.value, undefined);
   //     });
   //     test(`reconcile replace - overwrite an object with an array`, (ctx) => {
   //       const store = makeObservable({
@@ -7789,7 +7092,7 @@ describe('Big test', () => {
   //         keepThis: true,
   //       });
   //
-  //       assert.equal(ref).toBe(target.c[0].d);
+  //       assert.equal(ref, target.c[0].d);
   //     });
   //
   //     // using keys replace
@@ -7877,7 +7180,7 @@ describe('Big test', () => {
   //         },
   //       });
   //
-  //       assert.equal(ref).toBe(target.q.u.a.c.k[0].d[0]);
+  //       assert.equal(ref, target.q.u.a.c.k[0].d[0]);
   //       assert.equal(ref).not.toBe({ id: 1, name: 'b' });
   //       assert.equal(ref).toEqual({ id: 1, name: 'b' });
   //     });
@@ -8002,7 +7305,7 @@ describe('Big test', () => {
   //         b: false,
   //       });
   //
-  //       assert.equal(ref).toBe(target.c[0].d);
+  //       assert.equal(ref, target.c[0].d);
   //     });
   //
   //     // end of tests
@@ -8369,86 +7672,86 @@ describe('Big test', () => {
   //     return get();
   //   });
   //
-  //   assert.equal(callsMemo).toBe(0);
+  //   assert.equal(callsMemo, 0);
   //
   //   set(123);
   //   assert.equal(get()).toBe(123);
   //   assert.equal(value()).toBe(123);
-  //   assert.equal(callsMemo).toBe(1);
+  //   assert.equal(callsMemo, 1);
   //
   //   set(321);
   //   assert.equal(get()).toBe(321);
   //   assert.equal(value()).toBe(321);
-  //   assert.equal(callsMemo).toBe(2);
+  //   assert.equal(callsMemo, 2);
   //
   //   set(undefined);
   //   assert.equal(get()).toBe(undefined);
   //   assert.equal(value()).toBe(undefined);
-  //   assert.equal(callsMemo).toBe(3);
+  //   assert.equal(callsMemo, 3);
   //
   //   set(null);
   //   assert.equal(get()).toBe(null);
   //   assert.equal(value()).toBe(null);
-  //   assert.equal(callsMemo).toBe(4);
+  //   assert.equal(callsMemo, 4);
   //
   //   set(1);
   //   assert.equal(get()).toBe(1);
   //   assert.equal(value()).toBe(1);
-  //   assert.equal(callsMemo).toBe(5);
+  //   assert.equal(callsMemo, 5);
   //
   //   set('');
   //   assert.equal(get()).toBe('');
   //   assert.equal(value()).toBe('');
-  //   assert.equal(callsMemo).toBe(6);
+  //   assert.equal(callsMemo, 6);
   //
   //   set('string');
   //   assert.equal(get()).toBe('string');
   //   assert.equal(value()).toBe('string');
-  //   assert.equal(callsMemo).toBe(7);
+  //   assert.equal(callsMemo, 7);
   //
   //   set([true]);
   //   assert.equal(get()).toEqual([true]);
   //   assert.equal(value()).toEqual([true]);
   //   assert.equal(Array.isArray(get())).toBe(true);
-  //   assert.equal(callsMemo).toBe(8);
+  //   assert.equal(callsMemo, 8);
   //
   //   set({ 0: true });
   //   assert.equal(get()).toEqual({ 0: true });
   //   assert.equal(value()).toEqual({ 0: true });
   //   assert.equal(Array.isArray(get())).toBe(false);
-  //   assert.equal(callsMemo).toBe(9);
+  //   assert.equal(callsMemo, 9);
   //
   //   set([true]);
   //   assert.equal(get()).toEqual([true]);
   //   assert.equal(value()).toEqual([true]);
   //   assert.equal(Array.isArray(get())).toBe(true);
-  //   assert.equal(callsMemo).toBe(10);
+  //   assert.equal(callsMemo, 10);
   //
   //   set({ 0: true });
   //   assert.equal(get()).toEqual({ 0: true });
   //   assert.equal(value()).toEqual({ 0: true });
   //   assert.equal(Array.isArray(get())).toBe(false);
-  //   assert.equal(callsMemo).toBe(11);
+  //   assert.equal(callsMemo, 11);
   //
   //   set(true);
   //   assert.equal(get()).toBe(true);
   //   assert.equal(value()).toBe(true);
-  //   assert.equal(callsMemo).toBe(12);
+  //   assert.equal(callsMemo, 12);
   //
   //   set(false);
   //   assert.equal(get()).toBe(false);
   //   assert.equal(value()).toBe(false);
-  //   assert.equal(callsMemo).toBe(13);
+  //   assert.equal(callsMemo, 13);
   //
   //   set(Infinity);
   //   assert.equal(get()).toBe(Infinity);
   //   assert.equal(value()).toBe(Infinity);
-  //   assert.equal(callsMemo).toBe(14);
+  //   assert.equal(callsMemo, 14);
   //
   //   set(Infinity);
   //   assert.equal(get()).toBe(Infinity);
   //   assert.equal(value()).toBe(Infinity);
-  //   assert.equal(callsMemo).toBe(14);
+  //   assert.equal(callsMemo, 14);
   //
   //   // symbol
   //   const s = Symbol();
@@ -8456,47 +7759,47 @@ describe('Big test', () => {
   //   set(s);
   //   assert.equal(get()).toBe(s);
   //   assert.equal(value()).toBe(s);
-  //   assert.equal(callsMemo).toBe(15);
+  //   assert.equal(callsMemo, 15);
   //
   //   // bigint
   //   const bn = BigInt('9007199254740991');
   //   set(bn);
   //   assert.equal(get()).toBe(bn);
   //   assert.equal(value()).toBe(bn);
-  //   assert.equal(callsMemo).toBe(16);
+  //   assert.equal(callsMemo, 16);
   //
   //   // built-ins should work and return same value
   //   const p = Promise.resolve();
   //   set(p);
   //   assert.equal(get()).toBe(p);
   //   assert.equal(value()).toBe(p);
-  //   assert.equal(callsMemo).toBe(17);
+  //   assert.equal(callsMemo, 17);
   //
   //   const r = new RegExp('');
   //   set(r);
   //   assert.equal(get()).toBe(r);
   //   assert.equal(value()).toBe(r);
-  //   assert.equal(callsMemo).toBe(18);
+  //   assert.equal(callsMemo, 18);
   //
   //   const d = new Date();
   //   set(d);
   //   assert.equal(get()).toBe(d);
   //   assert.equal(value()).toBe(d);
-  //   assert.equal(callsMemo).toBe(19);
+  //   assert.equal(callsMemo, 19);
   //
   //   set(NaN);
   //   assert.equal(Object.is(get(), NaN)).toBe(true);
   //   assert.equal(Object.is(value(), NaN)).toBe(true);
-  //   assert.equal(callsMemo).toBe(20);
+  //   assert.equal(callsMemo, 20);
   //
   //   set(0);
   //   assert.equal(get()).toBe(0);
   //   assert.equal(value()).toBe(0);
-  //   assert.equal(callsMemo).toBe(21);
+  //   assert.equal(callsMemo, 21);
   //
   //   set(1);
   //   assert.equal(get()).toBe(1);
   //   assert.equal(value()).toBe(1);
-  //   assert.equal(callsMemo).toBe(22);
+  //   assert.equal(callsMemo, 22);
   // }
 });
