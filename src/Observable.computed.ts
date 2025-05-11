@@ -50,32 +50,19 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
 
         const prevValue = this.#setterValue;
         this.#setterValue = value;
-        if (!this.#equalSetterValue(prevValue)) {
-          this.#changed = true;
-          this.#adm.report(this.#property, this.#value);
-          this.#adm.state = 1;
-          this.#adm.batch(true);
+        if (!this.#equal(prevValue, this.#setterValue)) {
+          this.#changed = true; // maybe no need
+          this.#report(value);
         }
       };
-
       this.#isGetter = true;
     }
-  }
-
-  #equalSetterValue(prev: any) {
-    if (this.#setterValue == null) return prev == null;
-    return this.#setterValue.equal(prev);
   }
 
   /** Subscriber <br/>
    * Will be invoked when one of read observable changes
    * */
   subscriber() {
-    if (this.#property === 'greeting2' || this.#property === 'name2') {
-      console.warn('subscriber', this.#property);
-    }
-
-    // console.log(this.#property, 'subscriber');
     // if property will be accessed earlier than below microtask will be executed,
     // we'll call original getter to get current result
     this.#changed = true;
@@ -88,11 +75,6 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
 
   run() {
     return this.#descriptor.get?.call(this.#proxy);
-    // if (lib.action) return this.#descriptor.get?.call(this.#proxy);
-    // lib.action = true;
-    // const res = this.#descriptor.get?.call(this.#proxy);
-    // lib.action = false;
-    // return res;
   }
 
   #compute() {
@@ -101,24 +83,24 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
     const prevValue = this.#value;
     this.#reader();
     this.#changed = false;
-    if (!this.#equal(prevValue)) {
-      this.#adm.report(this.#property, this.#value);
-      this.#adm.state = 1;
-      this.#adm.batch(true);
-      // console.log('call batch', this.#property);
-    }
+    if (!this.#equal(prevValue, this.#value)) this.#report(this.#value);
   }
 
-  #equal(prev: any) {
-    if (this.#value == null) return prev == null;
-    return this.#value.equal(prev);
+  #report(value: any) {
+    this.#adm.report(this.#property, value);
+    this.#adm.state = 1;
+    this.#adm.batch(true);
+  }
+
+  #equal(prev: any, current: any) {
+    if (current == null) return prev == null;
+    return current.equal(prev);
   }
 
   #deps = 0;
 
   /** Read getter value in a transaction and subscribes to observables */
   #reader() {
-    // console.log('read', this.#property);
     const { result, read } = lib.executor.execute(this);
     this.#value = result;
     read.forEach((keys, adm) => adm.subscribers.set(this, keys));
@@ -130,34 +112,20 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
     // enable sync batching
     this.#adm.batch(true);
 
-    if (this.#isGetter) {
-      if (this.#first) {
-        this.#first = false;
-        this.#reader();
-        return this.#value;
-      }
-      if (this.#changed) {
-        this.#reader();
-        return this.#value;
-      }
-      return this.#value;
-    }
-
     // Initial value is undefined. Without this, we will report changed on first access
     if (this.#first) {
       this.#reader();
       this.#first = false;
-
       return this.#value;
     }
 
     // if property was changed, we should compare current value to previous, and report if they are not equal.
     if (this.#changed) {
-      this.#compute();
+      // eslint-disable-next-line no-unused-expressions
+      this.#isGetter ? this.#reader() : this.#compute();
+      return this.#value;
     }
-    if (!this.#first && this.#deps === 0) {
-      return this.run();
-    }
+    if (!this.#first && this.#deps === 0) return this.run();
     return this.#value;
   };
 }

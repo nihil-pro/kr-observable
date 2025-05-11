@@ -82,7 +82,7 @@ class ObservableProxyHandler {
     this.adm = adm;
   }
 
-  batch(property: Property) {
+  #batch(property: Property) {
     if (!lib.action) {
       if (this.adm.changes.has(property)) this.adm.batch(true);
     }
@@ -101,7 +101,7 @@ class ObservableProxyHandler {
       }
       return method;
     }
-    this.batch(property);
+    this.#batch(property);
     return value;
   }
   set(target: any, property: string, newValue: any) {
@@ -115,30 +115,24 @@ class ObservableProxyHandler {
         this.adm.state = 0;
         const value = maybeMakeObservable(property, newValue, this.adm);
         Reflect.set(target, property, value);
-        this.adm.report(property, value);
-        this.adm.state = 1;
-        queueBatch(this.adm);
+        this.#report(property);
       }
       return true;
     }
-
-    if (descriptor.set) {
-      Reflect.set(target, property, newValue);
-      return true;
-    }
-
+    if (descriptor.set) return Reflect.set(target, property, newValue);
     return false;
   }
   defineProperty(target: any, property: string, descriptor: PropertyDescriptor) {
-    if (this.methods[property]) {
-      this.methods[property] = undefined;
-    }
+    if (this.methods[property]) this.methods[property] = undefined;
     if (descriptor.value) {
-      return Reflect.defineProperty(target, property, {
-        ...descriptor,
-        value: maybeMakeObservable(property, descriptor.value, this.adm),
-      });
+      descriptor.value = maybeMakeObservable(property, descriptor.value, this.adm);
     }
+    // if (descriptor.value) {
+    //   return Reflect.defineProperty(target, property, {
+    //     ...descriptor,
+    //     value: maybeMakeObservable(property, descriptor.value, this.adm),
+    //   });
+    // }
     // can't create computeds in this way!
     return Reflect.defineProperty(target, property, descriptor);
 
@@ -150,18 +144,21 @@ class ObservableProxyHandler {
     if (this.methods[property]) this.methods[property] = undefined;
     this.adm.state = 0;
     delete target[property];
-    this.adm.report(property, undefined);
-    this.adm.state = 1;
-    queueBatch(this.adm);
+    this.#report(property);
     return true;
   }
   has(target: any, property: string | symbol) {
-    this.batch(property);
+    this.#batch(property);
     return property in target;
   }
   getOwnPropertyDescriptor(target: any, property: string | symbol) {
-    this.batch(property);
+    this.#batch(property);
     return Reflect.getOwnPropertyDescriptor(target, property);
+  }
+  #report(property: Property) {
+    this.adm.report(property, undefined);
+    this.adm.state = 1;
+    queueBatch(this.adm);
   }
 }
 
