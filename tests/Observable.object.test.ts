@@ -363,4 +363,56 @@ describe('Tests from other reactivity systems', () => {
     });
     assert.equal(subscriber1.mock.callCount(), 2);
   });
+
+  test('should reacting to property checks, adding', (ctx) => {
+    const o = makeObservable({});
+
+    const subscriber1 = mock.fn();
+
+    autorun(() => {
+      if ('value' in o) {
+        ctx.diagnostic('autorun: value');
+      }
+      subscriber1();
+    });
+    assert.equal(subscriber1.mock.callCount(), 1);
+
+    transaction(() => {
+      // @ts-ignore
+      o.value = undefined;
+    });
+    assert.equal(subscriber1.mock.callCount(), 2);
+
+    transaction(() => {
+      // @ts-ignore
+      o.value = undefined;
+    });
+    assert.equal(subscriber1.mock.callCount(), 2);
+  });
+
+  test('should reacting to property checks, adding deep', (ctx) => {
+    const o = makeObservable({ value: Object.create(null) });
+
+    const subscriber1 = mock.fn();
+
+    autorun(() => {
+      if ('deep' in o.value) {
+        ctx.diagnostic('autorun: value');
+      }
+      subscriber1();
+    });
+    assert.equal(subscriber1.mock.callCount(), 1);
+
+    transaction(() => {
+      // @ts-ignore
+      o.value.deep = undefined;
+    });
+    assert.equal(subscriber1.mock.callCount(), 2);
+
+    transaction(() => {
+      // @ts-ignore
+      o.value.deep = undefined;
+    });
+    assert.equal(subscriber1.mock.callCount(), 2);
+  });
 });

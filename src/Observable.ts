@@ -20,7 +20,13 @@ export function makeObservable<T extends object>(
   ignore: Set<Property> = emptySet,
   shallow: Set<Property> = emptySet
 ): T {
-  if (value == null || Object.prototype !== Object.getPrototypeOf(value)) {
+  // toDo
+  // || Object.prototype !== Object.getPrototypeOf(value)
+  if (value == null) {
+    throw new TypeError('Invalid argument. Only plain objects are allowed');
+  }
+  const proto = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto != null) {
     throw new TypeError('Invalid argument. Only plain objects are allowed');
   }
   const adm = new ObservableAdm('', ignore, shallow);
@@ -43,7 +49,8 @@ function maybeMakeObservable(key: Property, value: any, adm: ObservableAdm) {
   if (value == null || typeof value !== 'object') return value;
   if (value[$adm] || adm.ignore.has(key)) return value;
 
-  if (Object.prototype === Object.getPrototypeOf(value)) return makeObservable(value);
+  const proto = Object.getPrototypeOf(value);
+  if (Object.prototype === proto || proto === null) return makeObservable(value);
   if (Array.isArray(value)) {
     if (!adm.shallow.has(key)) {
       for (let i = 0; i < value.length; i++) {
@@ -99,7 +106,7 @@ class ObservableProxyHandler {
     // need benchmarks, this can be slow...
     const descriptor = Reflect.getOwnPropertyDescriptor(target, property);
     if (!descriptor || (descriptor.writable && !descriptor.set)) {
-      if (target[property] === newValue) {
+      if (descriptor && target[property] === newValue) {
         target[property] = newValue;
       } else {
         if (this.methods[property]) this.methods[property] = undefined;
