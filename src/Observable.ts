@@ -38,7 +38,7 @@ export function makeObservable<T extends object>(
       if (!adm.ignore.has(key)) {
         Object.defineProperty(value, key, new ObservableComputed(key, descriptor, adm, proxy));
       }
-    } else {
+    } else if (descriptor.writable) {
       value[key] = maybeMakeObservable(key, value[key], adm);
     }
   }
@@ -82,6 +82,13 @@ class ObservableProxyHandler {
     this.adm = adm;
   }
 
+  batch(property: Property) {
+    if (!lib.action) {
+      if (this.adm.changes.has(property)) this.adm.batch(true);
+    }
+    if (!this.adm.ignore.has(property)) lib.executor.report(this.adm, property);
+  }
+
   get(target: any, property: Property, receiver: any) {
     if (property === $adm) return this.adm;
     const value = Reflect.get(target, property, receiver);
@@ -94,12 +101,7 @@ class ObservableProxyHandler {
       }
       return method;
     }
-    if (!lib.action) {
-      if (this.adm.changes.has(property)) this.adm.batch(true);
-    }
-
-    if (!this.adm.ignore.has(property)) lib.executor.report(this.adm, property);
-
+    this.batch(property);
     return value;
   }
   set(target: any, property: string, newValue: any) {
@@ -131,8 +133,17 @@ class ObservableProxyHandler {
     if (this.methods[property]) {
       this.methods[property] = undefined;
     }
-    target[property] = maybeMakeObservable(property, descriptor.value, this.adm);
-    return true;
+    if (descriptor.value) {
+      return Reflect.defineProperty(target, property, {
+        ...descriptor,
+        value: maybeMakeObservable(property, descriptor.value, this.adm),
+      });
+    }
+    // can't create computeds in this way!
+    return Reflect.defineProperty(target, property, descriptor);
+
+    // target[property] = maybeMakeObservable(property, descriptor.value, this.adm);
+    // return true;
   }
   deleteProperty(target: any, property: string | symbol): boolean {
     if (!(property in target)) return false;
@@ -145,17 +156,11 @@ class ObservableProxyHandler {
     return true;
   }
   has(target: any, property: string | symbol) {
-    if (!lib.action) {
-      if (this.adm.changes.has(property)) this.adm.batch(true);
-    }
-    if (!this.adm.ignore.has(property)) lib.executor.report(this.adm, property);
+    this.batch(property);
     return property in target;
   }
   getOwnPropertyDescriptor(target: any, property: string | symbol) {
-    if (!lib.action) {
-      if (this.adm.changes.has(property)) this.adm.batch(true);
-    }
-    if (!this.adm.ignore.has(property)) lib.executor.report(this.adm, property);
+    this.batch(property);
     return Reflect.getOwnPropertyDescriptor(target, property);
   }
 }
