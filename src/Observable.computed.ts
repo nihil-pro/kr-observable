@@ -42,12 +42,9 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
     this.#descriptor = descriptor;
     this.#adm = adm;
     this.#proxy = proxy;
-    // @ts-ignore
-    this.name = property;
     if (descriptor.set) {
       this.set = (value: any) => {
         this.#descriptor.set?.call(this.#proxy, value);
-
         const prevValue = this.#setterValue;
         this.#setterValue = value;
         if (!this.#equal(prevValue, this.#setterValue)) {
@@ -125,7 +122,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
       this.#isGetter ? this.#reader() : this.#compute();
       return this.#value;
     }
-    if (!this.#first && this.#deps === 0) return this.run();
+    if (this.#deps === 0) return this.run();
     return this.#value;
   };
 }

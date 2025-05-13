@@ -42,7 +42,7 @@ export class ObservableAdm {
   batch(sync?: boolean) {
     if (this.state === 1) {
       this.state = 0;
-      this.notify(sync);
+      this.#notify(sync);
     }
   }
 
@@ -64,24 +64,8 @@ export class ObservableAdm {
   }
 
   /** Notify subscribers about changes */
-  private notify(sync?: boolean) {
-    // console.log('notify', sync);
+  #notify(sync?: boolean) {
     if (this.changes.size > 0) {
-      // for (const [cb, keys] of this.subscribers) {
-      //   const n = Reflect.get(cb, 'name');
-      //   if (n === 'E') {
-      //     this.subscribers.forEach((s) => {
-      //       console.log(n, s.has(n), sync);
-      //     });
-      //   }
-      //   for (const k of keys) {
-      //     if (this.changes.has(k)) {
-      //       lib.notifier.notify(cb, this.changes);
-      //       break;
-      //     }
-      //   }
-      // }
-
       this.subscribers.forEach((keys: Set<Property>, cb: ObservedRunnable) => {
         for (const k of keys) {
           if (this.changes.has(k)) {
@@ -90,14 +74,10 @@ export class ObservableAdm {
           }
         }
       });
-
       if (sync) {
         this.changes.clear();
-        // lib.notifier.clear();
       } else {
-        queueMicrotask(() => {
-          this.changes.clear();
-        });
+        queueMicrotask(() => this.changes.clear());
       }
     }
   }
