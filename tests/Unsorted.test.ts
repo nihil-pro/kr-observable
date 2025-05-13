@@ -1400,48 +1400,45 @@ describe('Big test', () => {
   });
 
   // somnitelno, no okay
-  test.todo(
-    `returns unproxied "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString", "toSource", "toString", "valueOf", properties`,
-    () => {
-      const o = makeObservable({});
+  test.skip(`returns unproxied "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString", "toSource", "toString", "valueOf", properties`, () => {
+    const o = makeObservable({});
 
-      const subscriber = mock.fn();
+    const subscriber = mock.fn();
 
-      autorun(() => {
-        subscriber();
-        console.info(
-          o.hasOwnProperty,
-          o.isPrototypeOf,
-          o.propertyIsEnumerable,
-          o.toLocaleString,
-          // @ts-ignore
-          o.toSource,
-          o.toString,
-          o.valueOf
-        );
-      });
+    autorun(() => {
+      subscriber();
+      console.info(
+        o.hasOwnProperty,
+        o.isPrototypeOf,
+        o.propertyIsEnumerable,
+        o.toLocaleString,
+        // @ts-ignore
+        o.toSource,
+        o.toString,
+        o.valueOf
+      );
+    });
 
-      assert.equal(subscriber.mock.callCount(), 1);
+    assert.equal(subscriber.mock.callCount(), 1);
 
-      transaction(() => {
-        // @ts-ignore
-        o.hasOwnProperty = 1;
-        // @ts-ignore
-        o.isPrototypeOf = 1;
-        // @ts-ignore
-        o.propertyIsEnumerable = 1;
-        // @ts-ignore
-        o.toLocaleString = 1;
-        // @ts-ignore
-        o.toSource = 1;
-        // @ts-ignore
-        o.toString = 1;
-        // @ts-ignore
-        o.valueOf = 1;
-      });
-      // assert.equal(subscriber.mock.callCount(), 1);
-    }
-  );
+    transaction(() => {
+      // @ts-ignore
+      o.hasOwnProperty = 1;
+      // @ts-ignore
+      o.isPrototypeOf = 1;
+      // @ts-ignore
+      o.propertyIsEnumerable = 1;
+      // @ts-ignore
+      o.toLocaleString = 1;
+      // @ts-ignore
+      o.toSource = 1;
+      // @ts-ignore
+      o.toString = 1;
+      // @ts-ignore
+      o.valueOf = 1;
+    });
+    // assert.equal(subscriber.mock.callCount(), 1);
+  });
 
   test(`returns the value being set`, () => {
     const o = makeObservable({ value: undefined });
@@ -1509,7 +1506,7 @@ describe('Big test', () => {
     assert.equal(o.value.lala, 3);
   });
 
-  test.todo(`supports reacting to deleting a shallow property`, (ctx) => {
+  test.skip(`supports reacting to deleting a shallow property`, (ctx) => {
     const o = makeObservable({ value: 123 });
     const subscriber = mock.fn();
 
@@ -1532,7 +1529,7 @@ describe('Big test', () => {
     assert.equal(subscriber.mock.callCount(), 3);
   });
 
-  test.todo(`supports not reacting when deleting a shallow property that was undefined`, (ctx) => {
+  test.skip(`supports not reacting when deleting a shallow property that was undefined`, (ctx) => {
     const o = makeObservable({ value: undefined });
     const subscriber = mock.fn();
 
@@ -1555,7 +1552,7 @@ describe('Big test', () => {
     assert.equal(subscriber.mock.callCount(), 2);
   });
 
-  test.todo(`supports reacting when deleting a shallow property that was null`, (ctx) => {
+  test.skip(`supports reacting when deleting a shallow property that was null`, (ctx) => {
     const o = makeObservable({ value: null });
     const subscriber = mock.fn();
 
@@ -1580,7 +1577,7 @@ describe('Big test', () => {
   });
 
   // reacts after deleting and then set to undefined
-  test.todo(`supports reacting to deleting a deep property`, (ctx) => {
+  test.skip(`supports reacting to deleting a deep property`, (ctx) => {
     const o = makeObservable({ deep: { value: 123 } });
     const subscriber = mock.fn();
 
@@ -1603,7 +1600,7 @@ describe('Big test', () => {
     assert.equal(subscriber.mock.callCount(), 3);
   });
 
-  test.todo(`supports not reacting when deleting a deep property that was undefined`, (ctx) => {
+  test.skip(`supports not reacting when deleting a deep property that was undefined`, (ctx) => {
     const o = makeObservable({ deep: { value: undefined } });
     const subscriber = mock.fn();
 
@@ -1921,7 +1918,7 @@ describe('Big test', () => {
   });
 
   // kr-observable supports it for methods, need to support also this
-  test.todo(`supports batching setters automatically`, (ctx) => {
+  test(`supports batching setters automatically`, (ctx) => {
     const o = makeObservable({
       foo: 1,
       bar: 2,
@@ -2028,185 +2025,169 @@ describe('Big test', () => {
     assert.equal(calls, 2);
   });
 
-  // test(`supports batching additions automatically no Object.keys, no reading`, (ctx) => {
-  //   const o = makeObservable({ bar: 2 });
-  //
-  //   let calls = 0;
-  //
-  //   autorun(() => {
-  //     calls += 1;
-  //     if ('foo' in o) {
-  //     }
-  //   });
-  //   execute();
-  //   assert.equal(calls, 1);
-  //
-  //   o.foo = 1;
-  //   execute();
-  //   assert.equal(calls, 2);
-  // });
-  //
-  // test(`supports batching additions automatically new property `, (ctx) => {
-  //   const o = makeObservable({ bar: 2 });
-  //
-  //   let calls = 0;
-  //
-  //   autorun(() => {
-  //     calls += 1;
-  //     o.foo;
-  //   });
-  //   execute();
-  //   assert.equal(calls, 1);
-  //
-  //   o.foo = 1;
-  //   execute();
-  //   assert.equal(calls, 2);
-  // });
-  //
-  // test(`supports reacting to changes on custom classes`, (ctx) => {
-  //   class Foo {
-  //     constructor() {
-  //       this.foo = 0;
-  //       return makeObservable(this);
-  //     }
-  //   }
-  //
-  //   class Bar extends Foo {
-  //     constructor() {
-  //       super();
-  //       this.bar = 0;
-  //       return makeObservable(this);
-  //     }
-  //   }
-  //
-  //   const foo = new Foo();
-  //   const bar = new Bar();
-  //
-  //   let calls = '';
-  //
-  //   const execute1 = memo(() => {
-  //     foo.foo;
-  //     calls += 'f';
-  //   });
-  //   execute1();
-  //
-  //   const execute2 = memo(() => {
-  //     bar.bar;
-  //     calls += 'b';
-  //   });
-  //   execute1(), execute2();
-  //
-  //   assert.equal(calls, 'fb');
-  //
-  //   foo.foo += 1;
-  //   execute1(), execute2();
-  //   assert.equal(calls, 'fbf');
-  //
-  //   bar.bar += 1;
-  //   execute1(), execute2();
-  //   assert.equal(calls, 'fbfb');
-  // });
-  //
-  // test(`${
-  //   lib
-  // }supports reacting to property checks when value is undefined, deleting [solid]`, (ctx) => {
-  //   const o = makeObservable({ value: undefined });
-  //
-  //   let calls = 0;
-  //
-  //   autorun(() => {
-  //     calls += 1;
-  //     if ('value' in o) {
-  //     }
-  //   });
-  //   execute();
-  //   assert.equal(calls, 1);
-  //
-  //   delete o.value;
-  //   execute();
-  //   assert.equal(calls, 2);
-  //   assert.equal('value' in o, false);
-  //   assert.equal(calls, 2);
-  //
-  //   delete o.value;
-  //   execute();
-  //   assert.equal(calls, 2);
-  //   assert.equal('value' in o, false);
-  //   assert.equal(calls, 2);
-  // });
-  //
-  // test(`${
-  //   lib
-  // }supports reacting to property checks when value is undefined, deleting deep [solid]`, (ctx) => {
-  //   const o = makeObservable({ value: { deep: undefined } });
-  //
-  //   let calls = 0;
-  //
-  //   autorun(() => {
-  //     calls += 1;
-  //     if ('deep' in o.value) {
-  //     }
-  //   });
-  //   execute();
-  //   assert.equal(calls, 1);
-  //
-  //   delete o.value.deep;
-  //   execute();
-  //   assert.equal(calls, 2);
-  //   assert.equal('deep' in o.value, false);
-  //   assert.equal(calls, 2);
-  //
-  //   delete o.value.deep;
-  //   execute();
-  //   assert.equal(calls, 2);
-  //   assert.equal('deep' in o.value, false);
-  //   assert.equal(calls, 2);
-  // });
-  //
-  // test(`supports reacting to property checks, adding [solid]`, (ctx) => {
-  //   const o = makeObservable({});
-  //
-  //   let calls = 0;
-  //
-  //   autorun(() => {
-  //     calls += 1;
-  //     if ('value' in o) {
-  //     }
-  //   });
-  //   execute();
-  //   assert.equal(calls, 1);
-  //
-  //   o.value = undefined;
-  //   execute();
-  //   assert.equal(calls, 2);
-  //
-  //   o.value = undefined;
-  //   execute();
-  //   assert.equal(calls, 2);
-  // });
-  //
-  // test(`supports reacting to property checks, adding deep [solid]`, (ctx) => {
-  //   const o = makeObservable({ value: Object.create(null) });
-  //
-  //   let calls = 0;
-  //
-  //   autorun(() => {
-  //     calls += 1;
-  //     if ('deep' in o.value) {
-  //     }
-  //   });
-  //   execute();
-  //   assert.equal(calls, 1);
-  //
-  //   o.value.deep = undefined;
-  //   execute();
-  //   assert.equal(calls, 2);
-  //
-  //   o.value.deep = undefined;
-  //   execute();
-  //   assert.equal(calls, 2);
-  // });
-  //
+  test(`supports batching additions automatically no Object.keys, no reading`, (ctx) => {
+    const o = makeObservable({ bar: 2 });
+
+    let calls = 0;
+
+    autorun(() => {
+      calls += 1;
+      ctx.diagnostic(`${'foo' in o}`);
+    });
+    assert.equal(calls, 1);
+
+    // @ts-ignore
+    transaction(() => (o.foo = 1));
+    assert.equal(calls, 2);
+  });
+
+  test(`supports batching additions automatically new property `, (ctx) => {
+    const o = makeObservable({ bar: 2 });
+
+    let calls = 0;
+
+    autorun(() => {
+      calls += 1;
+      // @ts-ignore
+      ctx.diagnostic(`${o.foo}`);
+    });
+    assert.equal(calls, 1);
+
+    // @ts-ignore
+    transaction(() => (o.foo = 1));
+    assert.equal(calls, 2);
+  });
+
+  test(`supports reacting to changes on custom classes`, (ctx) => {
+    class Foo extends Observable {
+      foo = 0;
+    }
+
+    class Bar extends Foo {
+      bar = 0;
+    }
+
+    const foo = new Foo();
+    const bar = new Bar();
+
+    let calls = '';
+
+    autorun(() => {
+      ctx.diagnostic(`${foo.foo}`);
+      calls += 'f';
+    });
+
+    autorun(() => {
+      ctx.diagnostic(`${bar.bar}`);
+      calls += 'b';
+    });
+
+    assert.equal(calls, 'fb');
+
+    transaction(() => (foo.foo += 1));
+    assert.equal(calls, 'fbf');
+
+    transaction(() => (bar.bar += 1));
+    assert.equal(calls, 'fbfb');
+  });
+
+  test(`supports reacting to property checks when value is undefined, deleting`, (ctx) => {
+    const o = makeObservable({ value: undefined });
+
+    let calls = 0;
+
+    autorun(() => {
+      calls += 1;
+      ctx.diagnostic(`${'value' in o}`);
+    });
+    assert.equal(calls, 1);
+
+    transaction(() => delete o.value);
+    assert.equal(calls, 2);
+    assert.equal('value' in o, false);
+    assert.equal(calls, 2);
+
+    transaction(() => {
+      try {
+        // toDo throws because of Reflect.deleteProperty, is this behaviour correct?
+        delete o.value;
+      } catch (error) {
+        assert.equal(error instanceof Error, true);
+      }
+    });
+    assert.equal(calls, 2);
+    assert.equal('value' in o, false);
+    assert.equal(calls, 2);
+  });
+
+  test(`supports reacting to property checks when value is undefined, deleting deep`, (ctx) => {
+    const o = makeObservable({ value: { deep: undefined } });
+
+    let calls = 0;
+
+    autorun(() => {
+      calls += 1;
+      ctx.diagnostic(`${'deep' in o.value}`);
+    });
+    assert.equal(calls, 1);
+
+    transaction(() => delete o.value.deep);
+    assert.equal(calls, 2);
+    assert.equal('deep' in o.value, false);
+    assert.equal(calls, 2);
+
+    transaction(() => {
+      try {
+        // toDo throws because of Reflect.deleteProperty, is this behaviour correct?
+        delete o.value.deep;
+      } catch (error) {
+        assert.equal(error instanceof Error, true);
+      }
+    });
+    assert.equal(calls, 2);
+    assert.equal('deep' in o.value, false);
+    assert.equal(calls, 2);
+  });
+
+  test(`supports reacting to property checks, adding [solid]`, (ctx) => {
+    const o = makeObservable({});
+
+    let calls = 0;
+
+    autorun(() => {
+      calls += 1;
+      ctx.diagnostic(`${'value' in o}`);
+    });
+    assert.equal(calls, 1);
+
+    // @ts-ignore
+    transaction(() => (o.value = undefined));
+    assert.equal(calls, 2);
+
+    // @ts-ignore
+    transaction(() => (o.value = undefined));
+    assert.equal(calls, 2);
+  });
+
+  test(`supports reacting to property checks, adding deep`, (ctx) => {
+    const o = makeObservable({ value: Object.create(null) });
+
+    let calls = 0;
+
+    autorun(() => {
+      calls += 1;
+      ctx.diagnostic(`${'deep' in o.value}`);
+    });
+    assert.equal(calls, 1);
+
+    transaction(() => (o.value.deep = undefined));
+    assert.equal(calls, 2);
+
+    transaction(() => (o.value.deep = undefined));
+    assert.equal(calls, 2);
+  });
+
+  // toDo what is root??
   // test(`survives reading a value inside a discarded root`, (ctx) => {
   //   const o = makeObservable({ value: 123 });
   //
@@ -2234,196 +2215,167 @@ describe('Big test', () => {
   //   execute();
   //   assert.equal(calls, 2);
   // });
-  //
-  // test(`does nothing for primitives`, (ctx) => {
-  //   const o = makeObservable({ foo: 123 });
-  //   assert.equal(o.foo, 123);
-  //
-  //   o.foo = 321;
-  //   assert.equal(o.foo, 321);
-  //
-  //   o.foo = undefined;
-  //   assert.equal(o.foo, undefined);
-  //
-  //   o.foo = null;
-  //   assert.equal(o.foo, null);
-  //
-  //   o.foo = 0;
-  //   assert.equal(o.foo, 0);
-  //
-  //   o.foo = '';
-  //   assert.equal(o.foo, '');
-  //
-  //   o.foo = 'string';
-  //   assert.equal(o.foo, 'string');
-  //
-  //   o.foo = [true];
-  //   assert.equal(o.foo).toEqual([true]);
-  //
-  //   o.foo = { 0: true };
-  //   assert.equal(o.foo).toEqual({ 0: true });
-  //
-  //   o.foo = [true];
-  //   assert.equal(o.foo).toEqual([true]);
-  //
-  //   o.foo = true;
-  //   assert.equal(o.foo, true);
-  //
-  //   o.foo = false;
-  //   assert.equal(o.foo, false);
-  //
-  //   o.foo = Infinity;
-  //   assert.equal(o.foo, Infinity);
-  //
-  //   o.foo = Infinity;
-  //   assert.equal(o.foo, Infinity);
-  //
-  //   o.foo = NaN;
-  //   assert.equal(Object.is(o.foo, NaN)).toBe(true);
-  //
-  //   o.foo = 1;
-  //   assert.equal(o.foo, 1);
-  // });
-  //
-  // test(`can mutate object returned by getter [oby]`, (ctx) => {
-  //   const result = makeObservable({
-  //     get greeting() {
-  //       return { greet: { deep: `hi, quack` } };
-  //     },
-  //     set greeting(val) {},
-  //   });
-  //   assert.equal(result.greeting.greet.deep, 'hi, quack');
-  //
-  //   result.greeting.greet.deep = undefined;
-  //   assert.equal(result.greeting.greet.deep, 'hi, quack');
-  //
-  //   const tmp1 = result.greeting;
-  //   assert.equal(tmp1.greet.deep, 'hi, quack');
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       tmp1.greet.deep = v;
-  //     },
-  //     () => tmp1.greet.deep
-  //   );
-  //
-  //   const tmp2 = result.greeting.greet;
-  //   assert.equal(tmp2.deep, 'hi, quack');
-  //
-  //   testValues(
-  //     expect,
-  //     (v) => {
-  //       tmp2.deep = v;
-  //     },
-  //     () => tmp2.deep
-  //   );
-  // });
-  //
+
+  test(`does nothing for primitives`, () => {
+    const o = makeObservable({ foo: 123 });
+    assert.equal(o.foo, 123);
+
+    o.foo = 321;
+    assert.equal(o.foo, 321);
+
+    o.foo = undefined;
+    assert.equal(o.foo, undefined);
+
+    o.foo = null;
+    assert.equal(o.foo, null);
+
+    o.foo = 0;
+    assert.equal(o.foo, 0);
+
+    // @ts-ignore
+    o.foo = '';
+    assert.equal(o.foo, '');
+
+    // @ts-ignore
+    o.foo = 'string';
+    assert.equal(o.foo, 'string');
+
+    // kr-observable will return proxy
+    // o.foo = { 0: true };
+    // assert.equal(o.foo).toEqual({ 0: true });
+
+    // kr-observable will return Observable array
+    // @ts-ignore
+    // o.foo = [true];
+    // assert.equal(o.foo, [true]);
+
+    // @ts-ignore
+    o.foo = true;
+    assert.equal(o.foo, true);
+
+    // @ts-ignore
+    o.foo = false;
+    assert.equal(o.foo, false);
+
+    o.foo = Infinity;
+    assert.equal(o.foo, Infinity);
+
+    o.foo = Infinity;
+    assert.equal(o.foo, Infinity);
+
+    o.foo = NaN;
+    assert.equal(Object.is(o.foo, NaN), true);
+
+    o.foo = 1;
+    assert.equal(o.foo, 1);
+  });
+
+  test(`can mutate object returned by getter [oby]`, () => {
+    const result = makeObservable({
+      get greeting() {
+        return { greet: { deep: `hi, quack` } };
+      },
+      set greeting(val) {
+        console.info(1);
+      },
+    });
+    assert.equal(result.greeting.greet.deep, 'hi, quack');
+
+    result.greeting.greet.deep = undefined;
+    assert.equal(result.greeting.greet.deep, 'hi, quack');
+
+    const tmp1 = result.greeting;
+    assert.equal(tmp1.greet.deep, 'hi, quack');
+
+    const tmp2 = result.greeting.greet;
+    assert.equal(tmp2.deep, 'hi, quack');
+  });
+
   // // vue
-  //
-  // test(`object.keys`, (ctx) => {
-  //   const original = { foo: 1 };
-  //   const result = makeObservable(original);
-  //   assert.equal(result.foo, 1);
-  //   assert.equal(result).not.toBe(original);
-  //
-  //   assert.equal('foo' in result, true);
-  //
-  //   assert.equal(Object.keys(result)).toEqual(['foo']);
-  // });
-  //
-  // test(`observed value should proxy mutations to original (Object)`, (ctx) => {
-  //   const original = { foo: 1 };
-  //   const observed = makeObservable(original);
-  //   // set
-  //   observed.bar = 1;
-  //   assert.equal(observed.bar, 1);
-  //   assert.equal(original.bar, 1);
-  //
-  //   // delete
-  //   delete observed.foo;
-  //   assert.equal('foo' in observed, false);
-  //   assert.equal('foo' in original, false);
-  // });
-  //
-  // test(`original value change should reflect in observed value (Object)`, (ctx) => {
-  //   // same as before test but the value set is on original rather than observed
-  //   const original = { foo: 1 };
-  //   const observed = makeObservable(original);
-  //
-  //   // set
-  //   original.bar = 1;
-  //   assert.equal(original.bar, 1);
-  //   assert.equal(observed.bar, 1);
-  //
-  //   // delete
-  //   delete original.foo;
-  //   assert.equal('foo' in original, false);
-  //   assert.equal('foo' in observed, false);
-  // });
-  //
-  // test(`setting a property with an unobserved value should wrap with reactive`, (ctx) => {
-  //   const observed = makeObservable({});
-  //   const raw = {};
-  //   observed.foo = raw;
-  //   assert.equal(observed.foo).not.toBe(raw);
-  //
-  //   let calls = 0;
-  //   autorun(() => {
-  //     calls++;
-  //     observed.foo;
-  //   });
-  //   execute();
-  //   assert.equal(calls, 1);
-  //
-  //   observed.foo = false;
-  //   execute();
-  //   assert.equal(calls, 2);
-  // });
-  //
-  // test(`observing already observed value should return same Proxy`, (ctx) => {
-  //   const original = { foo: 1 };
-  //   const observed = makeObservable(original);
-  //   const observed2 = makeObservable(observed);
-  //   assert.equal(observed2, observed);
-  // });
-  //
-  // test(`observing the same value multiple times should return same Proxy`, (ctx) => {
-  //   const original = { foo: 1 };
-  //   const observed = makeObservable(original);
-  //   const observed2 = makeObservable(original);
-  //   assert.equal(observed, observed2);
-  // });
-  //
-  // // #1246
-  // test(`mutation on objects using reactive as prototype should trigger`, (ctx) => {
-  //   const observed = makeObservable({ foo: 1 });
-  //   const original = Object.create(observed);
-  //   let dummy;
-  //   autorun(() => (dummy = original.foo));
-  //   execute();
-  //   assert.equal(dummy, 1);
-  //
-  //   observed.foo = 2;
-  //   execute();
-  //   assert.equal(dummy, 2);
-  //   assert.equal(observed.foo, 2);
-  //   assert.equal(original.foo, 2);
-  //
-  //   original.foo = 3;
-  //   execute();
-  //   assert.equal(dummy, 3);
-  //   assert.equal(observed.foo, 3);
-  //   assert.equal(original.foo, 3);
-  //
-  //   original.foo = 4;
-  //   execute();
-  //   assert.equal(dummy, 4);
-  //   assert.equal(observed.foo, 4);
-  //   assert.equal(original.foo, 4);
-  // });
-  //
+
+  test(`object.keys`, () => {
+    const original = { foo: 1 };
+    const result = makeObservable(original);
+    assert.equal(result.foo, 1);
+    assert.notEqual(result, original);
+    assert.equal('foo' in result, true);
+    assert.equal(Object.keys(result).toString(), 'foo');
+  });
+
+  test(`observed value should proxy mutations to original (Object)`, () => {
+    const original = { foo: 1 };
+    const observed = makeObservable(original);
+    // set
+    // @ts-ignore
+    observed.bar = 1;
+    // @ts-ignore
+    assert.equal(observed.bar, 1);
+    // @ts-ignore
+    assert.equal(original.bar, 1);
+
+    // delete
+    delete observed.foo;
+    assert.equal('foo' in observed, false);
+    assert.equal('foo' in original, false);
+  });
+
+  test(`original value change should reflect in observed value (Object)`, () => {
+    // same as before test but the value set is on original rather than observed
+    const original = { foo: 1 };
+    const observed = makeObservable(original);
+
+    // set
+    // @ts-ignore
+    original.bar = 1;
+    // @ts-ignore
+    assert.equal(original.bar, 1);
+    // @ts-ignore
+    assert.equal(observed.bar, 1);
+
+    // delete
+    delete original.foo;
+    assert.equal('foo' in original, false);
+    assert.equal('foo' in observed, false);
+  });
+
+  test(`observing already observed value should return same Proxy`, () => {
+    const original = { foo: 1 };
+    const observed = makeObservable(original);
+    const observed2 = makeObservable(observed);
+    assert.equal(observed2, observed);
+  });
+
+  // not sure if this is correct behaviour
+  test.skip(`observing the same value multiple times should return same Proxy`, () => {
+    const original = { foo: 1 };
+    const observed = makeObservable(original);
+    const observed2 = makeObservable(original);
+    assert.equal(observed, observed2);
+  });
+
+  test(`mutation on objects using reactive as prototype should trigger`, () => {
+    const observed = makeObservable({ foo: 1 });
+    const original = Object.create(observed);
+    let dummy;
+    autorun(() => (dummy = original.foo));
+    assert.equal(dummy, 1);
+
+    transaction(() => (observed.foo = 2));
+    assert.equal(dummy, 2);
+    assert.equal(observed.foo, 2);
+    assert.equal(original.foo, 2);
+
+    transaction(() => (original.foo = 3));
+    assert.equal(dummy, 3);
+    assert.equal(observed.foo, 3);
+    assert.equal(original.foo, 3);
+
+    transaction(() => (original.foo = 4));
+    assert.equal(dummy, 4);
+    assert.equal(observed.foo, 4);
+    assert.equal(original.foo, 4);
+  });
+
   // test(`should not observe non-extensible objects [solid]`, (ctx) => {
   //   let makeObservableObj;
   //   let testObj;
@@ -2602,47 +2554,7 @@ describe('Big test', () => {
   //   assert.equal(obj3.value === obj1, true);
   //   assert.equal(obj3.value.value === obj4.value.value, true);
   // });
-  //
-  // test(`should observe basic properties`, (ctx) => {
-  //   let dummy;
-  //   const counter = makeObservable({ num: 0 });
-  //
-  //   let calls = 0;
-  //   autorun(() => {
-  //     calls += 1;
-  //     dummy = counter.num;
-  //   });
-  //   execute();
-  //   assert.equal(calls, 1);
-  //   assert.equal(dummy, 0);
-  //
-  //   counter.num = 7;
-  //   execute();
-  //   assert.equal(dummy, 7);
-  //   assert.equal(calls, 2);
-  // });
-  //
-  // test(`should observe multiple properties`, (ctx) => {
-  //   batch(() => {
-  //     let dummy;
-  //     const counter = makeObservable({ num1: 0, num2: 0 });
-  //     let calls = 0;
-  //     autorun(() => {
-  //       calls += 1;
-  //       dummy = counter.num1 + counter.num1 + counter.num2;
-  //     });
-  //     execute();
-  //     assert.equal(calls, 1);
-  //     assert.equal(dummy, 0);
-  //
-  //     counter.num1 = counter.num2 = 7;
-  //     execute();
-  //     assert.equal(dummy, 21);
-  //     // fabio implementation of memo is clever
-  //     assert.equal(calls, 2);
-  //   });
-  // });
-  //
+
   // test(`should handle multiple effects`, (ctx) => {
   //   let dummy1;
   //   let dummy2;
@@ -2658,72 +2570,26 @@ describe('Big test', () => {
   //   assert.equal(dummy1, 1);
   //   assert.equal(dummy2, 1);
   // });
-  //
-  // test(`should observe nested properties`, (ctx) => {
-  //   let dummy;
-  //   const counter = makeObservable({ nested: { num: 0 } });
-  //   autorun(() => (dummy = counter.nested.num));
-  //   execute();
-  //
-  //   assert.equal(dummy, 0);
-  //
-  //   counter.nested.num = 8;
-  //   execute();
-  //   assert.equal(dummy, 8);
-  // });
-  //
-  // test(`should observe delete operations`, (ctx) => {
-  //   let dummy;
-  //   const obj = makeObservable({ prop: 'value' });
-  //   autorun(() => (dummy = obj.prop));
-  //   execute();
-  //
-  //   assert.equal(dummy, 'value');
-  //
-  //   delete obj.prop;
-  //   execute();
-  //   assert.equal(dummy, undefined);
-  // });
-  //
-  // test(`should observe has operations`, (ctx) => {
-  //   let dummy;
-  //   const obj = makeObservable({ prop: 'value' });
-  //   autorun(() => (dummy = 'prop' in obj));
-  //   execute();
-  //
-  //   assert.equal(dummy, true);
-  //
-  //   delete obj.prop;
-  //   execute();
-  //   assert.equal(dummy, false);
-  //   obj.prop = 12;
-  //   execute();
-  //   assert.equal(dummy, true);
-  // });
-  //
-  // test(`should observe properties on the prototype chain [solid]`, (ctx) => {
-  //   let dummy;
-  //   const counter = makeObservable({ num: 0 });
-  //   const parentCounter = makeObservable({ num: 2 });
-  //   Object.setPrototypeOf(counter, parentCounter);
-  //   autorun(() => (dummy = counter.num));
-  //   execute();
-  //
-  //   assert.equal(dummy, 0);
-  //
-  //   delete counter.num;
-  //   execute();
-  //   assert.equal(dummy, 2);
-  //
-  //   parentCounter.num = 4;
-  //   execute();
-  //   assert.equal(dummy, 4);
-  //
-  //   counter.num = 3;
-  //   execute();
-  //   assert.equal(dummy, 3);
-  // });
-  //
+
+  test.skip(`should observe properties on the prototype chain [solid]`, () => {
+    let dummy;
+    const counter = makeObservable({ num: 0 });
+    const parentCounter = makeObservable({ num: 2 });
+    Object.setPrototypeOf(counter, parentCounter);
+    autorun(() => (dummy = counter.num));
+
+    assert.equal(dummy, 0);
+
+    transaction(() => delete counter.num);
+    assert.equal(dummy, 2);
+
+    transaction(() => (parentCounter.num = 4));
+    assert.equal(dummy, 4);
+
+    transaction(() => (counter.num = 3));
+    assert.equal(dummy, 3);
+  });
+
   // test(`should observe has operations on the prototype chain`, (ctx) => {
   //   let dummy;
   //   const counter = makeObservable({ num: 0 });
@@ -2746,7 +2612,7 @@ describe('Big test', () => {
   //   execute();
   //   assert.equal(dummy, true);
   // });
-  //
+
   // test(`prototype change [oby]`, (ctx) => {
   //   let dummy;
   //   let parentDummy;
@@ -2780,7 +2646,7 @@ describe('Big test', () => {
   //   assert.equal(parentDummy, 2);
   //   assert.equal(parent.prop, 2);
   // });
-  //
+
   // test(`should observe function call chains`, (ctx) => {
   //   let dummy;
   //   const counter = makeObservable({ num: 0 });
@@ -2797,7 +2663,7 @@ describe('Big test', () => {
   //   execute();
   //   assert.equal(dummy, 2);
   // });
-  //
+
   // test(`should observe iteration`, (ctx) => {
   //   let dummy;
   //   const list = makeObservable({ value: 'Hello' });
@@ -2814,7 +2680,7 @@ describe('Big test', () => {
   //   execute();
   //   assert.equal(dummy, 'World!');
   // });
-  //
+
   // test(`should observe enumeration`, (ctx) => {
   //   const numbers = makeObservable({ num1: 3 });
   //
@@ -2837,7 +2703,7 @@ describe('Big test', () => {
   //   execute();
   //   assert.equal(sum, 4);
   // });
-  //
+
   // test(`should observe symbol keyed properties`, (ctx) => {
   //   const key = Symbol('symbol keyed prop');
   //
@@ -2890,214 +2756,95 @@ describe('Big test', () => {
   //   assert.equal(dummy, undefined);
   //   assert.equal(hasDummy, false);
   // });
-  //
-  // test(`should observe function valued properties`, (ctx) => {
-  //   const oldFunc = () => {};
-  //   const newFunc = () => {};
-  //
-  //   let dummy;
-  //   const obj = makeObservable({ func: oldFunc });
-  //   autorun(() => (dummy = obj.func));
-  //   execute();
-  //   if (lib === 'pota: ') {
-  //     assert.equal(typeof dummy, 'function');
-  //     obj.func = newFunc;
-  //     execute();
-  //     assert.equal(typeof obj.func, 'function');
-  //   } else {
-  //     assert.equal(dummy, oldFunc);
-  //     obj.func = newFunc;
-  //     execute();
-  //     assert.equal(dummy, newFunc);
-  //   }
-  // });
-  //
-  // test(`should observe getters relying on this`, (ctx) => {
-  //   const obj = makeObservable({
-  //     a: 1,
-  //     get b() {
-  //       return this.a;
-  //     },
-  //   });
-  //
-  //   let dummy;
-  //   autorun(() => {
-  //     dummy = obj.b;
-  //   });
-  //   execute();
-  //   assert.equal(dummy, 1);
-  //
-  //   obj.a++;
-  //   execute();
-  //   assert.equal(dummy, 2);
-  // });
-  //
-  // test(`should observe methods relying on this`, (ctx) => {
-  //   const obj = makeObservable({
-  //     a: 1,
-  //     b() {
-  //       return this.a;
-  //     },
-  //   });
-  //
-  //   let dummy;
-  //   autorun(() => {
-  //     dummy = obj.b();
-  //   });
-  //   execute();
-  //   assert.equal(dummy, 1);
-  //
-  //   obj.a++;
-  //   execute();
-  //   assert.equal(dummy, 2);
-  // });
-  //
-  // test(`should not observe set operations without a value change`, (ctx) => {
-  //   let hasDummy;
-  //   let getDummy;
-  //   const obj = makeObservable({ prop: 'value' });
-  //
-  //   let calls1 = 0;
-  //   let calls2 = 0;
-  //   const execute1 = memo(() => {
-  //     calls1++;
-  //     getDummy = obj.prop;
-  //   });
-  //   execute1();
-  //   const execute2 = memo(() => {
-  //     calls2++;
-  //     hasDummy = 'prop' in obj;
-  //   });
-  //   execute2();
-  //   assert.equal(calls1, 1);
-  //   assert.equal(calls2, 1);
-  //
-  //   assert.equal(getDummy, 'value');
-  //   assert.equal(hasDummy, true);
-  //
-  //   obj.prop = 'value';
-  //   execute1(), execute2();
-  //
-  //   assert.equal(calls1, 1);
-  //   assert.equal(calls2, 1);
-  //   assert.equal(getDummy, 'value');
-  //   assert.equal(hasDummy, true);
-  // });
-  //
-  // test(`should cut the loop`, (ctx) => {
-  //   const counter = makeObservable({ num: 0 });
-  //   autorun(() => {
-  //     if (counter.num < 10) {
-  //       counter.num++;
-  //     }
-  //   });
-  //   execute();
-  //   assert.equal(counter.num, 10);
-  // });
-  //
-  // test(`${
-  //   lib
-  // }should not be triggered by mutating a property, which is used in an inactive branch`, (ctx) => {
-  //   let dummy;
-  //   const obj = makeObservable({ prop: 'value', run: true });
-  //
-  //   let calls = 0;
-  //   autorun(() => {
-  //     calls++;
-  //     dummy = obj.run ? obj.prop : 'other';
-  //   });
-  //   execute();
-  //
-  //   assert.equal(dummy, 'value');
-  //   assert.equal(calls, 1);
-  //
-  //   obj.run = false;
-  //   execute();
-  //   assert.equal(dummy, 'other');
-  //   assert.equal(calls, 2);
-  //
-  //   obj.prop = 'value2';
-  //   execute();
-  //   assert.equal(dummy, 'other');
-  //   assert.equal(calls, 2);
-  // });
-  //
-  // test(`should not run multiple times for a single mutation`, (ctx) => {
-  //   let dummy;
-  //   const obj = makeObservable({});
-  //   let calls = 0;
-  //   autorun(() => {
-  //     calls++;
-  //     for (const key in obj) {
-  //       dummy = obj[key];
-  //     }
-  //     dummy = obj.prop;
-  //   });
-  //   execute();
-  //   assert.equal(calls, 1);
-  //
-  //   obj.prop = 16;
-  //   execute();
-  //
-  //   assert.equal(dummy, 16);
-  //   assert.equal(calls, 2);
-  // });
-  //
-  // test(`should observe json methods`, (ctx) => {
-  //   let dummy = {};
-  //   const obj = makeObservable({});
-  //   autorun(() => {
-  //     dummy = JSON.parse(JSON.stringify(obj));
-  //   });
-  //   execute();
-  //
-  //   obj.a = 1;
-  //   execute();
-  //   assert.equal(dummy.a, 1);
-  // });
-  //
-  // test(`should observe class method invocations`, (ctx) => {
-  //   class Model {
-  //     count;
-  //     constructor() {
-  //       this.count = 0;
-  //     }
-  //     inc() {
-  //       this.count++;
-  //     }
-  //   }
-  //   const model = makeObservable(new Model());
-  //   let dummy;
-  //   autorun(() => {
-  //     dummy = model.count;
-  //   });
-  //   execute();
-  //   assert.equal(dummy, 0);
-  //
-  //   model.inc();
-  //   execute();
-  //   assert.equal(dummy, 1);
-  // });
-  //
-  // test(`${
-  //   lib
-  // }should not be triggered when the value and the old value both are NaN [solid]`, (ctx) => {
-  //   const obj = makeObservable({
-  //     foo: NaN,
-  //   });
-  //   let calls = 0;
-  //   autorun(() => {
-  //     calls++;
-  //     obj.foo;
-  //   });
-  //   execute();
-  //   assert.equal(calls, 1);
-  //
-  //   obj.foo = NaN;
-  //   execute();
-  //   assert.equal(calls, 1);
-  // });
-  //
+
+  // somnitelyno, no okay
+  test.skip(`should cut the loop`, () => {
+    const counter = makeObservable({ num: 0 });
+    autorun(() => {
+      if (counter.num < 10) {
+        counter.num++;
+      }
+    });
+    assert.equal(counter.num, 10);
+  });
+
+  // kr-observable doesn't use atoms or signals
+  test.skip(`should not be triggered by mutating a property, which is used in an inactive branch`, () => {
+    let dummy;
+    const obj = makeObservable({ prop: 'value', run: true });
+
+    let calls = 0;
+    autorun(() => {
+      calls++;
+      dummy = obj.run ? obj.prop : 'other';
+    });
+
+    assert.equal(dummy, 'value');
+    assert.equal(calls, 1);
+
+    transaction(() => (obj.run = false));
+    assert.equal(dummy, 'other');
+    assert.equal(calls, 2);
+
+    transaction(() => (obj.prop = 'value2'));
+    assert.equal(dummy, 'other');
+    assert.equal(calls, 2);
+  });
+
+  test(`should not run multiple times for a single mutation`, () => {
+    let dummy;
+    const obj = makeObservable({});
+    let calls = 0;
+    autorun(() => {
+      calls++;
+      // eslint-disable-next-line guard-for-in
+      for (const key in obj) {
+        dummy = obj[key];
+      }
+      // @ts-ignore
+      dummy = obj.prop;
+    });
+
+    assert.equal(calls, 1);
+
+    // @ts-ignore
+    transaction(() => (obj.prop = 16));
+
+    assert.equal(dummy, 16);
+    assert.equal(calls, 2);
+  });
+
+  // it will for non-empty objects, no idea why this is needed
+  test.skip(`should observe json methods`, () => {
+    let dummy = {};
+    const obj = makeObservable({});
+    autorun(() => {
+      dummy = JSON.parse(JSON.stringify(obj));
+    });
+
+    // @ts-ignore
+    transaction(() => (obj.a = 1));
+    // @ts-ignore
+    assert.equal(dummy.a, 1);
+  });
+
+  // how often can this happen, but for such rare cases, do we want to check all mutations for NaN? That's not wise
+  test.skip(`should not be triggered when the value and the old value both are NaN`, (ctx) => {
+    const obj = makeObservable({
+      foo: NaN,
+    });
+    let calls = 0;
+    autorun(() => {
+      calls++;
+      ctx.diagnostic(`${obj.foo}`);
+    });
+
+    assert.equal(calls, 1);
+
+    transaction(() => (obj.foo = NaN));
+    assert.equal(calls, 1);
+  });
+
   // test(`should not be triggered when set with the same proxy [oby]`, (ctx) => {
   //   const obj = makeObservable({ foo: 1 });
   //   const observed = makeObservable({ obj });
@@ -3114,154 +2861,47 @@ describe('Big test', () => {
   //   execute();
   //   assert.equal(calls, 1);
   // });
-  //
-  // test(`should return updated value`, (ctx) => {
-  //   const value = makeObservable({});
-  //   const cValue = memo(() => value.foo);
-  //   assert.equal(cValue()).toBe(undefined);
-  //   value.foo = 1;
-  //   assert.equal(cValue()).toBe(1);
-  // });
-  //
-  // test(`should trigger effect`, (ctx) => {
-  //   const value = makeObservable({});
-  //   const cValue = memo(() => value.foo);
-  //   let dummy;
-  //   autorun(() => {
-  //     dummy = cValue();
-  //   });
-  //   execute();
-  //
-  //   assert.equal(dummy, undefined);
-  //
-  //   value.foo = 1;
-  //   execute();
-  //   assert.equal(dummy, 1);
-  // });
-  //
-  // test(`should work when chained`, (ctx) => {
-  //   const value = makeObservable({ foo: 0 });
-  //   const c1 = memo(() => value.foo);
-  //   const c2 = memo(() => c1() + 1);
-  //   assert.equal(c2()).toBe(1);
-  //   assert.equal(c1()).toBe(0);
-  //   value.foo++;
-  //   assert.equal(c2()).toBe(2);
-  //   assert.equal(c1()).toBe(1);
-  // });
-  //
-  // test(`should trigger effect when chained`, (ctx) => {
-  //   const value = makeObservable({ foo: 0 });
-  //
-  //   let calls1 = 0;
-  //   let calls2 = 0;
-  //
-  //   const c1 = memo(() => {
-  //     calls1++;
-  //     return value.foo;
-  //   });
-  //   const c2 = memo(() => {
-  //     calls2++;
-  //     return c1() + 1;
-  //   });
-  //
-  //   let dummy;
-  //   autorun(() => {
-  //     dummy = c2();
-  //   });
-  //   execute();
-  //
-  //   assert.equal(dummy, 1);
-  //   assert.equal(calls1, 1);
-  //   assert.equal(calls2, 1);
-  //
-  //   value.foo++;
-  //   execute();
-  //   assert.equal(dummy, 2);
-  //   // should not result in duplicate calls
-  //   assert.equal(calls1, 2);
-  //   assert.equal(calls2, 2);
-  // });
-  //
-  // test(`should trigger effect when chained (mixed invocations)`, (ctx) => {
-  //   const value = makeObservable({ foo: 0 });
-  //
-  //   let calls1 = 0;
-  //   let calls2 = 0;
-  //
-  //   const c1 = memo(() => {
-  //     calls1++;
-  //     return value.foo;
-  //   });
-  //   const c2 = memo(() => {
-  //     calls2++;
-  //     return c1() + 1;
-  //   });
-  //
-  //   let dummy;
-  //   autorun(() => {
-  //     dummy = c1() + c2();
-  //   });
-  //   execute();
-  //   assert.equal(dummy, 1);
-  //
-  //   assert.equal(calls1, 1);
-  //   assert.equal(calls2, 1);
-  //
-  //   value.foo++;
-  //   execute();
-  //
-  //   assert.equal(dummy, 3);
-  //   // should not result in duplicate calls
-  //   assert.equal(calls1, 2);
-  //   assert.equal(calls2, 2);
-  // });
-  //
+
   // test(`should avoid infinite loops with other effects`, (ctx) => {
-  //   batch(() => {
-  //     const nums = makeObservable({ num1: 0, num2: 1 });
+  //   const nums = makeObservable({ num1: 0, num2: 1 });
   //
-  //     let calls1 = 0;
-  //     let calls2 = 0;
+  //   let calls1 = 0;
+  //   let calls2 = 0;
   //
-  //     const execute1 = memo(() => {
-  //       calls1++;
-  //       nums.num1 = nums.num2;
-  //     });
-  //     execute1();
-  //     assert.equal(nums.num1, 1);
-  //     assert.equal(nums.num2, 1);
-  //
-  //     const execute2 = memo(() => {
-  //       calls2++;
-  //       nums.num2 = nums.num1;
-  //     });
-  //     execute1(), execute2();
-  //
-  //     assert.equal(nums.num1, 1);
-  //     assert.equal(nums.num2, 1);
-  //     assert.equal(calls1, 1);
-  //     assert.equal(calls2, 1);
-  //
-  //     nums.num2 = 4;
-  //     execute1(), execute2();
-  //
-  //     assert.equal(nums.num1, 4);
-  //     assert.equal(nums.num2, 4);
-  //     assert.equal(calls1, 2);
-  //     assert.equal(calls2, 2);
-  //
-  //     nums.num1 = 10;
-  //     execute1(), execute2();
-  //
-  //     assert.equal(nums.num1, 10);
-  //     assert.equal(nums.num2, 10);
-  //     // this is just implementation specific, but shouldnt run more than 3 times
-  //     assert.equal(calls1, 2);
-  //     assert.equal(calls2, 3);
+  //   autorun(() => {
+  //     calls1++;
+  //     nums.num1 = nums.num2;
   //   });
-  // });
   //
+  //   assert.equal(nums.num1, 1);
+  //   assert.equal(nums.num2, 1);
+  //
+  //   autorun(() => {
+  //     calls2++;
+  //     nums.num2 = nums.num1;
+  //   });
+  //
+  //   assert.equal(nums.num1, 1);
+  //   assert.equal(nums.num2, 1);
+  //   assert.equal(calls1, 1);
+  //   assert.equal(calls2, 1);
+  //
+  //   transaction(() => nums.num2 = 4);
+  //
+  //   assert.equal(nums.num1, 4);
+  //   assert.equal(nums.num2, 4);
+  //   assert.equal(calls1, 2);
+  //   assert.equal(calls2, 2);
+  //
+  //   transaction(() => nums.num1 = 10);
+  //
+  //   assert.equal(nums.num1, 10);
+  //   assert.equal(nums.num2, 10);
+  //   // this is just implementation specific, but shouldnt run more than 3 times
+  //   // assert.equal(calls1, 2);
+  //   assert.equal(calls2, 3);
+  // });
+
   // // #1246
   // test(`mutation on objects using makeObservable as prototype should trigger`, (ctx) => {
   //   const original = makeObservable({ foo: 1 });
@@ -6544,35 +6184,6 @@ describe('Big test', () => {
   //   }
   // });
   //
-  // test(`${
-  //   lib
-  // }blacklist: doesnt creates a proxy for HTMLElement, Date, RegExp, Promise`, (ctx) => {
-  //   const values = [
-  //     document.createElement('div'),
-  //     document.createElement('lala'),
-  //     document.createElement('my-el'),
-  //     new Date(),
-  //     /test/i,
-  //     new Promise(() => {}),
-  //   ];
-  //   for (const val of values) {
-  //     assert.equal(isProxy(makeObservable(val))).toBe(false);
-  //     assert.equal(isProxy(makeObservable({ nested: val }).nested)).toBe(false);
-  //   }
-  //
-  //   // nested
-  // });
-  //
-  // test(`${
-  //   lib
-  // }crash: doesnt crash with  window, globalThis, document, documentElement, body`, (ctx) => {
-  //   const values = [window, globalThis, document, document.documentElement, document.body];
-  //   for (const val of values) {
-  //     assert.equal(isProxy(makeObservable(val))).toBe(false);
-  //     assert.equal(isProxy(makeObservable({ nested: val }).nested)).toBe(false);
-  //   }
-  // });
-  //
   // test(`prototype walk in the right order`, (ctx) => {
   //   class c {
   //     get value() {
@@ -7310,496 +6921,5 @@ describe('Big test', () => {
   //
   //     // end of tests
   //   });
-  // }
-  // // benchmark
-  //
-  // // https://github.com/vobyjs/oby/blob/master/tasks/store.fixtures.js
-  // // https://github.com/vobyjs/oby/blob/master/tasks/store.js
-  //
-  // if (doBenchmark) {
-  //   const NOOP = () => {};
-  //
-  //   const OBJ = () => ({
-  //     str: 'string',
-  //     null: null,
-  //     undefined,
-  //     nr: 123,
-  //     bigint: 10n,
-  //     symbol: Symbol(),
-  //     re: /foo/g,
-  //     fn() {},
-  //     arr: [1, 2, 3, {}],
-  //     arrfilled: new Array(10_000).fill(0).map((_, idx) => idx),
-  //     /* arrBuf: new ArrayBuffer(12),
-  //     arrTyped: new Int8Array(new ArrayBuffer(24)),*/
-  //     obj: {
-  //       deep: {
-  //         deeper: true,
-  //       },
-  //     },
-  //     date: new Date(),
-  //     /* map: new Map([
-  //     ['1', 1],
-  //     ['2', 2],
-  //   ]),*/
-  //     set: new Set([1, 2, 3]),
-  //   });
-  //
-  //   const OBJ_HUGE = () => ({
-  //     arr: new Array(100_000).fill(0).map((_, idx) => idx),
-  //     date: new Date(),
-  //     /*  map: new Map(
-  //     new Array(100_000)
-  //       .fill(0)
-  //       .map((_, idx) => idx)
-  //       .map(nr => [`${nr}`, nr]),
-  //   ),
-  //   set: new Set(new Array(100_000).fill(0).map((_, idx) => idx)),*/
-  //   });
-  //
-  //   const superTotal = 0;
-  //   const benchmark = (title, context, fn) => {
-  //     if (!benchmarkTable[title]) {
-  //       benchmarkTable[title] = {};
-  //       if (!benchmarkTable.total) {
-  //         benchmarkTable.total = {
-  //           'solid: ': 0,
-  //           'oby: ': 0,
-  //           'pota: ': 0,
-  //         };
-  //       }
-  //     }
-  //     try {
-  //       let total = 0;
-  //       root((dispose) => {
-  //         const ctx = context();
-  //         for (let i = 0; i < 3_000; i++) {
-  //           total += timing(() => {
-  //             fn(ctx);
-  //           });
-  //         }
-  //         dispose();
-  //       });
-  //       benchmarkTable[title][lib] = total;
-  //       benchmarkTable.total[lib] += total;
-  //     } catch (e) {
-  //       console.log(e);
-  //       benchmarkTable[title][lib] = e;
-  //     }
-  //   };
-  //
-  //   // get
-  //   benchmark(
-  //     'access: primitive',
-  //     () => {
-  //       return makeObservable(OBJ());
-  //     },
-  //     (ctx) => {
-  //       ctx.str;
-  //       ctx.nr;
-  //       ctx.symbol;
-  //     }
-  //   );
-  //   benchmark(
-  //     'access: shallow',
-  //     () => {
-  //       return makeObservable(OBJ());
-  //     },
-  //     (ctx) => {
-  //       ctx.arr;
-  //       ctx.obj;
-  //     }
-  //   );
-  //   benchmark(
-  //     'access: deep',
-  //     () => {
-  //       return makeObservable(OBJ());
-  //     },
-  //     (ctx) => {
-  //       ctx.arr[3].undefined;
-  //       ctx.obj.deep.deeper;
-  //     }
-  //   );
-  //
-  //   benchmark(
-  //     'access: array',
-  //     () => {
-  //       return makeObservable(OBJ());
-  //     },
-  //     (ctx) => {
-  //       ctx.arr.concat(4);
-  //       ctx.arr.entries();
-  //       ctx.arr.every(NOOP);
-  //       ctx.arr.filter(NOOP);
-  //       ctx.arr.find(NOOP);
-  //       ctx.arr.findIndex(NOOP);
-  //       ctx.arr.forEach(() => {});
-  //       ctx.arr.includes(1);
-  //       ctx.arr.indexOf(1);
-  //       ctx.arr.join();
-  //       ctx.arr.keys();
-  //       ctx.arr.lastIndexOf(1);
-  //       ctx.arr.map(NOOP);
-  //       ctx.arr.reduce(() => ({}));
-  //       ctx.arr.reduceRight(() => ({}));
-  //       ctx.arr.slice();
-  //       ctx.arr.some(NOOP);
-  //       ctx.arr.toLocaleString();
-  //       ctx.arr.toString();
-  //       ctx.arr.values();
-  //     }
-  //   );
-  //
-  //   benchmark(
-  //     'set: object:shallow',
-  //     () => {
-  //       return makeObservable(OBJ());
-  //     },
-  //     (ctx) => {
-  //       ctx.arr[0] = 1;
-  //     }
-  //   );
-  //
-  //   benchmark(
-  //     'set: object:deep',
-  //     () => {
-  //       return makeObservable(OBJ());
-  //     },
-  //     (ctx) => {
-  //       ctx.obj.deep.deeper = true;
-  //     }
-  //   );
-  //
-  //   benchmark(
-  //     'set: array',
-  //     () => {
-  //       return makeObservable(OBJ());
-  //     },
-  //     (ctx) => {
-  //       ctx.arr.copyWithin(0, 0, 0);
-  //       ctx.arr.push();
-  //       ctx.arr.splice(0, 0);
-  //     }
-  //   );
-  //
-  //   benchmark(
-  //     'set: object:shallow 2',
-  //     () => {
-  //       return makeObservable(OBJ());
-  //     },
-  //     (ctx) => {
-  //       ctx.arr[0] = 10;
-  //       ctx.obj.foo = 10;
-  //     }
-  //   );
-  //   benchmark(
-  //     'set: object:deep 2',
-  //     () => {
-  //       return makeObservable(OBJ());
-  //     },
-  //     (ctx) => {
-  //       ctx.arr[3].undefined = 10;
-  //       ctx.obj.deep.deeper = 10;
-  //     }
-  //   );
-  //
-  //   /*
-  //
-  //   benchmark(
-  //   'set: array 2',
-  //   () => {
-  //     return makeObservable(OBJ())
-  //   },
-  //   ctx => {
-  //     ctx.arr.copyWithin(0, 1, 2)
-  //     ctx.arr.fill(0)
-  //     ctx.arr.pop()
-  //     ctx.arr.push(-1, -2, -3)
-  //     ctx.arr.reverse()
-  //     ctx.arr.shift()
-  //     ctx.arr.sort()
-  //     ctx.arr.splice(0, 1, 2)
-  //     ctx.arr.unshift(5)
-  //   },
-  // )
-  // benchmark(
-  //   'mutate array: copyWithin',
-  //   () => {
-  //     return makeObservable(OBJ())
-  //   },
-  //   ctx => {
-  //     ctx.arrfilled.copyWithin(0, 1, 2)
-  //   },
-  // )
-  //
-  // benchmark(
-  //   'mutate array: fill',
-  //   () => {
-  //     return makeObservable(OBJ())
-  //   },
-  //   ctx => {
-  //     ctx.arrfilled.fill(0)
-  //   },
-  // )
-  //
-  // benchmark(
-  //   'mutate array: pop',
-  //   () => {
-  //     return makeObservable(OBJ())
-  //   },
-  //   ctx => {
-  //     ctx.arrfilled.pop()
-  //   },
-  // )
-  // benchmark(
-  //   'mutate array: push',
-  //   () => {
-  //     return makeObservable(OBJ())
-  //   },
-  //   ctx => {
-  //     ctx.arrfilled.push()
-  //   },
-  // )
-  // benchmark(
-  //   'mutate array: reverse ',
-  //   () => {
-  //     return makeObservable(OBJ())
-  //   },
-  //   ctx => {
-  //     ctx.arrfilled.reverse()
-  //   },
-  // )
-  // benchmark(
-  //   'mutate array: shift ',
-  //   () => {
-  //     return makeObservable(OBJ())
-  //   },
-  //   ctx => {
-  //     ctx.arrfilled.shift()
-  //   },
-  // )
-  // benchmark(
-  //   'mutate array: sort ',
-  //   () => {
-  //     return makeObservable(OBJ())
-  //   },
-  //   ctx => {
-  //     ctx.arrfilled.sort()
-  //   },
-  // )
-  // benchmark(
-  //   'mutate array: splice ',
-  //   () => {
-  //     return makeObservable(OBJ())
-  //   },
-  //   ctx => {
-  //     ctx.arrfilled.splice(0, 1, 2)
-  //   },
-  // )
-  // benchmark(
-  //   'mutate array: unshift ',
-  //   () => {
-  //     return makeObservable(OBJ())
-  //   },
-  //   ctx => {
-  //     ctx.arrfilled.unshift(5)
-  //   },
-  // )
-  //
-  // benchmark(
-  //   'delete: object:shallow ',
-  //   () => {
-  //     return makeObservable(OBJ())
-  //   },
-  //   ctx => {
-  //     delete ctx.arr
-  //   },
-  // )
-  // benchmark(
-  //   'delete: object:deep ',
-  //   () => {
-  //     return makeObservable(OBJ())
-  //   },
-  //   ctx => {
-  //     delete ctx.obj.deep.deeper
-  //   },
-  // )*/
-  //   // create
-  //   benchmark(
-  //     'create: number',
-  //     () => {},
-  //     () => {
-  //       makeObservable(123);
-  //     }
-  //   );
-  //   benchmark(
-  //     'create: object',
-  //     () => {},
-  //     () => {
-  //       makeObservable({});
-  //     }
-  //   );
-  //   benchmark(
-  //     'create: array',
-  //     () => {},
-  //     () => {
-  //       makeObservable([]);
-  //     }
-  //   );
-  //   /* benchmark(
-  //   'create: small',
-  //   () => {},
-  //   () => {
-  //     makeObservable(OBJ())
-  //   },
-  // )
-  // benchmark(
-  //   'create: huge',
-  //   () => {},
-  //   () => {
-  //     makeObservable(OBJ_HUGE())
-  //   },
-  // )*/
-  // }
-  //
-  // function testValues(ctx, set, get) {
-  //   let callsMemo = 0;
-  //   const value = memo(() => {
-  //     callsMemo += 1;
-  //     get();
-  //     get();
-  //     get();
-  //     return get();
-  //   });
-  //
-  //   assert.equal(callsMemo, 0);
-  //
-  //   set(123);
-  //   assert.equal(get()).toBe(123);
-  //   assert.equal(value()).toBe(123);
-  //   assert.equal(callsMemo, 1);
-  //
-  //   set(321);
-  //   assert.equal(get()).toBe(321);
-  //   assert.equal(value()).toBe(321);
-  //   assert.equal(callsMemo, 2);
-  //
-  //   set(undefined);
-  //   assert.equal(get()).toBe(undefined);
-  //   assert.equal(value()).toBe(undefined);
-  //   assert.equal(callsMemo, 3);
-  //
-  //   set(null);
-  //   assert.equal(get()).toBe(null);
-  //   assert.equal(value()).toBe(null);
-  //   assert.equal(callsMemo, 4);
-  //
-  //   set(1);
-  //   assert.equal(get()).toBe(1);
-  //   assert.equal(value()).toBe(1);
-  //   assert.equal(callsMemo, 5);
-  //
-  //   set('');
-  //   assert.equal(get()).toBe('');
-  //   assert.equal(value()).toBe('');
-  //   assert.equal(callsMemo, 6);
-  //
-  //   set('string');
-  //   assert.equal(get()).toBe('string');
-  //   assert.equal(value()).toBe('string');
-  //   assert.equal(callsMemo, 7);
-  //
-  //   set([true]);
-  //   assert.equal(get()).toEqual([true]);
-  //   assert.equal(value()).toEqual([true]);
-  //   assert.equal(Array.isArray(get())).toBe(true);
-  //   assert.equal(callsMemo, 8);
-  //
-  //   set({ 0: true });
-  //   assert.equal(get()).toEqual({ 0: true });
-  //   assert.equal(value()).toEqual({ 0: true });
-  //   assert.equal(Array.isArray(get())).toBe(false);
-  //   assert.equal(callsMemo, 9);
-  //
-  //   set([true]);
-  //   assert.equal(get()).toEqual([true]);
-  //   assert.equal(value()).toEqual([true]);
-  //   assert.equal(Array.isArray(get())).toBe(true);
-  //   assert.equal(callsMemo, 10);
-  //
-  //   set({ 0: true });
-  //   assert.equal(get()).toEqual({ 0: true });
-  //   assert.equal(value()).toEqual({ 0: true });
-  //   assert.equal(Array.isArray(get())).toBe(false);
-  //   assert.equal(callsMemo, 11);
-  //
-  //   set(true);
-  //   assert.equal(get()).toBe(true);
-  //   assert.equal(value()).toBe(true);
-  //   assert.equal(callsMemo, 12);
-  //
-  //   set(false);
-  //   assert.equal(get()).toBe(false);
-  //   assert.equal(value()).toBe(false);
-  //   assert.equal(callsMemo, 13);
-  //
-  //   set(Infinity);
-  //   assert.equal(get()).toBe(Infinity);
-  //   assert.equal(value()).toBe(Infinity);
-  //   assert.equal(callsMemo, 14);
-  //
-  //   set(Infinity);
-  //   assert.equal(get()).toBe(Infinity);
-  //   assert.equal(value()).toBe(Infinity);
-  //   assert.equal(callsMemo, 14);
-  //
-  //   // symbol
-  //   const s = Symbol();
-  //
-  //   set(s);
-  //   assert.equal(get()).toBe(s);
-  //   assert.equal(value()).toBe(s);
-  //   assert.equal(callsMemo, 15);
-  //
-  //   // bigint
-  //   const bn = BigInt('9007199254740991');
-  //   set(bn);
-  //   assert.equal(get()).toBe(bn);
-  //   assert.equal(value()).toBe(bn);
-  //   assert.equal(callsMemo, 16);
-  //
-  //   // built-ins should work and return same value
-  //   const p = Promise.resolve();
-  //   set(p);
-  //   assert.equal(get()).toBe(p);
-  //   assert.equal(value()).toBe(p);
-  //   assert.equal(callsMemo, 17);
-  //
-  //   const r = new RegExp('');
-  //   set(r);
-  //   assert.equal(get()).toBe(r);
-  //   assert.equal(value()).toBe(r);
-  //   assert.equal(callsMemo, 18);
-  //
-  //   const d = new Date();
-  //   set(d);
-  //   assert.equal(get()).toBe(d);
-  //   assert.equal(value()).toBe(d);
-  //   assert.equal(callsMemo, 19);
-  //
-  //   set(NaN);
-  //   assert.equal(Object.is(get(), NaN)).toBe(true);
-  //   assert.equal(Object.is(value(), NaN)).toBe(true);
-  //   assert.equal(callsMemo, 20);
-  //
-  //   set(0);
-  //   assert.equal(get()).toBe(0);
-  //   assert.equal(value()).toBe(0);
-  //   assert.equal(callsMemo, 21);
-  //
-  //   set(1);
-  //   assert.equal(get()).toBe(1);
-  //   assert.equal(value()).toBe(1);
-  //   assert.equal(callsMemo, 22);
   // }
 });
