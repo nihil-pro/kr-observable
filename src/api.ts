@@ -10,6 +10,15 @@ export function subscribe(target: Observable, cb: Subscriber, keys: Set<Property
   const adm = Reflect.get(target, $adm) as ObservableAdm | undefined;
   if (!adm) throw error;
   const runnable = { subscriber: cb } as ObservedRunnable;
+
+  keys.forEach((key) => {
+    let deps = adm.deps.get(key);
+    if (!deps) {
+      deps = new Set<ObservedRunnable>();
+      adm.deps.set(key, deps);
+    }
+    deps.add(runnable);
+  });
   adm.subscribers.set(runnable, keys);
   return () => {
     adm.subscribers.delete(runnable);
@@ -40,7 +49,13 @@ export function transaction(work: () => void) {
  Returns a dispose function.
  */
 export function autorun(work: () => void) {
-  const runnable = { run: work, subscriber: work, autosub: true };
+  const runnable = {
+    run: work,
+    subscriber: () => {
+      lib.executor.execute(runnable);
+    },
+    autosub: true,
+  };
   lib.executor.execute(runnable);
   return () => lib.executor.dispose(runnable);
 }

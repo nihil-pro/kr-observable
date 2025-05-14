@@ -16,6 +16,8 @@ export class ObservableAdm {
    * */
   subscribers: Map<ObservedRunnable, Set<Property>> = new Map();
 
+  deps: Map<Property, Set<ObservedRunnable>> = new Map();
+
   /** Set of listeners. */
   listeners: Set<Listener> = new Set();
 
@@ -63,22 +65,35 @@ export class ObservableAdm {
     this.changes.add(property);
   }
 
+  // sync?: boolean
   /** Notify subscribers about changes */
-  #notify(sync?: boolean) {
+  #notify() {
+    // console.warn(this);
     if (this.changes.size > 0) {
-      this.subscribers.forEach((keys: Set<Property>, cb: ObservedRunnable) => {
-        for (const k of keys) {
-          if (this.changes.has(k)) {
-            lib.notifier.notify(cb, this.changes);
-            break;
-          }
+      const changes = new Set(this.changes);
+      this.changes.forEach((change) => {
+        const subscribers = this.deps.get(change);
+        this.changes.delete(change);
+        if (subscribers) {
+          subscribers.forEach((subscriber) => {
+            lib.notifier.notify(subscriber, changes);
+          });
         }
       });
-      if (sync) {
-        this.changes.clear();
-      } else {
-        queueMicrotask(() => this.changes.clear());
-      }
+
+      // this.subscribers.forEach((keys: Set<Property>, cb: ObservedRunnable) => {
+      //   for (const k of keys) {
+      //     if (this.changes.has(k)) {
+      //       lib.notifier.notify(cb, this.changes);
+      //       break;
+      //     }
+      //   }
+      // });
+      // if (sync) {
+      //   this.changes.clear();
+      // } else {
+      //   queueMicrotask(() => this.changes.clear());
+      // }
     }
   }
 }

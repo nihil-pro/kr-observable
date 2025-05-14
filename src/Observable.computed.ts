@@ -77,6 +77,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
   #compute() {
     // means that microtask was queued, but getter was accessed before microtask start execution
     if (!this.#changed) return;
+    if (this.#adm.deps.get(this.#property)?.size === 0) return;
     const prevValue = this.#value;
     this.#reader();
     this.#changed = false;
@@ -100,7 +101,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
   #reader() {
     const { result, read } = lib.executor.execute(this);
     this.#value = result;
-    read.forEach((keys, adm) => adm.subscribers.set(this, keys));
+    // read.forEach((keys, adm) => adm.subscribers.set(this, keys));
     this.#deps = read.size;
   }
 

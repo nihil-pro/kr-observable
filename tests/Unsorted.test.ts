@@ -2561,7 +2561,7 @@ describe('Big test', () => {
   //   assert.equal(dummy2, 1);
   // });
 
-  test.skip(`should observe properties on the prototype chain [solid]`, () => {
+  test(`should observe properties on the prototype chain`, () => {
     let dummy;
     const counter = makeObservable({ num: 0 });
     const parentCounter = makeObservable({ num: 2 });
@@ -2580,119 +2580,110 @@ describe('Big test', () => {
     assert.equal(dummy, 3);
   });
 
-  // test(`should observe has operations on the prototype chain`, (ctx) => {
-  //   let dummy;
-  //   const counter = makeObservable({ num: 0 });
-  //   const parentCounter = makeObservable({ num: 2 });
-  //   Object.setPrototypeOf(counter, parentCounter);
-  //   autorun(() => (dummy = 'num' in counter));
-  //   execute();
-  //
-  //   assert.equal(dummy, true);
-  //
-  //   delete counter.num;
-  //   execute();
-  //   assert.equal(dummy, true);
-  //
-  //   delete parentCounter.num;
-  //   execute();
-  //   assert.equal(dummy, false);
-  //
-  //   counter.num = 3;
-  //   execute();
-  //   assert.equal(dummy, true);
-  // });
+  test(`should observe has operations on the prototype chain`, () => {
+    let dummy;
+    const counter = makeObservable({ num: 0 });
+    const parentCounter = makeObservable({ num: 2 });
+    Object.setPrototypeOf(counter, parentCounter);
+    autorun(() => (dummy = 'num' in counter));
 
-  // test(`prototype change [oby]`, (ctx) => {
-  //   let dummy;
-  //   let parentDummy;
-  //   let hiddenValue;
-  //   const obj = makeObservable({});
-  //   const parent = makeObservable({
-  //     set prop(value) {
-  //       hiddenValue = value;
-  //     },
-  //     get prop() {
-  //       return hiddenValue;
-  //     },
-  //   });
-  //   Object.setPrototypeOf(obj, parent);
-  //   const execute1 = memo(() => (dummy = obj.prop));
-  //   const execute2 = memo(() => (parentDummy = parent.prop));
-  //   execute1(), execute2();
-  //
-  //   assert.equal(dummy, undefined);
-  //   assert.equal(parentDummy, undefined);
-  //
-  //   obj.prop = 4;
-  //   execute1(), execute2();
-  //   assert.equal(obj.prop, 4);
-  //   assert.equal(dummy, 4);
-  //
-  //   parent.prop = 2;
-  //   execute1(), execute2();
-  //   assert.equal(obj.prop, 2);
-  //   assert.equal(dummy, 2);
-  //   assert.equal(parentDummy, 2);
-  //   assert.equal(parent.prop, 2);
-  // });
+    assert.equal(dummy, true);
 
-  // test(`should observe function call chains`, (ctx) => {
-  //   let dummy;
-  //   const counter = makeObservable({ num: 0 });
-  //   autorun(() => (dummy = getNum()));
-  //   execute();
-  //
-  //   function getNum() {
-  //     return counter.num;
-  //   }
-  //
-  //   assert.equal(dummy, 0);
-  //
-  //   counter.num = 2;
-  //   execute();
-  //   assert.equal(dummy, 2);
-  // });
+    transaction(() => delete counter.num);
+    assert.equal(dummy, true);
 
-  // test(`should observe iteration`, (ctx) => {
-  //   let dummy;
-  //   const list = makeObservable({ value: 'Hello' });
-  //   autorun(() => (dummy = list.value));
-  //   execute();
-  //
-  //   assert.equal(dummy, 'Hello');
-  //
-  //   list.value += ' World!';
-  //   execute();
-  //   assert.equal(dummy, 'Hello World!');
-  //
-  //   list.value = list.value.replace('Hello ', '');
-  //   execute();
-  //   assert.equal(dummy, 'World!');
-  // });
+    transaction(() => delete parentCounter.num);
+    assert.equal(dummy, false);
 
-  // test(`should observe enumeration`, (ctx) => {
-  //   const numbers = makeObservable({ num1: 3 });
-  //
-  //   let sum = 0;
-  //   autorun(() => {
-  //     sum = 0;
-  //     for (const key in numbers) {
-  //       sum += numbers[key];
-  //     }
-  //   });
-  //   execute();
-  //
-  //   assert.equal(sum, 3);
-  //
-  //   numbers.num2 = 4;
-  //   execute();
-  //   assert.equal(sum, 7);
-  //
-  //   delete numbers.num1;
-  //   execute();
-  //   assert.equal(sum, 4);
-  // });
+    transaction(() => (counter.num = 3));
+    assert.equal(dummy, true);
+  });
+
+  test(`prototype change `, () => {
+    let dummy;
+    let parentDummy;
+    let hiddenValue;
+    const obj = makeObservable({});
+    const parent = makeObservable({
+      set prop(value) {
+        hiddenValue = value;
+      },
+      get prop() {
+        return hiddenValue;
+      },
+    });
+    Object.setPrototypeOf(obj, parent);
+    // @ts-ignore
+    autorun(() => (dummy = obj.prop));
+    autorun(() => (parentDummy = parent.prop));
+
+    assert.equal(dummy, undefined);
+    assert.equal(parentDummy, undefined);
+
+    // @ts-ignore
+    transaction(() => (obj.prop = 4));
+    // @ts-ignore
+    assert.equal(obj.prop, 4);
+    assert.equal(dummy, 4);
+
+    transaction(() => (parent.prop = 2));
+    // @ts-ignore
+    assert.equal(obj.prop, 2);
+    assert.equal(dummy, 2);
+    assert.equal(parentDummy, 2);
+    assert.equal(parent.prop, 2);
+  });
+
+  test(`should observe function call chains`, () => {
+    let dummy;
+    const counter = makeObservable({ num: 0 });
+    autorun(() => (dummy = getNum()));
+
+    function getNum() {
+      return counter.num;
+    }
+
+    assert.equal(dummy, 0);
+
+    transaction(() => (counter.num = 2));
+    assert.equal(dummy, 2);
+  });
+
+  test(`should observe iteration`, () => {
+    let dummy;
+    const list = makeObservable({ value: 'Hello' });
+    autorun(() => (dummy = list.value));
+
+    assert.equal(dummy, 'Hello');
+
+    transaction(() => (list.value += ' World!'));
+    assert.equal(dummy, 'Hello World!');
+
+    transaction(() => (list.value = list.value.replace('Hello ', '')));
+    assert.equal(dummy, 'World!');
+  });
+
+  test.skip(`should observe enumeration`, () => {
+    const numbers = makeObservable({ num1: 3 });
+
+    let sum = 0;
+    autorun(() => {
+      sum = 0;
+      // eslint-disable-next-line guard-for-in
+      for (const key in numbers) {
+        sum += numbers[key];
+      }
+    });
+
+    assert.equal(sum, 3);
+
+    // @ts-ignore
+    transaction(() => (numbers.num2 = 4));
+    assert.equal(sum, 7);
+
+    transaction(() => delete numbers.num1);
+    assert.equal(sum, 4);
+  });
 
   // test(`should observe symbol keyed properties`, (ctx) => {
   //   const key = Symbol('symbol keyed prop');
@@ -2759,7 +2750,7 @@ describe('Big test', () => {
   });
 
   // kr-observable doesn't use atoms or signals
-  test.skip(`should not be triggered by mutating a property, which is used in an inactive branch`, () => {
+  test(`should not be triggered by mutating a property, which is used in an inactive branch`, () => {
     let dummy;
     const obj = makeObservable({ prop: 'value', run: true });
 
@@ -2852,45 +2843,45 @@ describe('Big test', () => {
   //   assert.equal(calls, 1);
   // });
 
-  // test(`should avoid infinite loops with other effects`, (ctx) => {
-  //   const nums = makeObservable({ num1: 0, num2: 1 });
-  //
-  //   let calls1 = 0;
-  //   let calls2 = 0;
-  //
-  //   autorun(() => {
-  //     calls1++;
-  //     nums.num1 = nums.num2;
-  //   });
-  //
-  //   assert.equal(nums.num1, 1);
-  //   assert.equal(nums.num2, 1);
-  //
-  //   autorun(() => {
-  //     calls2++;
-  //     nums.num2 = nums.num1;
-  //   });
-  //
-  //   assert.equal(nums.num1, 1);
-  //   assert.equal(nums.num2, 1);
-  //   assert.equal(calls1, 1);
-  //   assert.equal(calls2, 1);
-  //
-  //   transaction(() => nums.num2 = 4);
-  //
-  //   assert.equal(nums.num1, 4);
-  //   assert.equal(nums.num2, 4);
-  //   assert.equal(calls1, 2);
-  //   assert.equal(calls2, 2);
-  //
-  //   transaction(() => nums.num1 = 10);
-  //
-  //   assert.equal(nums.num1, 10);
-  //   assert.equal(nums.num2, 10);
-  //   // this is just implementation specific, but shouldnt run more than 3 times
-  //   // assert.equal(calls1, 2);
-  //   assert.equal(calls2, 3);
-  // });
+  test(`should avoid infinite loops with other effects`, () => {
+    const nums = makeObservable({ num1: 0, num2: 1 });
+
+    let calls1 = 0;
+    let calls2 = 0;
+
+    autorun(() => {
+      calls1++;
+      nums.num1 = nums.num2;
+    });
+
+    assert.equal(nums.num1, 1);
+    assert.equal(nums.num2, 1);
+
+    autorun(() => {
+      calls2++;
+      nums.num2 = nums.num1;
+    });
+
+    assert.equal(nums.num1, 1);
+    assert.equal(nums.num2, 1);
+    assert.equal(calls1, 1);
+    assert.equal(calls2, 1);
+
+    transaction(() => (nums.num2 = 4));
+
+    assert.equal(nums.num1, 4);
+    assert.equal(nums.num2, 4);
+    assert.equal(calls1, 2);
+    assert.equal(calls2, 2);
+
+    transaction(() => (nums.num1 = 10));
+
+    assert.equal(nums.num1, 10);
+    assert.equal(nums.num2, 10);
+    // this is just implementation specific, but shouldnt run more than 3 times
+    assert.equal(calls1, 3);
+    assert.equal(calls2, 3);
+  });
 
   // // #1246
   test(`mutation on objects using makeObservable as prototype should trigger`, () => {

@@ -142,6 +142,11 @@ class ObservableProxyHandler {
     this.#report(property, undefined);
     return res;
   }
+  setPrototypeOf(target: any, proto: any) {
+    const protoAdm = proto[$adm];
+    if (protoAdm) Object.assign(protoAdm, this.adm);
+    return Reflect.setPrototypeOf(target, proto);
+  }
   has(target: any, property: string | symbol) {
     this.#batch(property);
     return property in target;

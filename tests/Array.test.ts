@@ -711,22 +711,19 @@ describe('Array ', () => {
     assert.equal(dummy, 'World!');
   });
 
-  // test(`array: should observe implicit array length changes`, (ctx) => {
-  //   let dummy;
-  //   const list = makeObservable(['Hello']);
-  //   autorun(() => (dummy = list.join(' ')));
-  //   execute();
-  //
-  //   assert.equal(dummy, 'Hello');
-  //
-  //   list[1] = 'World!';
-  //   execute();
-  //   assert.equal(dummy, 'Hello World!');
-  //
-  //   list[3] = 'Hello!';
-  //   execute();
-  //   assert.equal(dummy, 'Hello World!  Hello!');
-  // });
+  test(`array: should observe implicit array length changes`, () => {
+    let dummy;
+    const list = makeObservable({ arr: ['Hello'] });
+    autorun(() => (dummy = list.arr.join(' ')));
+
+    assert.equal(dummy, 'Hello');
+
+    transaction(() => list.arr.set(1, 'World!'));
+    assert.equal(dummy, 'Hello World!');
+
+    transaction(() => list.arr.set(3, 'Hello!'));
+    assert.equal(dummy, 'Hello World!  Hello!');
+  });
 
   test(`array: should observe sparse array mutations`, () => {
     let dummy;
@@ -824,18 +821,6 @@ describe('Array ', () => {
   //   execute1(), execute2();
   //   assert.equal(length, 0);
   //   assert.equal(a, undefined);
-  // });
-
-  // test(`${
-  //   lib
-  // }array: identity methods should work if raw value contains reactive objects`, (ctx) => {
-  //   const nativearr = [];
-  //   const obj = makeObservable({});
-  //   nativearr.push(obj);
-  //
-  //   const reactivearr = makeObservable(nativearr);
-  //   // console.log(reactivearr, nativearr, obj)
-  //   assert.equal(reactivearr.includes(obj)).toBe(true);
   // });
 
   // test(`array: iterator references`, (ctx) => {
