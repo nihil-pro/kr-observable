@@ -41,10 +41,11 @@ export class ObservableAdm {
    * @see ObservableComputed
    * @see proxyHandler
    * */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   batch(sync?: boolean) {
     if (this.state === 1) {
       this.state = 0;
-      this.#notify(sync);
+      this.#notify();
     }
   }
 

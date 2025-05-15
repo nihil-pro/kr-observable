@@ -38,8 +38,8 @@ test('Karlovskiy reactivity test', async (ctx) => {
     }
 
     change1() {
-      this.A = 1;
       this.B = 1;
+      this.A = 1;
     }
 
     change2() {

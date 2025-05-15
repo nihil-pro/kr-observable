@@ -47,13 +47,9 @@ export class ObservableExecutor {
       result = new ExecutionResult();
       this.#registry.set(runnable, result);
     } else {
-      // @ts-ignore
-      // eslint-disable-next-line no-lonely-if
-      if (!runnable.strict) {
-        result.read.forEach((_, adm) => {
-          adm.deps.forEach((v) => v.delete(runnable));
-        });
-      }
+      result.read.forEach((_, adm) => {
+        adm.deps.forEach((v) => v.delete(runnable));
+      });
     }
     this.#stack.push({ runnable, result });
     try {
