@@ -44,13 +44,6 @@ export function makeObservable<T extends object>(
     } else {
       Object.defineProperty(value, key, new ObservableComputed(key, descriptor, adm, proxy));
     }
-    // if (descriptor.get) {
-    //   if (!adm.ignore.has(key)) {
-    //     Object.defineProperty(value, key, new ObservableComputed(key, descriptor, adm, proxy));
-    //   }
-    // } else if (descriptor.writable) {
-    //   value[key] = maybeMakeObservable(key, value[key], adm);
-    // }
   }
   return proxy;
 }
@@ -149,6 +142,11 @@ class ObservableProxyHandler {
     this.#report(property, undefined);
     return res;
   }
+  setPrototypeOf(target: any, proto: any) {
+    const protoAdm = proto[$adm];
+    if (protoAdm) Object.assign(protoAdm, this.adm);
+    return Reflect.setPrototypeOf(target, proto);
+  }
   has(target: any, property: string | symbol) {
     this.#batch(property);
     return property in target;
@@ -186,10 +184,6 @@ export class Observable {
       const desc = Object.getOwnPropertyDescriptor(proto, key);
       if (desc.writable || !desc.configurable) continue;
       Object.defineProperty(this, key, new ObservableComputed(key, desc, adm, proxy));
-      // if (desc?.get) {
-      //   Object.defineProperty(this, key, new ObservableComputed(key, desc, adm, proxy));
-      // }
-      // if (desc.set && !desc.get) Object.defineProperty(this, key, desc);
     }
     return proxy;
   }

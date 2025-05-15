@@ -24,15 +24,18 @@ export class ObservableExecutor {
    * @see ObservableProxyHandler */
   static report(adm: ObservableAdm, property: Property) {
     if (this.#stack.length === 0) return;
+    let deps = adm.deps.get(property);
+    if (!deps) {
+      deps = new Set<ObservedRunnable>();
+      adm.deps.set(property, deps);
+    }
     const { runnable, result } = this.#stack[this.#stack.length - 1];
-
+    deps.add(runnable);
     let keys = result.read.get(adm);
     if (!keys) {
       keys = new Set(); // we'll use to subscribe
       result.read.set(adm, keys);
-      if (runnable.autosub) {
-        adm.subscribers.set(runnable, keys);
-      }
+      // if (runnable.autosub) adm.subscribers.set(runnable, keys);
     }
     keys.add(property);
   }
@@ -43,6 +46,10 @@ export class ObservableExecutor {
     if (!result) {
       result = new ExecutionResult();
       this.#registry.set(runnable, result);
+    } else {
+      result.read.forEach((_, adm) => {
+        adm.deps.forEach((v) => v.delete(runnable));
+      });
     }
     this.#stack.push({ runnable, result });
     try {

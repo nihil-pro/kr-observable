@@ -16,6 +16,8 @@ export class ObservableAdm {
    * */
   subscribers: Map<ObservedRunnable, Set<Property>> = new Map();
 
+  deps: Map<Property, Set<ObservedRunnable>> = new Map();
+
   /** Set of listeners. */
   listeners: Set<Listener> = new Set();
 
@@ -39,10 +41,11 @@ export class ObservableAdm {
    * @see ObservableComputed
    * @see proxyHandler
    * */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   batch(sync?: boolean) {
     if (this.state === 1) {
       this.state = 0;
-      this.notify(sync);
+      this.#notify();
     }
   }
 
@@ -63,42 +66,35 @@ export class ObservableAdm {
     this.changes.add(property);
   }
 
+  // sync?: boolean
   /** Notify subscribers about changes */
-  private notify(sync?: boolean) {
-    // console.log('notify', sync);
+  #notify() {
+    // console.warn(this);
     if (this.changes.size > 0) {
-      // for (const [cb, keys] of this.subscribers) {
-      //   const n = Reflect.get(cb, 'name');
-      //   if (n === 'E') {
-      //     this.subscribers.forEach((s) => {
-      //       console.log(n, s.has(n), sync);
-      //     });
-      //   }
+      const changes = new Set(this.changes);
+      this.changes.forEach((change) => {
+        const subscribers = this.deps.get(change);
+        this.changes.delete(change);
+        if (subscribers) {
+          subscribers.forEach((subscriber) => {
+            lib.notifier.notify(subscriber, changes);
+          });
+        }
+      });
+
+      // this.subscribers.forEach((keys: Set<Property>, cb: ObservedRunnable) => {
       //   for (const k of keys) {
       //     if (this.changes.has(k)) {
       //       lib.notifier.notify(cb, this.changes);
       //       break;
       //     }
       //   }
+      // });
+      // if (sync) {
+      //   this.changes.clear();
+      // } else {
+      //   queueMicrotask(() => this.changes.clear());
       // }
-
-      this.subscribers.forEach((keys: Set<Property>, cb: ObservedRunnable) => {
-        for (const k of keys) {
-          if (this.changes.has(k)) {
-            lib.notifier.notify(cb, this.changes);
-            break;
-          }
-        }
-      });
-
-      if (sync) {
-        this.changes.clear();
-        // lib.notifier.clear();
-      } else {
-        queueMicrotask(() => {
-          this.changes.clear();
-        });
-      }
     }
   }
 }

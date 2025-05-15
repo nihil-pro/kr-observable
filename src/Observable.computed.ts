@@ -42,12 +42,9 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
     this.#descriptor = descriptor;
     this.#adm = adm;
     this.#proxy = proxy;
-    // @ts-ignore
-    this.name = property;
     if (descriptor.set) {
       this.set = (value: any) => {
         this.#descriptor.set?.call(this.#proxy, value);
-
         const prevValue = this.#setterValue;
         this.#setterValue = value;
         if (!this.#equal(prevValue, this.#setterValue)) {
@@ -66,11 +63,13 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
     // if property will be accessed earlier than below microtask will be executed,
     // we'll call original getter to get current result
     this.#changed = true;
-    if (!lib.action) {
-      this.#compute();
-    } else {
-      queueMicrotask(() => this.#compute());
-    }
+    if (this.#adm.deps.get(this.#property)?.size === 0) return;
+    this.#compute();
+    // if (!lib.action) {
+    //   this.#compute();
+    // } else {
+    //   queueMicrotask(() => this.#compute());
+    // }
   }
 
   run() {
@@ -103,7 +102,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
   #reader() {
     const { result, read } = lib.executor.execute(this);
     this.#value = result;
-    read.forEach((keys, adm) => adm.subscribers.set(this, keys));
+    // read.forEach((keys, adm) => adm.subscribers.set(this, keys));
     this.#deps = read.size;
   }
 
@@ -125,7 +124,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
       this.#isGetter ? this.#reader() : this.#compute();
       return this.#value;
     }
-    if (!this.#first && this.#deps === 0) return this.run();
+    if (this.#deps === 0) return this.run();
     return this.#value;
   };
 }

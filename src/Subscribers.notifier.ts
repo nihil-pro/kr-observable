@@ -9,13 +9,11 @@ export class SubscribersNotifier {
       if (!this.#queued) {
         this.#queued = true;
         queueMicrotask(() => {
-          this.#notified = new Set<ObservedRunnable>();
+          this.#notified.clear();
           this.#queued = false;
         });
       }
-      return true;
     }
-    return false;
   }
 
   static clear() {
