@@ -1,16 +1,17 @@
 import { Observable } from './Observable.js';
 import { ObservableAdm } from './Observable.adm.js';
 import { Property, Subscriber, Listener, ObservedRunnable } from './types.js';
-import { $adm } from './shared.js';
+import { $adm, noop } from './shared.js';
 import { lib } from './global.this.js';
 
+const registry = new Map<() => void, ObservedRunnable>();
 const error = new TypeError('First argument must be Observable');
 
 export function subscribe(target: Observable, cb: Subscriber, keys: Set<Property>) {
   const adm = Reflect.get(target, $adm) as ObservableAdm | undefined;
   if (!adm) throw error;
+  if (registry.has(cb)) return noop;
   const runnable = { subscriber: cb } as ObservedRunnable;
-
   keys.forEach((key) => {
     let deps = adm.deps.get(key);
     if (!deps) {
@@ -18,10 +19,11 @@ export function subscribe(target: Observable, cb: Subscriber, keys: Set<Property
       adm.deps.set(key, deps);
     }
     deps.add(runnable);
+    registry.set(cb, runnable);
   });
-  adm.subscribers.set(runnable, keys);
   return () => {
-    adm.subscribers.delete(runnable);
+    registry.delete(cb);
+    adm.deps.forEach((list) => list.delete(runnable));
   };
 }
 
@@ -30,9 +32,7 @@ export function listen(target: Observable, cb: Listener) {
   const adm = Reflect.get(target, $adm) as ObservableAdm | undefined;
   if (!adm) throw error;
   adm.listeners.add(cb);
-  return () => {
-    adm.listeners.delete(cb);
-  };
+  return () => void adm.listeners.delete(cb);
 }
 
 export function transaction(work: () => void) {
@@ -49,13 +49,15 @@ export function transaction(work: () => void) {
  Returns a dispose function.
  */
 export function autorun(work: () => void) {
+  if (registry.has(work)) return noop;
   const runnable = {
     run: work,
-    subscriber: () => {
-      lib.executor.execute(runnable);
-    },
-    autosub: true,
+    subscriber: () => void lib.executor.execute(runnable),
   };
+  registry.set(work, runnable);
   lib.executor.execute(runnable);
-  return () => lib.executor.dispose(runnable);
+  return () => {
+    registry.delete(work);
+    lib.executor.dispose(runnable);
+  };
 }

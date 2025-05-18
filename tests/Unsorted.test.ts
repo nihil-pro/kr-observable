@@ -98,6 +98,7 @@ describe('Big test', () => {
     assert.equal(source.data.user.last, 'Snow');
 
     try {
+      // @ts-ignore
       source.data.user = 'something else';
     } catch (error) {
       assert.equal(error instanceof Error, true);

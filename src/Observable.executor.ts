@@ -4,7 +4,7 @@ import { ObservedRunnable, Property } from './types.js';
 /** Stores ObservedRunnable execution result
  * @see ObservedRunnable */
 class ExecutionResult {
-  read: Map<ObservableAdm, Set<Property>> = new Map();
+  read: Set<ObservableAdm> = new Set();
 
   /** If the execution fails, it will contain thrown error */
   error: undefined | Error;
@@ -31,25 +31,19 @@ export class ObservableExecutor {
     }
     const { runnable, result } = this.#stack[this.#stack.length - 1];
     deps.add(runnable);
-    let keys = result.read.get(adm);
-    if (!keys) {
-      keys = new Set(); // we'll use to subscribe
-      result.read.set(adm, keys);
-      // if (runnable.autosub) adm.subscribers.set(runnable, keys);
-    }
-    keys.add(property);
+    result.read.add(adm);
   }
+  static current: ObservedRunnable | undefined;
 
   /** Execute a runnable and store read Observables */
   static execute(runnable: ObservedRunnable) {
+    this.current = runnable;
     let result = this.#registry.get(runnable);
     if (!result) {
       result = new ExecutionResult();
       this.#registry.set(runnable, result);
     } else {
-      result.read.forEach((_, adm) => {
-        adm.deps.forEach((v) => v.delete(runnable));
-      });
+      this.unsubscribe(result.read, runnable);
     }
     this.#stack.push({ runnable, result });
     try {
@@ -58,6 +52,7 @@ export class ObservableExecutor {
       result.error = e as Error;
     }
     this.#stack.pop();
+    this.current = undefined;
     return result;
   }
 
@@ -65,8 +60,14 @@ export class ObservableExecutor {
   static dispose(runnable: ObservedRunnable) {
     const res = this.#registry.get(runnable);
     if (res) {
-      res.read.forEach((_, adm) => adm.subscribers.delete(runnable));
+      this.unsubscribe(res.read, runnable);
       this.#registry.delete(runnable);
     }
+  }
+
+  static unsubscribe(adms: Set<ObservableAdm>, runnable: ObservedRunnable) {
+    adms.forEach((adm) => {
+      adm.deps.forEach((list) => list.delete(runnable));
+    });
   }
 }

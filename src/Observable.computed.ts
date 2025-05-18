@@ -28,7 +28,6 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
 
   #isGetter = false;
 
-  autosub = false;
   set: undefined | any = undefined;
   #setterValue: any | undefined = undefined;
 
@@ -47,10 +46,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
         this.#descriptor.set?.call(this.#proxy, value);
         const prevValue = this.#setterValue;
         this.#setterValue = value;
-        if (!this.#equal(prevValue, this.#setterValue)) {
-          this.#changed = true; // maybe no need
-          this.#report(value);
-        }
+        if (!this.#equal(prevValue, this.#setterValue)) this.#report(value);
       };
       this.#isGetter = true;
     }
@@ -65,11 +61,6 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
     this.#changed = true;
     if (this.#adm.deps.get(this.#property)?.size === 0) return;
     this.#compute();
-    // if (!lib.action) {
-    //   this.#compute();
-    // } else {
-    //   queueMicrotask(() => this.#compute());
-    // }
   }
 
   run() {
@@ -88,7 +79,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
   #report(value: any) {
     this.#adm.report(this.#property, value);
     this.#adm.state = 1;
-    this.#adm.batch(true);
+    this.#adm.batch();
   }
 
   #equal(prev: any, current: any) {
@@ -102,14 +93,13 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
   #reader() {
     const { result, read } = lib.executor.execute(this);
     this.#value = result;
-    // read.forEach((keys, adm) => adm.subscribers.set(this, keys));
     this.#deps = read.size;
   }
 
   /** A trap for original descriptor getter */
   get = () => {
     // enable sync batching
-    this.#adm.batch(true);
+    this.#adm.batch();
 
     // Initial value is undefined. Without this, we will report changed on first access
     if (this.#first) {

@@ -13,13 +13,10 @@ import {
 
 import { lib } from '../global.this.js';
 import { ObservedRunnable } from '../types.js';
-
-// eslint-disable-next-line @typescript-eslint/no-empty-function
-function noop() {}
+import { noop } from '../shared.js';
 
 class Rss implements ObservedRunnable {
   version = 1;
-  autosub = true;
   debug = false;
   rc: Function;
   onStoreChange = noop;
@@ -33,9 +30,7 @@ class Rss implements ObservedRunnable {
   getSnapshot = () => this.version;
 
   subscriber(changes?: Set<string | symbol>) {
-    if (this.debug) {
-      console.info(`[${this.rc.name}] will re-render. Changes:`, changes);
-    }
+    if (this.debug) console.info(`[${this.rc.name}] will re-render. Changes:`, changes);
     ++this.version;
     this.onStoreChange();
   }
@@ -44,18 +39,14 @@ class Rss implements ObservedRunnable {
     this.onStoreChange = onStoreChange;
     return () => {
       lib.executor.dispose(this);
-      if (this.debug) {
-        console.info(`[${this.rc.name}] was unmounted`);
-      }
+      if (this.debug) console.info(`[${this.rc.name}] was unmounted`);
     };
   };
 }
 
 function useObserver<T>(rc: () => T, debug = false) {
   const ref = useRef<Rss | null>(null);
-  if (!ref.current) {
-    ref.current = new Rss(rc, debug);
-  }
+  if (!ref.current) ref.current = new Rss(rc, debug);
   const store = ref.current!;
   store.run = rc;
   useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
@@ -63,7 +54,18 @@ function useObserver<T>(rc: () => T, debug = false) {
   if (TR.error) throw TR.error;
   if (debug) {
     const read: Record<string, Set<string | symbol>> = {};
-    TR.read.forEach((keys, adm) => (read[adm.owner] = keys));
+    TR.read.forEach((adm) => {
+      adm.deps.forEach((list, key) => {
+        if (list.has(store)) {
+          let keys = read[adm.owner];
+          if (!keys) {
+            keys = new Set();
+            read[adm.owner] = keys;
+          }
+          keys.add(key);
+        }
+      });
+    });
     console.info(`[${rc.name}] was rendered. Read: `, read);
   }
   return TR.result;

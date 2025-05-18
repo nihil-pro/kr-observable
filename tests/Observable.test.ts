@@ -223,7 +223,7 @@ describe('Synchronous batching', () => {
     const subscriber = mock.fn();
 
     autorun(() => {
-      foo.disabled = foo.value === '';
+      foo.effect = foo.value === '';
       foo.effect = foo.disabled;
       ctx.diagnostic(
         `Current values in autorun: value: ${foo.value}, disabled: ${foo.disabled}, effect: ${foo.effect}`
@@ -369,5 +369,48 @@ describe('Synchronous batching', () => {
     assert.equal(foo.b, 'string');
     assert.equal(foo.c, true);
     assert.equal(subscriber.mock.callCount(), 1, 'Should not be called');
+  });
+
+  test('consistency', (ctx) => {
+    class Foo extends Observable {
+      a = 0;
+
+      get computed() {
+        return `computed from ${this.a}`;
+      }
+
+      change() {
+        this.a += 1;
+        ctx.diagnostic('changed');
+      }
+    }
+    const foo = new Foo();
+
+    let $res1 = '';
+    let $res2 = '';
+    let $res3 = '';
+
+    function reaction() {
+      ctx.diagnostic('first autorun');
+      foo.a += 1;
+      $res1 = `${foo.a}`;
+    }
+
+    autorun(reaction);
+
+    autorun(() => {
+      ctx.diagnostic('second autorun');
+      $res2 = `${foo.a}`;
+      $res3 = foo.computed;
+    });
+
+    assert.equal($res1, '1');
+    assert.equal($res2, '1');
+    assert.equal($res3, 'computed from 1');
+
+    foo.change();
+    assert.equal($res1, '3');
+    assert.equal($res2, '3');
+    assert.equal($res3, 'computed from 3');
   });
 });
