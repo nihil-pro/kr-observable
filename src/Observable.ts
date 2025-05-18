@@ -88,7 +88,7 @@ class ObservableProxyHandler {
 
   #batch(property: Property) {
     if (!lib.action) {
-      if (this.adm.changes.has(property)) this.adm.batch(true);
+      if (this.adm.changes.has(property)) this.adm.batch();
     }
     if (!this.adm.ignore.has(property)) lib.executor.report(this.adm, property);
   }
@@ -124,15 +124,12 @@ class ObservableProxyHandler {
   }
   defineProperty(target: any, property: string, desc: PropertyDescriptor) {
     delete this.methods[property];
-    if (desc.value) desc.value = maybeMakeObservable(property, desc.value, this.adm);
-    // if (descriptor.value) {
-    //   return Reflect.defineProperty(target, property, {
-    //     ...descriptor,
-    //     value: maybeMakeObservable(property, descriptor.value, this.adm),
-    //   });
-    // }
-    // can't create computeds in this way!
-    return Reflect.defineProperty(target, property, desc);
+    let $desc = desc;
+    if (desc.writable) $desc.value = maybeMakeObservable(property, desc.value, this.adm);
+    else if (desc.configurable) {
+      $desc = new ObservableComputed(property, desc, this.adm, this.receiver);
+    }
+    return Reflect.defineProperty(target, property, $desc);
   }
   deleteProperty(target: any, property: string | symbol): boolean {
     if (!(property in target)) return false;
@@ -214,7 +211,7 @@ class ObservableArray<T> extends Array<T> {
   }
 
   [Symbol.iterator]() {
-    this.meta.adm.batch(true);
+    this.meta.adm.batch();
     return super[Symbol.iterator]();
   }
 
@@ -308,7 +305,7 @@ class ObservableMap<K, V> extends Map<K, V> {
   get size() {
     const meta = this.meta;
     if (!lib.action) {
-      if (meta.adm.changes.has(meta.key)) meta.adm.batch(true);
+      if (meta.adm.changes.has(meta.key)) meta.adm.batch();
     }
     return super.size;
   }
@@ -321,7 +318,7 @@ class ObservableMap<K, V> extends Map<K, V> {
   }
 
   [Symbol.iterator]() {
-    this.meta.adm.batch(true);
+    this.meta.adm.batch();
     return super[Symbol.iterator]();
   }
 
@@ -338,7 +335,7 @@ class ObservableMap<K, V> extends Map<K, V> {
   get(key: K): V | undefined {
     const meta = this.meta;
     try {
-      meta.adm.batch(true);
+      meta.adm.batch();
       return super.get(key);
     } finally {
       // is needed to subscribe on a key in map
@@ -396,7 +393,7 @@ class ObservableSet<T> extends Set<T> {
   }
 
   [Symbol.iterator]() {
-    this.meta.adm.batch(true);
+    this.meta.adm.batch();
     return super[Symbol.iterator]();
   }
 

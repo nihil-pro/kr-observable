@@ -11,11 +11,6 @@ export class ObservableAdm {
    *  or to ignore queued microtask at all */
   state = 0;
 
-  /** Stores subscribers as key => value map, where key is subscriber callback,
-   * and value is a set of properties that the subscriber wants to track.
-   * */
-  subscribers: Map<ObservedRunnable, Set<Property>> = new Map();
-
   deps: Map<Property, Set<ObservedRunnable>> = new Map();
 
   /** Set of listeners. */
@@ -41,12 +36,8 @@ export class ObservableAdm {
    * @see ObservableComputed
    * @see proxyHandler
    * */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  batch(sync?: boolean) {
-    if (this.state === 1) {
-      this.state = 0;
-      this.#notify();
-    }
+  batch() {
+    if (this.state === 1) this.#notify();
   }
 
   /** Is called from `proxyHandler.set`  and `ObservableMap`, `ObservableSet`, `ObservableArray` and `ObservableComputed`.
@@ -57,44 +48,22 @@ export class ObservableAdm {
    * @see ObservableComputed
    * @see proxyHandler
    * */
-  report(property: Property, value: any = undefined, ignoreListeners = false) {
+  report(property: Property, value: any) {
     if (this.listeners.size > 0) {
-      if (!ignoreListeners) {
-        this.listeners.forEach((cb) => cb(property, value));
-      }
+      this.listeners.forEach((cb) => cb(property, value));
     }
     this.changes.add(property);
   }
 
-  // sync?: boolean
   /** Notify subscribers about changes */
   #notify() {
-    // console.warn(this);
-    if (this.changes.size > 0) {
-      const changes = new Set(this.changes);
-      this.changes.forEach((change) => {
-        const subscribers = this.deps.get(change);
-        this.changes.delete(change);
-        if (subscribers) {
-          subscribers.forEach((subscriber) => {
-            lib.notifier.notify(subscriber, changes);
-          });
-        }
-      });
-
-      // this.subscribers.forEach((keys: Set<Property>, cb: ObservedRunnable) => {
-      //   for (const k of keys) {
-      //     if (this.changes.has(k)) {
-      //       lib.notifier.notify(cb, this.changes);
-      //       break;
-      //     }
-      //   }
-      // });
-      // if (sync) {
-      //   this.changes.clear();
-      // } else {
-      //   queueMicrotask(() => this.changes.clear());
-      // }
-    }
+    this.state = 0;
+    if (this.changes.size === 0) return;
+    const changes = new Set(this.changes);
+    this.deps.forEach((list, key) => {
+      if (this.changes.delete(key)) {
+        list.forEach((subscriber) => lib.notifier.notify(subscriber, changes));
+      }
+    });
   }
 }

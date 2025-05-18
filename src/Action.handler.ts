@@ -5,6 +5,7 @@ import { lib } from './global.this.js';
 export class ActionHandler {
   receiver: Object;
   adm: ObservableAdm;
+
   constructor(receiver: Object, adm: ObservableAdm) {
     this.receiver = receiver;
     this.adm = adm;
@@ -16,9 +17,9 @@ export class ActionHandler {
     lib.action = true;
     const result = target.apply(this.receiver, argArray);
     this.adm.state = 1;
-    lib.action = false;
-    lib.queue.forEach((adm) => adm.batch(true));
+    lib.queue.forEach((adm) => adm.batch());
     lib.queue.clear();
+    lib.action = false;
     return result;
   }
 }
