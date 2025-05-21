@@ -79,7 +79,7 @@ function maybeMakeObservable(key: Property, value: any, adm: ObservableAdm) {
 
 class ObservableProxyHandler {
   adm: ObservableAdm;
-  methods: Record<Property, Function> = Object.create(null);
+  fns: Record<Property, Function> = Object.create(null);
   receiver: Object;
 
   constructor(adm: ObservableAdm) {
@@ -88,25 +88,21 @@ class ObservableProxyHandler {
 
   #batch(property: Property) {
     if (!lib.action) {
-      if (this.adm.changes.has(property)) this.adm.batch();
+      if (this.adm.changes.has(property)) {
+        lib.queue.delete(this.adm);
+        this.adm.batch();
+      }
     }
     if (!this.adm.ignore.has(property)) lib.executor.report(this.adm, property);
   }
-
-  get(target: any, property: Property, receiver: any) {
-    if (property === $adm) return this.adm;
-    const value = Reflect.get(target, property, receiver);
-    const type = typeof value;
-    if (type === 'function') {
-      let method = this.methods[property];
-      if (!method) {
-        method = new Proxy(value, new ActionHandler(receiver, this.adm));
-        this.methods[property] = method;
-      }
-      return method;
+  get(target: any, key: Property, ctx: any) {
+    if (key === $adm) return this.adm;
+    const val = Reflect.get(target, key, ctx);
+    if (typeof val === 'function') {
+      return this.fns[key] || (this.fns[key] = new Proxy(val, new ActionHandler(ctx, this.adm)));
     }
-    this.#batch(property);
-    return value;
+    this.#batch(key);
+    return val;
   }
   set(target: any, property: string, newValue: any) {
     const desc = Reflect.getOwnPropertyDescriptor(target, property);
@@ -114,7 +110,7 @@ class ObservableProxyHandler {
     if (desc?.get || (desc && !desc.writable)) return false;
     let res = true;
     if (!desc || desc?.value !== newValue) {
-      delete this.methods[property];
+      this.fns[property] = undefined;
       this.adm.state = 0;
       const value = maybeMakeObservable(property, newValue, this.adm);
       res = Reflect.set(target, property, value);
@@ -123,7 +119,7 @@ class ObservableProxyHandler {
     return res;
   }
   defineProperty(target: any, property: string, desc: PropertyDescriptor) {
-    delete this.methods[property];
+    delete this.fns[property];
     let $desc = desc;
     if (desc.writable) $desc.value = maybeMakeObservable(property, desc.value, this.adm);
     else if (desc.configurable) {
@@ -133,7 +129,7 @@ class ObservableProxyHandler {
   }
   deleteProperty(target: any, property: string | symbol): boolean {
     if (!(property in target)) return false;
-    delete this.methods[property];
+    delete this.fns[property];
     this.adm.state = 0;
     const res = Reflect.deleteProperty(target, property);
     this.#report(property, undefined);
