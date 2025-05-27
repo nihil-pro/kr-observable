@@ -1,7 +1,7 @@
 import { describe, mock, test } from 'node:test';
 import assert from 'node:assert';
 
-import { Observable, autorun, subscribe } from '../src/index.js';
+import { Observable, autorun, subscribe, transaction } from '../src/index.js';
 
 describe('Synchronous batching', () => {
   test('should invoke subscriber once, when values are changed at the same time', (ctx) => {
@@ -412,5 +412,95 @@ describe('Synchronous batching', () => {
     assert.equal($res1, '3');
     assert.equal($res2, '3');
     assert.equal($res3, 'computed from 3');
+  });
+
+  test('Can mutate state in autorun', (ctx) => {
+    const subscriber = mock.fn();
+
+    class Foo extends Observable {
+      a = 0;
+
+      someWork() {
+        ctx.diagnostic(`Work in method: ${this.a}`);
+        subscriber();
+      }
+    }
+
+    const state = new Foo();
+
+    autorun(() => {
+      state.a = 2;
+    });
+
+    autorun(state.someWork);
+    assert.equal(subscriber.mock.callCount(), 1);
+  });
+
+  test('should react only when property was read (not changed) in autorun', (ctx) => {
+    const subscriber = mock.fn();
+
+    class Foo extends Observable {
+      a = 0;
+      b = 0;
+    }
+
+    const state = new Foo();
+
+    autorun(() => {
+      state.a = state.b + 1;
+      ctx.diagnostic(`in autorun`);
+      subscriber();
+    });
+
+    assert.equal(subscriber.mock.callCount(), 1);
+
+    transaction(() => ++state.a);
+    assert.equal(state.a, 2);
+    assert.equal(state.b, 0);
+    assert.equal(subscriber.mock.callCount(), 1);
+  });
+
+  test('magic', (ctx) => {
+    const subscriber = mock.fn();
+
+    class State extends Observable {
+      loading = true;
+      postId = 1;
+      post = null;
+
+      constructor() {
+        super();
+        autorun(this.getPost);
+      }
+
+      async getPost() {
+        subscriber();
+        try {
+          this.loading = true;
+          const response = await fetch(`https://jsonplaceholder.typicode.com/posts/${this.postId}`);
+          this.post = await response.json();
+        } catch (e) {
+          this.post = null;
+          console.error(e);
+          ctx.diagnostic(`${e.message}`);
+        } finally {
+          this.loading = false;
+        }
+      }
+    }
+
+    const state = new State();
+    // autorun(state.getPost);
+    assert.equal(subscriber.mock.callCount(), 1);
+    return new Promise((resolve) => {
+      autorun(() => {
+        ctx.diagnostic(`second autorun`);
+        if (!state.loading) {
+          ctx.diagnostic(`${state.loading} ${state.post} ${state.post?.title}`);
+          assert.equal(subscriber.mock.callCount(), 1);
+          resolve();
+        }
+      });
+    });
   });
 });

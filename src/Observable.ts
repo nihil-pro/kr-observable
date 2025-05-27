@@ -151,7 +151,12 @@ class ObservableProxyHandler {
   #report(property: Property, value: any) {
     this.adm.report(property, value);
     this.adm.state = 1;
-    queueBatch(this.adm);
+    // queueBatch(this.adm);
+    if (lib.executor.current) {
+      lib.executor.report(this.adm, property, true);
+    } else {
+      queueBatch(this.adm);
+    }
   }
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "kr-observable",
-  "version": "2.0.15",
+  "version": "2.0.17",
   "description": "Adds reactivity power for your JavaScript",
   "type": "module",
   "scripts": {
@@ -13,7 +13,9 @@
     "check-types": "tsc --noEmit",
     "gen-coverage-badge": "node --import tsx ./scripts/genCoverageBadge.ts",
     "gen-size-badge": "node --import tsx ./scripts/genSizeBadges.ts",
-    "test-ts": "c8 node --import tsx --test --experimental-strip-types --test-reporter=spec ./tests/*.test.* && npm run gen-coverage-badge"
+    "test-ts": "c8 node --import tsx --test --experimental-strip-types --test-reporter=spec ./tests/*.test.* && npm run gen-coverage-badge",
+    "test-main": "c8 node --import tsx --test --experimental-strip-types --test-reporter=spec ./tests/Observable.test.* && npm run gen-coverage-badge"
+
   },
   "keywords": [
     "proxy",
