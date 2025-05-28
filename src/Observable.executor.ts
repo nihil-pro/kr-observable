@@ -22,17 +22,23 @@ export class ObservableExecutor {
 
   /** The `get` method of ObservableProxyHandler invoque this every time a property is read
    * @see ObservableProxyHandler */
-  static report(adm: ObservableAdm, property: Property) {
-    if (this.#stack.length === 0) return;
+  static report(adm: ObservableAdm, property: Property, set = false) {
+    if (!this.#stack.length) return;
+    const { runnable, result } = this.#stack[this.#stack.length - 1];
+    if (set) {
+      adm.deps.get(property)?.delete(runnable);
+      result.read.delete(adm);
+      return;
+    }
     let deps = adm.deps.get(property);
     if (!deps) {
       deps = new Set<ObservedRunnable>();
       adm.deps.set(property, deps);
     }
-    const { runnable, result } = this.#stack[this.#stack.length - 1];
     deps.add(runnable);
     result.read.add(adm);
   }
+
   static current: ObservedRunnable | undefined;
 
   /** Execute a runnable and store read Observables */
