@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * References:
  * https://github.com/potahtml/pota/tree/master/src/lib/store
@@ -14,7 +15,7 @@
 import { describe, mock, test } from 'node:test';
 import assert from 'node:assert';
 
-import { Observable, autorun, makeObservable, transaction, subscribe } from '../src/index.js';
+import { Observable, autorun, makeObservable, transaction, subscribe } from '../index.js';
 
 describe('Big test', () => {
   test('value: object property', () => {
@@ -126,6 +127,7 @@ describe('Big test', () => {
     assert.equal(source.data.user.store.last, 'Snow');
 
     try {
+      // @ts-ignore
       source.data.user = 'something else';
     } catch (error) {
       assert.equal(error instanceof Error, true);

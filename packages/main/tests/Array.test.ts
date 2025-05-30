@@ -1,7 +1,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert';
 
-import { autorun, makeObservable, Observable, transaction } from '../src/index.js';
+import { autorun, makeObservable, Observable, transaction } from '../index.js';
 
 describe('Array ', () => {
   // /** ARRAY */

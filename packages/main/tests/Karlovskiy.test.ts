@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 
-import { Observable, autorun, transaction } from '../src/index.js';
+import { Observable, autorun, transaction } from '../index.js';
 
 test('Karlovskiy reactivity test', async (ctx) => {
   const toBe = [8369, 4188, 8364, 8372, 4191, 8369, 4188];

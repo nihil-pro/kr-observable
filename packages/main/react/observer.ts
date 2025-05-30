@@ -11,9 +11,9 @@ import {
   useSyncExternalStore,
 } from 'react';
 
-import { lib } from '../global.this.js';
-import { ObservedRunnable } from '../types.js';
-import { noop } from '../shared.js';
+import { lib } from '../src/global.this.js';
+import { ObservedRunnable } from '../src/types.js';
+import { noop } from '../src/shared.js';
 
 class Rss implements ObservedRunnable {
   version = 1;

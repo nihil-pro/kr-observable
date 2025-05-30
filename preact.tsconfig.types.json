@@ -1,10 +1,9 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["packages/**/*"],
   "compilerOptions": {
-    "outDir": "./dist/types",
+    "outDir": "dist/types/preact",
     "declaration": true,
-    "declarationMap": true,
     "emitDeclarationOnly": true
-  }
+  },
+  "include": ["packages/preact"]
 }
