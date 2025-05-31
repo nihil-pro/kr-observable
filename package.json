@@ -18,7 +18,7 @@
     "check-types": "tsc --noEmit",
     "gen-coverage-badge": "node --import tsx ./scripts/genCoverageBadge.ts",
     "gen-size-badge": "node --import tsx ./scripts/genSizeBadges.ts",
-    "test-ts": "c8 -r text -- node --import tsx --test --experimental-strip-types --test-reporter=spec ./packages/**/*test.ts && npm run gen-coverage-badge",
+    "test-ts": "c8 node --import tsx --test --experimental-strip-types --test-reporter=spec ./packages/**/*.test.ts && npm run gen-coverage-badge",
     "test-main": "c8 node --import tsx --test --experimental-strip-types --test-reporter=spec packages/main/tests/Observable.test.* && npm run gen-coverage-badge"
   },
   "keywords": [
