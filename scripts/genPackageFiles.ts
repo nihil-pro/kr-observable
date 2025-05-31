@@ -21,6 +21,10 @@ async function writePackageJson(
     sideEffects: false,
   };
 
+  if (pkgName === 'main') {
+    Reflect.set(defaultPkg, 'main', './index.js');
+  }
+
   let finalPkg = { ...defaultPkg };
 
   // Try to load existing package.json from source
@@ -62,7 +66,7 @@ async function generateMainPackage() {
     await fs.writeFile(indexFile, `export * from './main/index.js';`, 'utf-8');
 
     // Write package.json
-    await writePackageJson(outDir, PKG_NAME, '', target.moduleType);
+    await writePackageJson(outDir, PKG_NAME, 'main', target.moduleType);
   }
 }
 
