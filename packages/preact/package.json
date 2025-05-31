@@ -1,9 +1,10 @@
 {
-  "name": "kr-observable-preact",
+  "name": "kr-observable/preact",
   "version": "2.0.17",
   "main": "../dist/esm/preact/index.js",
   "types": "../dist/types/preact/index.d.ts",
   "peerDependencies": {
-    "kr-observable": "latest"
+    "kr-observable": "2.1.0-beta-10",
+    "preact": "*"
   }
 }

@@ -1,11 +1,16 @@
 {
   "name": "kr-observable",
-  "version": "2.1.0-beta-8",
+  "version": "2.1.0-beta-10",
   "description": "Adds reactivity power for your JavaScript",
   "type": "module",
   "scripts": {
     "prepare": "husky",
-    "build": "rm -rf ./dist && tsc -b ./tsconfig.cjs.json ./tsconfig.esm.json ./tsconfig.types.json ./preact.tsconfig.cjs.json ./preact.tsconfig.esm.json ./preact.tsconfig.types.json && node --import tsx ./scripts/genPackageFiles.ts",
+    "clean": "rm -rf dist",
+    "build:main": "tsc -b tsconfig.cjs.json tsconfig.esm.json tsconfig.types.json",
+    "build:preact": "tsc -b preact.tsconfig.cjs.json preact.tsconfig.esm.json preact.tsconfig.types.json",
+    "build:react": "tsc -b react.tsconfig.cjs.json react.tsconfig.esm.json react.tsconfig.types.json",
+    "generate": "node --import tsx ./scripts/genPackageFiles.ts",
+    "build": "npm-run-all clean build:main build:preact build:react generate",
     "test": "npm run build && node --test --test-reporter=spec packages/main/test/import*.*js && c8 node --import tsx --test --test-reporter=spec ./test/*.test.* && npm run gen-coverage-badge",
     "test-watch": "npm run build && node --import tsx --test --test-reporter=spec --watch packages/main/test/*.test.*",
     "analyze:js": "eslint ./src",
@@ -15,20 +20,18 @@
     "gen-size-badge": "node --import tsx ./scripts/genSizeBadges.ts",
     "test-ts": "c8 -r text -- node --import tsx --test --experimental-strip-types --test-reporter=spec ./packages/**/*test.ts && npm run gen-coverage-badge",
     "test-main": "c8 node --import tsx --test --experimental-strip-types --test-reporter=spec packages/main/tests/Observable.test.* && npm run gen-coverage-badge"
-
   },
   "keywords": [
     "proxy",
     "observer",
     "observable",
-    "reactive"
+    "reactive",
+    "react",
+    "preact",
+    "state-manager"
   ],
   "author": "Roman Konstantin",
   "license": "MIT",
-  "peerDependencies": {
-    "react": "*",
-    "preact": "*"
-  },
   "devDependencies": {
     "@espcom/esbuild-plugin-compress": "1.0.1",
     "@espcom/eslint-config": "latest",
@@ -40,6 +43,7 @@
     "esbuild": "0.25.5",
     "husky": "9.1.5",
     "lint-staged": "15.2.9",
+    "npm-run-all": "^4.1.5",
     "tsx": "^4.19.2",
     "typescript": "^4.9.5",
     "xml-splitter": "1.2.1"
@@ -55,6 +59,11 @@
       "types": "./dist/types/preact/index.d.ts",
       "require": "./dist/cjs/preact/index.js",
       "import": "./dist/esm/preact/index.js"
+    },
+    "./react": {
+      "types": "./dist/types/react/index.d.ts",
+      "require": "./dist/cjs/react/index.js",
+      "import": "./dist/esm/react/index.js"
     }
   },
   "main": "dist/cjs/index.js",
@@ -65,4 +74,3 @@
     "url": "https://github.com/nihil-pro/observable-class.git"
   }
 }
-

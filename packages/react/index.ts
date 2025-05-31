@@ -10,12 +10,12 @@ import {
   useRef,
   useSyncExternalStore,
 } from 'react';
+import { executor } from 'kr-observable';
 
-import { lib } from '../src/global.this.js';
-import { ObservedRunnable } from '../src/types.js';
-import { noop } from '../src/shared.js';
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+function noop() {}
 
-class Rss implements ObservedRunnable {
+class Rss {
   version = 1;
   debug = false;
   rc: Function;
@@ -38,7 +38,7 @@ class Rss implements ObservedRunnable {
   subscribe = (onStoreChange: () => void) => {
     this.onStoreChange = onStoreChange;
     return () => {
-      lib.executor.dispose(this);
+      executor.dispose(this);
       if (this.debug) console.info(`[${this.rc.name}] was unmounted`);
     };
   };
@@ -50,7 +50,7 @@ function useObserver<T>(rc: () => T, debug = false) {
   const store = ref.current!;
   store.run = rc;
   useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
-  const TR = lib.executor.execute(store);
+  const TR = executor.execute(store);
   if (TR.error) throw TR.error;
   if (debug) {
     const read: Record<string, Set<string | symbol>> = {};

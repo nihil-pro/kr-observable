@@ -1,16 +1,3 @@
-// import * as fs from 'node:fs';
-// import * as path from 'node:path';
-//
-// fs.writeFileSync(path.resolve('dist/esm/package.json'), '{"type": "module"}', 'utf-8');
-// fs.writeFileSync(path.resolve('dist/cjs/package.json'), '{"type": "commonjs"}', 'utf-8');
-
-// import fs from 'fs/promises';
-// import path from 'path';
-//
-// const ROOT = process.cwd();
-// const DIST_DIR = path.join(process.cwd(), 'dist');
-// const PKG_NAME = 'kr-observable';
-
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -19,11 +6,16 @@ const DIST_DIR = path.join(ROOT, 'dist');
 const PKG_NAME = 'kr-observable';
 
 // Helper to write package.json stubs
-async function writePackageJson(outputPath: string, moduleName: string) {
+async function writePackageJson(
+  outputPath: string,
+  moduleName: string,
+  pkgName: string,
+  mod: string
+) {
   // Default fields needed for ESM/CJS resolution
   const defaultPkg = {
     name: moduleName,
-    type: 'module',
+    type: mod,
     module: './index.js',
     types: './index.d.ts',
     sideEffects: false,
@@ -32,7 +24,7 @@ async function writePackageJson(outputPath: string, moduleName: string) {
   let finalPkg = { ...defaultPkg };
 
   // Try to load existing package.json from source
-  const srcPkgPath = path.join(ROOT, 'packages', 'preact', 'package.json');
+  const srcPkgPath = path.join(ROOT, 'packages', pkgName, 'package.json');
 
   try {
     const srcPkgRaw = await fs.readFile(srcPkgPath, 'utf-8');
@@ -70,11 +62,11 @@ async function generateMainPackage() {
     await fs.writeFile(indexFile, `export * from './main/index.js';`, 'utf-8');
 
     // Write package.json
-    await writePackageJson(outDir, PKG_NAME);
+    await writePackageJson(outDir, PKG_NAME, '', target.moduleType);
   }
 }
 
-async function generateSubpackage() {
+async function generatePreact() {
   const targets = [
     { dir: 'esm/preact', moduleType: 'module' },
     { dir: 'cjs/preact', moduleType: 'commonjs' },
@@ -91,14 +83,36 @@ async function generateSubpackage() {
     // await fs.writeFile(indexFile, `export * from '../preact/index.js';`, 'utf-8');
 
     // Write package.json
-    await writePackageJson(outDir, `${PKG_NAME}-preact`);
+    await writePackageJson(outDir, `${PKG_NAME}/preact`, 'preact', target.moduleType);
+  }
+}
+
+async function generateReact() {
+  const targets = [
+    { dir: 'esm/react', moduleType: 'module' },
+    { dir: 'cjs/react', moduleType: 'commonjs' },
+  ];
+
+  for await (const target of targets) {
+    const outDir = path.join(DIST_DIR, target.dir);
+    // const indexFile = path.join(outDir, 'index.js');
+
+    // Ensure the folder exists
+    await fs.mkdir(outDir, { recursive: true });
+
+    // Write the correct export
+    // await fs.writeFile(indexFile, `export * from '../preact/index.js';`, 'utf-8');
+
+    // Write package.json
+    await writePackageJson(outDir, `${PKG_NAME}/react`, 'react', target.moduleType);
   }
 }
 
 async function main() {
   try {
     await generateMainPackage();
-    await generateSubpackage();
+    await generatePreact();
+    await generateReact();
 
     // console.log('✅ Package files generated successfully.');
   } catch {

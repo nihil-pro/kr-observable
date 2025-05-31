@@ -22,6 +22,7 @@
 
 {
   "include": ["packages/**/*", "scripts", "eslint.config.mjs", "lint-staged.config.mjs"],
+//  "exclude": ["packages/main/test/*", "packages/main/tests/*"],
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
