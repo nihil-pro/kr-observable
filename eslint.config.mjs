@@ -3,7 +3,7 @@ import path from 'node:path';
 import { getEslintConfig } from '@espcom/eslint-config';
 
 const eslintConfig = getEslintConfig({
-  tsConfigPath: path.resolve('./tsconfig.json'),
+  tsConfigPath: path.resolve('./tsconfig.eslint.json'),
 });
 
 Object.assign(eslintConfig[0].rules, {

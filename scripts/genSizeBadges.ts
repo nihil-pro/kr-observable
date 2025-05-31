@@ -22,7 +22,7 @@ function bytesForHuman(bytes: number, decimals = 2) {
   return `${parseFloat(bytes.toFixed(decimals))} ${units[i]}`;
 }
 
-function afterBuild(result: BuildResult, type: 'esm' | 'cjs') {
+function afterBuild(result: BuildResult, type: 'esm' | 'cjs', name: string) {
   const sizes: Record<string, string> = {};
 
   result.outputFiles.forEach((file) => {
@@ -34,7 +34,7 @@ function afterBuild(result: BuildResult, type: 'esm' | 'cjs') {
   const svgPath = path.resolve(assetsPath, `${type}.svg`);
 
   // eslint-disable-next-line no-console
-  console.log(`Size ${type} ${sizes.js} ${sizes.gz}`);
+  console.log(name, `Size ${type} gzipped ${sizes.gz}`); // ${sizes.js}
 
   const svg = makeBadge({
     label: type.toUpperCase(), // ,`Size (${type})`,
@@ -70,17 +70,17 @@ await Promise.all([
   esbuild
     .build({
       ...buildConfig,
-      entryPoints: [path.resolve(pkg.exports.import)],
+      entryPoints: [path.resolve(pkg.exports['.'].import)],
       format: 'esm',
       outdir: 'assets/esm',
     })
-    .then((res) => afterBuild(res, 'esm')),
+    .then((res) => afterBuild(res, 'esm', '')),
   esbuild
     .build({
       ...buildConfig,
-      entryPoints: [path.resolve(pkg.exports.require)],
+      entryPoints: [path.resolve(pkg.exports['.'].require)],
       format: 'cjs',
       outdir: 'assets/cjs',
     })
-    .then((res) => afterBuild(res, 'cjs')),
+    .then((res) => afterBuild(res, 'cjs', '')),
 ]);

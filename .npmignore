@@ -9,7 +9,7 @@ eslint.config.*
 .editorconfig
 .gitignore
 lint-staged.config.*
-/test
+/packages/main/test
 
 .nyc_output
 .github

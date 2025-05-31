@@ -1,7 +1,7 @@
 import { describe, mock, test } from 'node:test';
 import assert from 'node:assert';
 
-import { Observable, autorun, subscribe, transaction } from '../src/index.js';
+import { Observable, autorun, subscribe, transaction } from '../index.js';
 
 describe('Synchronous batching', () => {
   test('should invoke subscriber once, when values are changed at the same time', (ctx) => {

@@ -1,7 +1,7 @@
 import { describe, mock, test } from 'node:test';
 import assert from 'node:assert';
 
-import { makeObservable, Observable, subscribe, listen, transaction } from '../src/index.js';
+import { makeObservable, Observable, subscribe, listen, transaction } from '../index.js';
 
 describe('Bind tests', () => {
   test('should has correct receiver when access adm trap', () => {

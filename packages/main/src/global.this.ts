@@ -29,3 +29,4 @@ if (!Reflect.has(Array.prototype, 'set')) {
 
 /** Maybe is not great idea, but it's a reliable way to get a singleton  */
 export const lib = Reflect.get(getGlobal(), GlobalKey);
+export const executor = lib.executor;
