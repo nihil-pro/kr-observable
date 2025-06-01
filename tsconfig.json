@@ -29,12 +29,15 @@
     "lib": ["ES2022", "DOM.Iterable", "DOM"],
     "outDir": "dist",
     "moduleResolution": "node",
+    "skipLibCheck": true,
     "removeComments": true,
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "paths": {
       "kr-observable": ["packages/main/index.ts"],
-      "kr-observable/preact": ["packages/preact/index.ts"]
+      "kr-observable/preact": ["packages/preact/index.ts"],
+      "kr-observable/react": ["packages/react/index.ts"],
+      "kr-observable/vue": ["packages/vue/index.ts"]
     }
   }
 }

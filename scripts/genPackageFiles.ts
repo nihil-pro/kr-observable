@@ -112,11 +112,33 @@ async function generateReact() {
   }
 }
 
+async function generateVue() {
+  const targets = [
+    { dir: 'esm/vue', moduleType: 'module' },
+    { dir: 'cjs/vue', moduleType: 'commonjs' },
+  ];
+
+  for await (const target of targets) {
+    const outDir = path.join(DIST_DIR, target.dir);
+    // const indexFile = path.join(outDir, 'index.js');
+
+    // Ensure the folder exists
+    await fs.mkdir(outDir, { recursive: true });
+
+    // Write the correct export
+    // await fs.writeFile(indexFile, `export * from '../preact/index.js';`, 'utf-8');
+
+    // Write package.json
+    await writePackageJson(outDir, `${PKG_NAME}/vue`, 'vue', target.moduleType);
+  }
+}
+
 async function main() {
   try {
     await generateMainPackage();
     await generatePreact();
     await generateReact();
+    await generateVue();
 
     // console.log('✅ Package files generated successfully.');
   } catch {
