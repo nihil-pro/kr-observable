@@ -1,5 +1,5 @@
 import { defineComponent, h, Plugin } from 'vue';
-import { executor, makeObservable } from 'kr-observable';
+import { executor } from 'kr-observable';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 function noop() {}
@@ -42,20 +42,3 @@ export const ObserverPlugin: Plugin = {
     app.component('Observer', Observer);
   },
 };
-
-/** Lite version of vue `defineModel` without options support
- * @example
- * const model = defineModel(0)
- * <input v-model="model" />
- * */
-export function defineModel<T>(initial: T | undefined): { value: T } {
-  return makeObservable({
-    _value: initial,
-    get value() {
-      return this._value;
-    },
-    set value(newValue) {
-      this._value = newValue;
-    },
-  });
-}

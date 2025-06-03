@@ -55,6 +55,8 @@ export class ObservableAdm {
     this.changes.add(property);
   }
 
+  current: Set<ObservedRunnable> | null = null;
+
   /** Notify subscribers about changes */
   #notify() {
     this.state = 0;
@@ -62,7 +64,9 @@ export class ObservableAdm {
     const changes = new Set(this.changes);
     this.deps.forEach((list, key) => {
       if (this.changes.delete(key)) {
+        this.current = list;
         list.forEach((subscriber) => lib.notifier.notify(subscriber, changes));
+        this.current = null;
       }
     });
   }

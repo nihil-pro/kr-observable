@@ -20,3 +20,4 @@ tsconfig.*.json
 .nycrc.json
 /assets
 /scripts
+packages
