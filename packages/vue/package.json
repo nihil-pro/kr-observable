@@ -1,0 +1,10 @@
+{
+  "name": "kr-observable/vue",
+  "version": "3.0.0",
+  "main": "../dist/esm/vue/index.js",
+  "types": "../dist/types/vue/index.d.ts",
+  "peerDependencies": {
+    "kr-observable": "^3.0.0",
+    "vue": "^3.0.0"
+  }
+}

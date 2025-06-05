@@ -1,0 +1,10 @@
+{
+  "name": "kr-observable/react",
+  "version": "3.0.0",
+  "main": "../dist/esm/react/index.js",
+  "types": "../dist/types/react/index.d.ts",
+  "peerDependencies": {
+    "kr-observable": "^3.0.0",
+    "react": "^18.3.1"
+  }
+}

@@ -1,7 +1,7 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
 
-const exportContent = require('../dist/cjs/index');
+const exportContent = require('../../../dist/cjs/index.js');
 
 void describe('Test import cjs', async () => {
   await it('success', () => {

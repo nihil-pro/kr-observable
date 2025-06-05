@@ -1,21 +1,12 @@
-import {
-  ForwardRefExoticComponent,
-  ForwardRefRenderFunction,
-  FunctionComponent,
-  memo,
-  MemoExoticComponent,
-  PropsWithoutRef,
-  RefAttributes,
-  Ref,
-  useRef,
-  useSyncExternalStore,
-} from 'react';
+import { executor } from 'kr-observable';
+import { useRef } from 'preact/hooks';
+import { useSyncExternalStore, memo, forwardRef } from 'preact/compat';
+import { VNode, Ref, ComponentType } from 'preact';
 
-import { lib } from '../global.this.js';
-import { ObservedRunnable } from '../types.js';
-import { noop } from '../shared.js';
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+function noop() {}
 
-class Rss implements ObservedRunnable {
+class Rss {
   version = 1;
   debug = false;
   rc: Function;
@@ -38,7 +29,7 @@ class Rss implements ObservedRunnable {
   subscribe = (onStoreChange: () => void) => {
     this.onStoreChange = onStoreChange;
     return () => {
-      lib.executor.dispose(this);
+      executor.dispose(this);
       if (this.debug) console.info(`[${this.rc.name}] was unmounted`);
     };
   };
@@ -49,8 +40,8 @@ function useObserver<T>(rc: () => T, debug = false) {
   if (!ref.current) ref.current = new Rss(rc, debug);
   const store = ref.current!;
   store.run = rc;
-  useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
-  const TR = lib.executor.execute(store);
+  useSyncExternalStore(store.subscribe, store.getSnapshot);
+  const TR = executor.execute(store);
   if (TR.error) throw TR.error;
   if (debug) {
     const read: Record<string, Set<string | symbol>> = {};
@@ -71,23 +62,32 @@ function useObserver<T>(rc: () => T, debug = false) {
   return TR.result;
 }
 
-export function observer<P extends object, TRef = {}>(
-  rc: ForwardRefExoticComponent<PropsWithoutRef<P> & RefAttributes<TRef>>,
-  debug?: boolean
-): MemoExoticComponent<ForwardRefExoticComponent<PropsWithoutRef<P> & RefAttributes<TRef>>>;
+// type _Ref<T> = Ref<T>;
+type Component<P = {}> = ComponentType<P>;
 
-export function observer<P extends object>(
-  rc: FunctionComponent<P>,
-  debug?: boolean
-): FunctionComponent<P>;
+// Helper to detect if component uses ref
+function isForwardRef<P>(fn: Component<P>): boolean {
+  return fn.length > 1;
+}
 
-export function observer<A extends object, B = {}>(
-  rc:
-    | ForwardRefRenderFunction<B, A>
-    | FunctionComponent<A>
-    | ForwardRefExoticComponent<PropsWithoutRef<A> & RefAttributes<B>>,
+export function observer<P>(
+  rc: (props: P) => VNode<any>,
+  debug?: boolean
+): (props: P) => VNode<any>;
+
+export function observer<P, T>(
+  rc: (props: P, ref: Ref<T>) => VNode<any>,
+  debug?: boolean
+): (props: P, ref: Ref<T>) => VNode<any>;
+
+export function observer<P, T>(
+  rc: ((props: P) => VNode<any>) | ((props: P, ref: Ref<T>) => VNode<any>),
   debug = false
 ) {
-  const observedComponent = (props: any, ref: Ref<B>) => useObserver(() => rc(props, ref), debug);
-  return memo(observedComponent);
+  const wrapped = (props: P, ref: Ref<T>) => useObserver(() => rc(props, ref), debug);
+
+  if (isForwardRef(rc)) {
+    return memo(forwardRef(wrapped as (props: P, ref: Ref<T>) => VNode<any>));
+  }
+  return memo(wrapped as (props: P) => VNode<any>);
 }

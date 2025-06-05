@@ -115,6 +115,13 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
       return this.#value;
     }
     if (this.#deps === 0) return this.run();
+
+    // cases when dependency was changed, but notifier did not notify computed yet
+    if (this.#adm.current?.has(this)) {
+      this.#reader();
+      this.#adm.report(this.#property, this.#value);
+      return this.#value;
+    }
     return this.#value;
   };
 }

@@ -1,7 +1,7 @@
 import { describe, mock, test } from 'node:test';
 import assert from 'node:assert';
 
-import { Observable, autorun, subscribe, transaction } from '../src/index.js';
+import { Observable, autorun, subscribe, transaction } from '../index.js';
 
 describe('Synchronous batching', () => {
   test('should invoke subscriber once, when values are changed at the same time', (ctx) => {
@@ -412,6 +412,47 @@ describe('Synchronous batching', () => {
     assert.equal($res1, '3');
     assert.equal($res2, '3');
     assert.equal($res3, 'computed from 3');
+  });
+
+  test('computed should be compute when accessed', async (ctx) => {
+    class Foo extends Observable {
+      a = 0;
+
+      get computed() {
+        return `computed from ${this.a}`;
+      }
+    }
+    const foo = new Foo();
+
+    let $res1 = '';
+    let $res2 = '';
+    let $res3 = '';
+
+    function reaction() {
+      ctx.diagnostic('first autorun');
+      $res1 = `${foo.a}`;
+    }
+
+    autorun(reaction);
+
+    autorun(() => {
+      ctx.diagnostic('second autorun');
+      $res2 = `${foo.a}`;
+      $res3 = foo.computed;
+    });
+
+    assert.equal($res1, '0');
+    assert.equal($res2, '0');
+    assert.equal($res3, 'computed from 0');
+    await new Promise((resolve) => {
+      setTimeout(() => {
+        foo.a += 1;
+        resolve(true);
+      });
+    });
+    assert.equal($res1, '1');
+    assert.equal($res2, '1');
+    assert.equal($res3, 'computed from 1');
   });
 
   test('Can mutate state in autorun', (ctx) => {

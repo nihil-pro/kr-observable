@@ -1,10 +1,9 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["packages/**/*"],
   "compilerOptions": {
-    "outDir": "./dist/types",
+    "outDir": "dist/types/vue",
     "declaration": true,
-    "declarationMap": true,
     "emitDeclarationOnly": true
-  }
+  },
+  "include": ["packages/vue"]
 }

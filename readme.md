@@ -12,30 +12,23 @@
 4. Works in all runtimes (Node.js, Web, e.t.c);
 5. Well typed;
 6. Framework-agnostic.
-
-For use as a state-manager, it comes with `observer` HOC (higher-order component) for React, as most popular library. 
-But it can be used with any JavaScript framework or library.
+7. Bindings for react, preact and vue
 
 ### Docs – [observable.ru](https://observable.ru/)
 
 ## Example with React
 ```ts
-import { Observable, observer } from 'kr-observable'
+import { makeObservable } from 'kr-observable'
+import { observer } from 'kr-observable/react'
 
-class Counter extends Observable {
-  count = 0;
-  increase() { ++this.count; }
-  decrease() { --this.count; }
-}
-
-const counter = new Counter()
+const state = makeObservable({ count: 0 })
 
 function App() {
   return (
     <div>
-      <button onClick={counter.decrease}>-</button>
-      <div>{counter.count}</div>
-      <button onClick={counter.increase}>+</button>
+      <button onClick={() => --state.count}>-</button>
+      <div>{state.count}</div>
+      <button onClick={() => ++state.count}>+</button>
     </div>
 )
 }
@@ -44,31 +37,8 @@ export default observer(App)
 
 More example and full docs on [observable.ru](https://observable.ru/)
 
+## Performance and memory usage benchmark
+[js-framework-benchmark](https://krausest.github.io/js-framework-benchmark/index.html)
 
-## Performance 
-Is fast enough.
-![observable performance](https://observable.ru/perf.png)
-
-## Memory allocation
-Economical)
-![observable memory usage](https://observable.ru/mem.png)
-
-## Size
-Is really tiny 
-![observable memory usage](https://observable.ru/size.png)
-
-## Limitations
-There is only one limitation: if you assign a new element to the array by index – changes will happen, of course, but You will not be notified.
-```typescript
-import { Observable } from 'kr-observable';
-
-class Example extends Observable {
-  array = []
-}
-
-const state = new Example()
-state.listen((p,v) => console.log(p,v))
-state.array[0] = 1 // 
-state.array.set(0,1) // array 1
-```
-There is a new `set` method in Array which you can use for that.
+## Reactivity benchmark
+[mol.hyoo.ru](https://mol.hyoo.ru/#!section=bench/bench=reactivity)
