@@ -42,7 +42,7 @@ export class ObservableExecutor {
   static current: ObservedRunnable | undefined;
 
   /** Execute a runnable and store read Observables */
-  static execute(runnable: ObservedRunnable) {
+  static execute(runnable: ObservedRunnable): ExecutionResult {
     this.current = runnable;
     let result = this.#registry.get(runnable);
     if (!result) {
@@ -52,8 +52,26 @@ export class ObservableExecutor {
       this.unsubscribe(result.read, runnable);
     }
     this.#stack.push({ runnable, result });
+    if (runnable.isAsync) {
+      return this.asyncExecutor(runnable, result) as unknown as ExecutionResult;
+    }
+    return this.syncExecutor(runnable, result);
+  }
+
+  static syncExecutor(runnable: ObservedRunnable, result: ExecutionResult) {
     try {
       result.result = runnable.run();
+    } catch (e) {
+      result.error = e as Error;
+    }
+    this.#stack.pop();
+    this.current = undefined;
+    return result;
+  }
+
+  static async asyncExecutor(runnable: ObservedRunnable, result: ExecutionResult) {
+    try {
+      result.result = await runnable.run();
     } catch (e) {
       result.error = e as Error;
     }

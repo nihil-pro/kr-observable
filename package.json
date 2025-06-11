@@ -1,6 +1,6 @@
 {
   "name": "kr-observable",
-  "version": "3.0.4",
+  "version": "3.0.6",
   "description": "Adds reactivity power for your JavaScript",
   "type": "module",
   "scripts": {
@@ -53,7 +53,7 @@
   "sideEffect": false,
   "exports": {
     ".": {
-      "types": "./dist/types/index.d.ts",
+      "types": "./dist/types/main/index.d.ts",
       "require": "./dist/cjs/index.js",
       "import": "./dist/esm/index.js"
     },
@@ -75,7 +75,7 @@
   },
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
-  "types": "dist/types/index.d.ts",
+  "types": "dist/types/main/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/nihil-pro/observable-class.git"

@@ -48,11 +48,14 @@ export function transaction(work: () => void) {
  It also runs once when you create the autorun itself.
  Returns a dispose function.
  */
-export function autorun(work: () => void) {
+
+export function autorun(work: () => void | Promise<void>) {
   if (registry.has(work)) return noop;
+  const isAsync = Reflect.getPrototypeOf(work)?.constructor.name === 'AsyncFunction';
   const runnable = {
     run: work,
     subscriber: () => void lib.executor.execute(runnable),
+    isAsync,
   };
   registry.set(work, runnable);
   lib.executor.execute(runnable);
