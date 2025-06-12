@@ -40,7 +40,12 @@ export function makeObservable<T extends object>(
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
     if (!descriptor.configurable) continue;
     if (descriptor.writable) {
-      value[key] = maybeMakeObservable(key, value[key], adm);
+      if (typeof descriptor.value === 'function') {
+        value[key] = new Proxy(descriptor.value, new ActionHandler(proxy, adm));
+        handler.fns[key] = 1;
+      } else {
+        value[key] = maybeMakeObservable(key, value[key], adm);
+      }
     } else {
       Object.defineProperty(value, key, new ObservableComputed(key, descriptor, adm, proxy));
     }
@@ -79,7 +84,7 @@ function maybeMakeObservable(key: Property, value: any, adm: ObservableAdm) {
 
 class ObservableProxyHandler {
   adm: ObservableAdm;
-  fns: Record<Property, Function> = Object.create(null);
+  fns: Record<Property, number> = Object.create(null);
   receiver: Object;
 
   constructor(adm: ObservableAdm) {
@@ -88,21 +93,14 @@ class ObservableProxyHandler {
 
   #batch(property: Property) {
     if (!lib.action) {
-      if (this.adm.changes.has(property)) {
-        lib.queue.delete(this.adm);
-        this.adm.batch();
-      }
+      if (this.adm.changes.has(property)) this.adm.batch();
     }
-    if (!this.adm.ignore.has(property)) lib.executor.report(this.adm, property);
+    lib.executor.report(this.adm, property);
   }
   get(target: any, key: Property, ctx: any) {
     if (key === $adm) return this.adm;
-    const val = Reflect.get(target, key, ctx);
-    if (typeof val === 'function') {
-      return this.fns[key] || (this.fns[key] = new Proxy(val, new ActionHandler(ctx, this.adm)));
-    }
-    this.#batch(key);
-    return val;
+    if (!this.fns[key]) this.#batch(key);
+    return Reflect.get(target, key, ctx);
   }
   set(target: any, property: string, newValue: any) {
     const desc = Reflect.getOwnPropertyDescriptor(target, property);
@@ -119,18 +117,24 @@ class ObservableProxyHandler {
     return res;
   }
   defineProperty(target: any, property: string, desc: PropertyDescriptor) {
-    delete this.fns[property];
     let $desc = desc;
-    if (desc.writable) $desc.value = maybeMakeObservable(property, desc.value, this.adm);
-    else if (desc.configurable) {
+    if (typeof desc.value === 'function') {
+      $desc = {
+        ...desc,
+        value: new Proxy(desc.value, new ActionHandler(this.receiver, this.adm)),
+      };
+      this.fns[property] = 1;
+    } else if (desc.writable) {
+      $desc.value = maybeMakeObservable(property, desc.value, this.adm);
+    } else if (desc.configurable) {
       $desc = new ObservableComputed(property, desc, this.adm, this.receiver);
     }
     return Reflect.defineProperty(target, property, $desc);
   }
   deleteProperty(target: any, property: string | symbol): boolean {
     if (!(property in target)) return false;
-    delete this.fns[property];
     this.adm.state = 0;
+    delete this.fns[property];
     const res = Reflect.deleteProperty(target, property);
     this.#report(property, undefined);
     return res;
@@ -149,6 +153,9 @@ class ObservableProxyHandler {
     return Reflect.getOwnPropertyDescriptor(target, property);
   }
   #report(property: Property, value: any) {
+    if (!this.adm.deps.has(property)) {
+      if (this.adm.listeners.size === 0) return;
+    }
     this.adm.report(property, value);
     this.adm.state = 1;
     // queueBatch(this.adm);
@@ -178,11 +185,19 @@ export class Observable {
     const proxy = new Proxy(this, handler);
     handler.receiver = proxy;
     for (const key of Reflect.ownKeys(proto)) {
-      if (adm.ignore.has(key)) continue;
-      const desc = Object.getOwnPropertyDescriptor(proto, key);
-      if (desc.writable || !desc.configurable) continue;
-      Object.defineProperty(this, key, new ObservableComputed(key, desc, adm, proxy));
+      if (key === 'constructor') continue;
+      Object.defineProperty(proxy, key, Object.getOwnPropertyDescriptor(proto, key));
+      // if (adm.ignore.has(key)) continue;
+      // const desc = Object.getOwnPropertyDescriptor(proto, key);
+      // if (typeof desc.value === 'function') {
+      //   handler.fns[key] = 1;
+      //   Object.defineProperty(this, key, { ...desc, value: new Proxy(desc.value, new ActionHandler(proxy, adm))});
+      //   continue;
+      // }
+      // if (desc.writable || !desc.configurable) continue;
+      // Object.defineProperty(this, key, new ObservableComputed(key, desc, adm, proxy));
     }
+
     return proxy;
   }
 }

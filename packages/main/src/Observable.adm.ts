@@ -65,7 +65,13 @@ export class ObservableAdm {
     this.deps.forEach((list, key) => {
       if (this.changes.delete(key)) {
         this.current = list;
-        list.forEach((subscriber) => lib.notifier.notify(subscriber, changes));
+        list.forEach((subscriber) => {
+          if (!subscriber.invalid) {
+            lib.notifier.notify(subscriber, changes);
+          } else {
+            list.delete(subscriber);
+          }
+        });
         this.current = null;
       }
     });

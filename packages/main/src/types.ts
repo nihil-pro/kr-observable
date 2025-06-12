@@ -11,6 +11,7 @@ export interface ObservedRunnable {
   run: Function;
   subscriber: Subscriber;
   isAsync?: boolean;
+  invalid?: boolean;
 }
 
 type Structure = Map<any, any> | Set<any> | Array<any>;
