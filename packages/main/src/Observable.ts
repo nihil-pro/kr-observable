@@ -47,6 +47,7 @@ export function makeObservable<T extends object>(
       Object.defineProperty(value, key, new ObservableComputed(key, descriptor, adm, proxy));
     }
   }
+
   return proxy;
 }
 
