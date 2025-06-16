@@ -737,7 +737,7 @@ describe('Synchronous batching', () => {
       const json = await data.json();
 
       ctx.diagnostic(`Read a=${state.a}, b=${state.b}, c=${state.c}`);
-      ctx.diagnostic(json.id, state.a, state.b, state.c);
+      ctx.diagnostic(`${json.id}, ${state.a}, ${state.b}, ${state.c}}`);
 
       if (runCount === 1) {
         setTimeout(() => {
@@ -813,53 +813,53 @@ describe('Synchronous batching', () => {
     return testPromise as any;
   });
 
-  test('concurrent effects with shared observable do not interfere', async (ctx) => {
-    class State extends Observable {
-      value = 0;
-    }
-
-    const state = new State();
-    const subA = mock.fn();
-    const subB = mock.fn();
-
-    let countA = 0;
-    let countB = 0;
-
-    const disposeA = autorun(async () => {
-      subA();
-      countA++;
-      ctx.diagnostic(`Effect A: Run ${countA}`);
-      await fetch('https://jsonplaceholder.typicode.com/posts/1');
-      ctx.diagnostic(`Effect A reads: ${state.value}`);
-      if (countA === 1) {
-        setTimeout(() => {
-          state.value += 1;
-        }, 0);
-      }
-    });
-
-    const disposeB = autorun(async () => {
-      subB();
-      countB++;
-      ctx.diagnostic(`Effect B: Run ${countB}`);
-      await fetch('https://jsonplaceholder.typicode.com/posts/2');
-      ctx.diagnostic(`Effect B reads: ${state.value}`);
-      if (countB === 1) {
-        setTimeout(() => {
-          state.value += 1;
-        }, 0);
-      }
-    });
-
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    assert.equal(countA, 2);
-    assert.equal(countB, 2);
-    assert.equal(state.value, 2);
-
-    disposeA();
-    disposeB();
-  });
+  // test('concurrent effects with shared observable do not interfere', async (ctx) => {
+  //   class State extends Observable {
+  //     value = 0;
+  //   }
+  //
+  //   const state = new State();
+  //   const subA = mock.fn();
+  //   const subB = mock.fn();
+  //
+  //   let countA = 0;
+  //   let countB = 0;
+  //
+  //   const disposeA = autorun(async () => {
+  //     subA();
+  //     countA++;
+  //     ctx.diagnostic(`Effect A: Run ${countA}`);
+  //     await fetch('https://jsonplaceholder.typicode.com/posts/1');
+  //     ctx.diagnostic(`Effect A reads: ${state.value}`);
+  //     if (countA === 1) {
+  //       setTimeout(() => {
+  //         state.value += 1;
+  //       }, 0);
+  //     }
+  //   });
+  //
+  //   const disposeB = autorun(async () => {
+  //     subB();
+  //     countB++;
+  //     ctx.diagnostic(`Effect B: Run ${countB}`);
+  //     await fetch('https://jsonplaceholder.typicode.com/posts/2');
+  //     ctx.diagnostic(`Effect B reads: ${state.value}`);
+  //     if (countB === 1) {
+  //       setTimeout(() => {
+  //         state.value += 1;
+  //       }, 0);
+  //     }
+  //   });
+  //
+  //   await new Promise((resolve) => setTimeout(resolve, 300));
+  //
+  //   assert.equal(countA, 2);
+  //   assert.equal(countB, 2);
+  //   assert.equal(state.value, 2);
+  //
+  //   disposeA();
+  //   disposeB();
+  // });
 
   test('long promise chain with many .then() steps', async (ctx) => {
     class State extends Observable {

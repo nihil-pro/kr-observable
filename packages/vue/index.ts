@@ -18,6 +18,7 @@ export const Observer = defineComponent({
     run: noop,
     subscriber: noop,
     render: noop,
+    disposed: false,
   }),
   beforeMount() {
     this.run = this.$slots?.default;

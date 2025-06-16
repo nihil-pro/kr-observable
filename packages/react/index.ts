@@ -18,6 +18,7 @@ function noop() {}
 class Rss {
   version = 1;
   debug = false;
+  disposed = false;
   rc: Function;
   onStoreChange = noop;
   run = noop;

@@ -40,7 +40,9 @@ export function makeObservable<T extends object>(
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
     if (!descriptor.configurable) continue;
     if (descriptor.writable) {
-      value[key] = maybeMakeObservable(key, value[key], adm);
+      if (typeof descriptor.value === 'object') {
+        value[key] = maybeMakeObservable(key, descriptor.value, adm);
+      }
     } else {
       Object.defineProperty(value, key, new ObservableComputed(key, descriptor, adm, proxy));
     }
@@ -77,9 +79,16 @@ function maybeMakeObservable(key: Property, value: any, adm: ObservableAdm) {
   return value;
 }
 
+const NON_PROXIED_METHODS = new Set<Property>([
+  ...Object.getOwnPropertyNames(Object.prototype),
+  ...Object.getOwnPropertyNames(Symbol.prototype),
+]);
+
+const { executor } = lib;
+
 class ObservableProxyHandler {
   adm: ObservableAdm;
-  fns: Record<Property, Function> = Object.create(null);
+  fns: Record<Property, Function> = {};
   receiver: Object;
 
   constructor(adm: ObservableAdm) {
@@ -87,32 +96,40 @@ class ObservableProxyHandler {
   }
 
   #batch(property: Property) {
-    if (!lib.action) {
-      if (this.adm.changes.has(property)) {
-        lib.queue.delete(this.adm);
-        this.adm.batch();
+    const { adm } = this;
+
+    if (adm.state === 1) {
+      if (!lib.action) {
+        if (adm.changes.has(property)) adm.batch();
       }
     }
-    if (!this.adm.ignore.has(property)) lib.executor.report(this.adm, property);
+    executor.report(this.adm, property);
+    // lib.executor.report(this.adm, property);
+    // if (!this.adm.ignore.has(property)) lib.executor.report(this.adm, property);
   }
   get(target: any, key: Property, ctx: any) {
     if (key === $adm) return this.adm;
     const val = Reflect.get(target, key, ctx);
     if (typeof val === 'function') {
+      if (NON_PROXIED_METHODS.has(key)) return val;
       return this.fns[key] || (this.fns[key] = new Proxy(val, new ActionHandler(ctx, this.adm)));
     }
     this.#batch(key);
     return val;
   }
   set(target: any, property: string, newValue: any) {
+    const { adm } = this;
+    if (!adm.deps.has(property)) {
+      adm?.listeners?.forEach((cb) => cb(property, newValue));
+      return Reflect.set(target, property, newValue);
+    }
     const desc = Reflect.getOwnPropertyDescriptor(target, property);
     if (desc?.set) return Reflect.set(target, property, newValue, this.receiver);
     if (desc?.get || (desc && !desc.writable)) return false;
     let res = true;
     if (!desc || desc?.value !== newValue) {
-      this.fns[property] = undefined;
-      this.adm.state = 0;
-      const value = maybeMakeObservable(property, newValue, this.adm);
+      adm.state = 0;
+      const value = maybeMakeObservable(property, newValue, adm);
       res = Reflect.set(target, property, value);
       this.#report(property, newValue);
     }
@@ -151,9 +168,10 @@ class ObservableProxyHandler {
   #report(property: Property, value: any) {
     this.adm.report(property, value);
     this.adm.state = 1;
+    // if (!this.adm.deps.has(property)) return;
     // queueBatch(this.adm);
-    if (lib.executor.current) {
-      lib.executor.report(this.adm, property, true);
+    if (executor.current) {
+      executor.report(this.adm, property, true);
     } else {
       queueBatch(this.adm);
     }
@@ -197,8 +215,8 @@ class ObservableArray<T> extends Array<T> {
   report() {
     const meta = this.meta;
     meta.adm.report(meta.key, this);
-    queueBatch(meta.adm);
     meta.adm.state = 1;
+    queueBatch(meta.adm);
   }
 
   prepare(items: T[]) {

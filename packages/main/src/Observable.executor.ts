@@ -6,6 +6,8 @@ import { ObservedRunnable, Property } from './types.js';
 class ExecutionResult {
   read: Set<ObservableAdm> = new Set();
 
+  deps: Set<Set<ObservedRunnable>> = new Set();
+
   /** If the execution fails, it will contain thrown error */
   error: undefined | Error;
 
@@ -24,19 +26,22 @@ export class ObservableExecutor {
    * @see ObservableProxyHandler */
   static report(adm: ObservableAdm, property: Property, set = false) {
     if (!this.#stack.length) return;
-    const { runnable, result } = this.#stack[this.#stack.length - 1];
+    if (adm.ignore.has(property)) return;
+    const stackEntry = this.#stack[this.#stack.length - 1];
+    const { runnable, result } = stackEntry;
     if (set) {
-      adm.deps.get(property)?.delete(runnable);
-      result.read.delete(adm);
+      const deps = adm.deps.get(property);
+      deps?.delete(runnable);
+      // result.read.delete(adm);
       return;
     }
     let deps = adm.deps.get(property);
     if (!deps) {
-      deps = new Set<ObservedRunnable>();
+      deps = new Set();
       adm.deps.set(property, deps);
     }
     deps.add(runnable);
-    result.read.add(adm);
+    result.deps.add(deps);
   }
 
   static current: ObservedRunnable | undefined;
@@ -49,7 +54,8 @@ export class ObservableExecutor {
       result = new ExecutionResult();
       this.#registry.set(runnable, result);
     } else {
-      this.unsubscribe(result.read, runnable);
+      // this.unsubscribe(result, runnable);
+      result.deps.forEach((list) => list.delete(runnable));
     }
     this.#stack.push({ runnable, result });
     if (runnable.isAsync) {
@@ -82,16 +88,16 @@ export class ObservableExecutor {
 
   /** Unsubscribes from Observables read during passed runnable execution */
   static dispose(runnable: ObservedRunnable) {
-    const res = this.#registry.get(runnable);
-    if (res) {
-      this.unsubscribe(res.read, runnable);
-      this.#registry.delete(runnable);
-    }
+    this.#registry.delete(runnable);
+    runnable.disposed = true;
+    // const result = this.#registry.get(runnable);
+    // if (result) {
+    //   this.unsubscribe(result, runnable);
+    //   this.#registry.delete(runnable);
+    // }
   }
 
-  static unsubscribe(adms: Set<ObservableAdm>, runnable: ObservedRunnable) {
-    adms.forEach((adm) => {
-      adm.deps.forEach((list) => list.delete(runnable));
-    });
-  }
+  // static unsubscribe(result: ExecutionResult, runnable: ObservedRunnable) {
+  //   result.deps.forEach(list => list.delete(runnable))
+  // }
 }

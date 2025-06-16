@@ -11,7 +11,7 @@ export function subscribe(target: Observable, cb: Subscriber, keys: Set<Property
   const adm = Reflect.get(target, $adm) as ObservableAdm | undefined;
   if (!adm) throw error;
   if (registry.has(cb)) return noop;
-  const runnable = { subscriber: cb } as ObservedRunnable;
+  const runnable = { subscriber: cb, disposed: false } as ObservedRunnable;
   keys.forEach((key) => {
     let deps = adm.deps.get(key);
     if (!deps) {
@@ -31,6 +31,7 @@ export function subscribe(target: Observable, cb: Subscriber, keys: Set<Property
 export function listen(target: Observable, cb: Listener) {
   const adm = Reflect.get(target, $adm) as ObservableAdm | undefined;
   if (!adm) throw error;
+  if (!adm.listeners) adm.listeners = new Set<Listener>();
   adm.listeners.add(cb);
   return () => void adm.listeners.delete(cb);
 }
@@ -56,6 +57,7 @@ export function autorun(work: () => void | Promise<void>) {
     run: work,
     subscriber: () => void lib.executor.execute(runnable),
     isAsync,
+    disposed: false,
   };
   registry.set(work, runnable);
   lib.executor.execute(runnable);
