@@ -14,7 +14,7 @@ export class ObservableAdm {
   deps: Map<Property, Set<ObservedRunnable>> = new Map();
 
   /** Set of listeners. */
-  listeners: Set<Listener> = new Set();
+  listeners: Set<Listener> | undefined;
 
   /** When proxy `set` is called, the name of the accessed property is stored here.
    * They will be used during notifying subscribers.
@@ -49,9 +49,7 @@ export class ObservableAdm {
    * @see proxyHandler
    * */
   report(property: Property, value: any) {
-    if (this.listeners.size > 0) {
-      this.listeners.forEach((cb) => cb(property, value));
-    }
+    this.listeners?.forEach((cb) => cb(property, value));
     this.changes.add(property);
   }
 
@@ -63,9 +61,16 @@ export class ObservableAdm {
     if (this.changes.size === 0) return;
     const changes = new Set(this.changes);
     this.deps.forEach((list, key) => {
+      if (list.size === 0) return;
       if (this.changes.delete(key)) {
         this.current = list;
-        list.forEach((subscriber) => lib.notifier.notify(subscriber, changes));
+        list.forEach((subscriber) => {
+          if (subscriber.disposed) {
+            list.delete(subscriber);
+          } else {
+            lib.notifier.notify(subscriber, changes);
+          }
+        });
         this.current = null;
       }
     });

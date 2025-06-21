@@ -30,7 +30,7 @@ function App() {
       <div>{state.count}</div>
       <button onClick={() => ++state.count}>+</button>
     </div>
-)
+  )
 }
 export default observer(App)
 ```

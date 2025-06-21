@@ -13,6 +13,8 @@ const queueBatch = (adm: ObservableAdm) => {
   }
 };
 
+const error = new TypeError('Invalid argument. Only plain objects are allowed');
+
 /** Only plain object are allowed
  * @example makeObservable({ foo: 'bar' }) */
 export function makeObservable<T extends object>(
@@ -20,15 +22,9 @@ export function makeObservable<T extends object>(
   ignore: Set<Property> = emptySet,
   shallow: Set<Property> = emptySet
 ): T {
-  // toDo
-  // || Object.prototype !== Object.getPrototypeOf(value)
-  if (value == null) {
-    throw new TypeError('Invalid argument. Only plain objects are allowed');
-  }
-  const proto = Object.getPrototypeOf(value);
-  if (proto !== Object.prototype && proto != null) {
-    throw new TypeError('Invalid argument. Only plain objects are allowed');
-  }
+  if (!value || typeof value !== 'object') throw error;
+  const type = value?.constructor;
+  if (type && type !== Object) throw error;
   if (value[$adm]) return value;
   const adm = new ObservableAdm('', ignore, shallow);
   const handler = new ObservableProxyHandler(adm);
@@ -40,7 +36,7 @@ export function makeObservable<T extends object>(
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
     if (!descriptor.configurable) continue;
     if (descriptor.writable) {
-      value[key] = maybeMakeObservable(key, value[key], adm);
+      value[key] = maybeMakeObservable(key, descriptor.value, adm);
     } else {
       Object.defineProperty(value, key, new ObservableComputed(key, descriptor, adm, proxy));
     }
@@ -49,11 +45,11 @@ export function makeObservable<T extends object>(
 }
 
 function maybeMakeObservable(key: Property, value: any, adm: ObservableAdm) {
-  if (value == null || typeof value !== 'object') return value;
+  if (!value || typeof value !== 'object') return value;
   if (value[$adm] || adm.ignore.has(key)) return value;
+  const ctor = value.constructor;
+  if (!ctor || ctor === Object) return makeObservable(value);
 
-  const proto = Object.getPrototypeOf(value);
-  if (Object.prototype === proto || proto === null) return makeObservable(value);
   if (Array.isArray(value)) {
     if (!adm.shallow.has(key)) {
       for (let i = 0; i < value.length; i++) {
@@ -77,44 +73,55 @@ function maybeMakeObservable(key: Property, value: any, adm: ObservableAdm) {
   return value;
 }
 
+const NON_PROXIED_METHODS = new Set<Property>([
+  ...Object.getOwnPropertyNames(Object.prototype),
+  ...Object.getOwnPropertyNames(Symbol.prototype),
+]);
+
+const { executor } = lib;
+
 class ObservableProxyHandler {
   adm: ObservableAdm;
-  fns: Record<Property, Function> = Object.create(null);
+  fns: Record<Property, Function> = {};
   receiver: Object;
 
   constructor(adm: ObservableAdm) {
     this.adm = adm;
   }
 
-  #batch(property: Property) {
-    if (!lib.action) {
-      if (this.adm.changes.has(property)) {
-        lib.queue.delete(this.adm);
-        this.adm.batch();
+  batch(property: Property) {
+    if (this.adm.state === 1) {
+      if (!lib.action) {
+        if (this.adm.changes.has(property)) this.adm.batch();
       }
     }
-    if (!this.adm.ignore.has(property)) lib.executor.report(this.adm, property);
+    lib.executor.report(this.adm, property);
   }
   get(target: any, key: Property, ctx: any) {
     if (key === $adm) return this.adm;
     const val = Reflect.get(target, key, ctx);
     if (typeof val === 'function') {
+      if (NON_PROXIED_METHODS.has(key)) return val;
       return this.fns[key] || (this.fns[key] = new Proxy(val, new ActionHandler(ctx, this.adm)));
     }
-    this.#batch(key);
+    this.batch(key);
     return val;
   }
   set(target: any, property: string, newValue: any) {
+    const { adm } = this;
+    if (!adm.deps.has(property)) {
+      adm?.listeners?.forEach((cb) => cb(property, newValue));
+      return Reflect.set(target, property, newValue);
+    }
     const desc = Reflect.getOwnPropertyDescriptor(target, property);
     if (desc?.set) return Reflect.set(target, property, newValue, this.receiver);
     if (desc?.get || (desc && !desc.writable)) return false;
     let res = true;
     if (!desc || desc?.value !== newValue) {
-      this.fns[property] = undefined;
-      this.adm.state = 0;
-      const value = maybeMakeObservable(property, newValue, this.adm);
+      adm.state = 0;
+      const value = maybeMakeObservable(property, newValue, adm);
       res = Reflect.set(target, property, value);
-      this.#report(property, newValue);
+      this.report(property, newValue);
     }
     return res;
   }
@@ -132,7 +139,7 @@ class ObservableProxyHandler {
     delete this.fns[property];
     this.adm.state = 0;
     const res = Reflect.deleteProperty(target, property);
-    this.#report(property, undefined);
+    this.report(property, undefined);
     return res;
   }
   setPrototypeOf(target: any, proto: any) {
@@ -141,19 +148,18 @@ class ObservableProxyHandler {
     return Reflect.setPrototypeOf(target, proto);
   }
   has(target: any, property: string | symbol) {
-    this.#batch(property);
+    this.batch(property);
     return property in target;
   }
   getOwnPropertyDescriptor(target: any, property: string | symbol) {
-    this.#batch(property);
+    this.batch(property);
     return Reflect.getOwnPropertyDescriptor(target, property);
   }
-  #report(property: Property, value: any) {
+  report(property: Property, value: any) {
     this.adm.report(property, value);
     this.adm.state = 1;
-    // queueBatch(this.adm);
-    if (lib.executor.current) {
-      lib.executor.report(this.adm, property, true);
+    if (executor.current) {
+      executor.report(this.adm, property, true);
     } else {
       queueBatch(this.adm);
     }
@@ -197,8 +203,8 @@ class ObservableArray<T> extends Array<T> {
   report() {
     const meta = this.meta;
     meta.adm.report(meta.key, this);
-    queueBatch(meta.adm);
     meta.adm.state = 1;
+    queueBatch(meta.adm);
   }
 
   prepare(items: T[]) {

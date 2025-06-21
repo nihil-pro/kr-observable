@@ -4,10 +4,9 @@ import { ObservedRunnable, Property } from './types.js';
 /** Stores ObservedRunnable execution result
  * @see ObservedRunnable */
 class ExecutionResult {
-  read: Set<ObservableAdm> = new Set();
+  read?: Set<ObservableAdm>;
 
-  /** If the execution fails, it will contain thrown error */
-  error: undefined | Error;
+  deps: Set<Set<ObservedRunnable>> = new Set();
 
   /** Execution result */
   result: any;
@@ -24,39 +23,54 @@ export class ObservableExecutor {
    * @see ObservableProxyHandler */
   static report(adm: ObservableAdm, property: Property, set = false) {
     if (!this.#stack.length) return;
-    const { runnable, result } = this.#stack[this.#stack.length - 1];
+    if (adm.ignore.has(property)) return;
+    const stackEntry = this.#stack[this.#stack.length - 1];
+    const { runnable, result } = stackEntry;
     if (set) {
-      adm.deps.get(property)?.delete(runnable);
-      result.read.delete(adm);
+      const deps = adm.deps.get(property);
+      deps?.delete(runnable);
+      result.read?.delete(adm);
       return;
     }
     let deps = adm.deps.get(property);
     if (!deps) {
-      deps = new Set<ObservedRunnable>();
+      deps = new Set();
       adm.deps.set(property, deps);
+      result.read?.add(adm);
     }
     deps.add(runnable);
-    result.read.add(adm);
+    result.deps.add(deps);
   }
 
   static current: ObservedRunnable | undefined;
 
   /** Execute a runnable and store read Observables */
-  static execute(runnable: ObservedRunnable) {
+  static execute(runnable: ObservedRunnable): ExecutionResult {
     this.current = runnable;
     let result = this.#registry.get(runnable);
     if (!result) {
       result = new ExecutionResult();
+      if (runnable.debug) result.read = new Set();
       this.#registry.set(runnable, result);
     } else {
-      this.unsubscribe(result.read, runnable);
+      result.deps.forEach((list) => list.delete(runnable));
     }
     this.#stack.push({ runnable, result });
-    try {
-      result.result = runnable.run();
-    } catch (e) {
-      result.error = e as Error;
+    if (runnable.isAsync) {
+      return this.asyncExecutor(runnable, result) as unknown as ExecutionResult;
     }
+    return this.syncExecutor(runnable, result);
+  }
+
+  static syncExecutor(runnable: ObservedRunnable, result: ExecutionResult) {
+    result.result = runnable.run();
+    this.#stack.pop();
+    this.current = undefined;
+    return result;
+  }
+
+  static async asyncExecutor(runnable: ObservedRunnable, result: ExecutionResult) {
+    result.result = await runnable.run();
     this.#stack.pop();
     this.current = undefined;
     return result;
@@ -64,16 +78,7 @@ export class ObservableExecutor {
 
   /** Unsubscribes from Observables read during passed runnable execution */
   static dispose(runnable: ObservedRunnable) {
-    const res = this.#registry.get(runnable);
-    if (res) {
-      this.unsubscribe(res.read, runnable);
-      this.#registry.delete(runnable);
-    }
-  }
-
-  static unsubscribe(adms: Set<ObservableAdm>, runnable: ObservedRunnable) {
-    adms.forEach((adm) => {
-      adm.deps.forEach((list) => list.delete(runnable));
-    });
+    this.#registry.delete(runnable);
+    runnable.disposed = true;
   }
 }

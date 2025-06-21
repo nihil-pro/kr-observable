@@ -1,6 +1,6 @@
 {
   "name": "kr-observable",
-  "version": "3.0.4",
+  "version": "3.0.8",
   "description": "Adds reactivity power for your JavaScript",
   "type": "module",
   "scripts": {
@@ -20,7 +20,7 @@
     "gen-coverage-badge": "node --import tsx ./scripts/genCoverageBadge.ts",
     "gen-size-badge": "node --import tsx ./scripts/genSizeBadges.ts",
     "test-ts": "c8 node --import tsx --test --experimental-strip-types --test-reporter=spec ./packages/**/*.test.ts && npm run gen-coverage-badge",
-    "test-main": "c8 node --import tsx --test --experimental-strip-types --test-reporter=spec packages/main/tests/Observable.test.* && npm run gen-coverage-badge"
+    "test-main": "c8 node --import tsx --test --experimental-strip-types --test-reporter=spec packages/main/tests/Karlovskiy.test.* && npm run gen-coverage-badge"
   },
   "keywords": [
     "proxy",
@@ -53,7 +53,7 @@
   "sideEffect": false,
   "exports": {
     ".": {
-      "types": "./dist/types/index.d.ts",
+      "types": "./dist/types/main/index.d.ts",
       "require": "./dist/cjs/index.js",
       "import": "./dist/esm/index.js"
     },
@@ -75,7 +75,10 @@
   },
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
-  "types": "dist/types/index.d.ts",
+  "types": "dist/types/main/index.d.ts",
+  "react": "./dist/cjs/react/index.js",
+  "preact": "./dist/cjs/preact/index.js",
+  "vue": "./dist/cjs/vue/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/nihil-pro/observable-class.git"

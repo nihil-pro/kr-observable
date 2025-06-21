@@ -8,6 +8,9 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
    * Can't use target because properties access won't be tracked, and access to private properties won't work. */
   #proxy: object;
 
+  disposed = false;
+  debug = false;
+
   /** Original descriptor */
   #descriptor: PropertyDescriptor;
 
@@ -59,6 +62,13 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
     // if property will be accessed earlier than below microtask will be executed,
     // we'll call original getter to get current result
     this.#changed = true;
+    // let shouldCompute = false;
+    // console.log(this.#property, this.#adm.deps.get(this.#property))
+    // this.#adm.deps.get(this.#property)?.forEach(run => {
+    //   if (shouldCompute) return;
+    //   if (!run.disposed) shouldCompute = true;
+    // })
+    // if (!shouldCompute) return;
     if (this.#adm.deps.get(this.#property)?.size === 0) return;
     this.#compute();
   }
@@ -91,9 +101,9 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
 
   /** Read getter value in a transaction and subscribes to observables */
   #reader() {
-    const { result, read } = lib.executor.execute(this);
+    const { result, deps } = lib.executor.execute(this);
     this.#value = result;
-    this.#deps = read.size;
+    this.#deps = deps.size;
   }
 
   /** A trap for original descriptor getter */
