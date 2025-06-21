@@ -58,6 +58,7 @@ export function autorun(work: () => void | Promise<void>) {
     subscriber: () => void lib.executor.execute(runnable),
     isAsync,
     disposed: false,
+    debug: false,
   };
   registry.set(work, runnable);
   lib.executor.execute(runnable);

@@ -4,12 +4,9 @@ import { ObservedRunnable, Property } from './types.js';
 /** Stores ObservedRunnable execution result
  * @see ObservedRunnable */
 class ExecutionResult {
-  read: Set<ObservableAdm> = new Set();
+  read?: Set<ObservableAdm>;
 
   deps: Set<Set<ObservedRunnable>> = new Set();
-
-  /** If the execution fails, it will contain thrown error */
-  error: undefined | Error;
 
   /** Execution result */
   result: any;
@@ -32,13 +29,14 @@ export class ObservableExecutor {
     if (set) {
       const deps = adm.deps.get(property);
       deps?.delete(runnable);
-      // result.read.delete(adm);
+      result.read?.delete(adm);
       return;
     }
     let deps = adm.deps.get(property);
     if (!deps) {
       deps = new Set();
       adm.deps.set(property, deps);
+      result.read?.add(adm);
     }
     deps.add(runnable);
     result.deps.add(deps);
@@ -52,9 +50,9 @@ export class ObservableExecutor {
     let result = this.#registry.get(runnable);
     if (!result) {
       result = new ExecutionResult();
+      if (runnable.debug) result.read = new Set();
       this.#registry.set(runnable, result);
     } else {
-      // this.unsubscribe(result, runnable);
       result.deps.forEach((list) => list.delete(runnable));
     }
     this.#stack.push({ runnable, result });
@@ -65,22 +63,14 @@ export class ObservableExecutor {
   }
 
   static syncExecutor(runnable: ObservedRunnable, result: ExecutionResult) {
-    try {
-      result.result = runnable.run();
-    } catch (e) {
-      result.error = e as Error;
-    }
+    result.result = runnable.run();
     this.#stack.pop();
     this.current = undefined;
     return result;
   }
 
   static async asyncExecutor(runnable: ObservedRunnable, result: ExecutionResult) {
-    try {
-      result.result = await runnable.run();
-    } catch (e) {
-      result.error = e as Error;
-    }
+    result.result = await runnable.run();
     this.#stack.pop();
     this.current = undefined;
     return result;
@@ -90,14 +80,5 @@ export class ObservableExecutor {
   static dispose(runnable: ObservedRunnable) {
     this.#registry.delete(runnable);
     runnable.disposed = true;
-    // const result = this.#registry.get(runnable);
-    // if (result) {
-    //   this.unsubscribe(result, runnable);
-    //   this.#registry.delete(runnable);
-    // }
   }
-
-  // static unsubscribe(result: ExecutionResult, runnable: ObservedRunnable) {
-  //   result.deps.forEach(list => list.delete(runnable))
-  // }
 }

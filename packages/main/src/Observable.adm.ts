@@ -69,13 +69,8 @@ export class ObservableAdm {
             list.delete(subscriber);
           } else {
             lib.notifier.notify(subscriber, changes);
-            // subscriber.disposed = true;
           }
-          // lib.notifier.notify(subscriber, changes);
-          // lib.notifier.notify(subscriber, changes);
-          // list.delete(subscriber);
         });
-        // list.clear()
         this.current = null;
       }
     });

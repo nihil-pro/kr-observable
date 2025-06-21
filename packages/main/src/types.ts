@@ -12,6 +12,7 @@ export interface ObservedRunnable {
   subscriber: Subscriber;
   isAsync?: boolean;
   disposed: boolean;
+  debug: boolean;
 }
 
 type Structure = Map<any, any> | Set<any> | Array<any>;

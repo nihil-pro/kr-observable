@@ -9,6 +9,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
   #proxy: object;
 
   disposed = false;
+  debug = false;
 
   /** Original descriptor */
   #descriptor: PropertyDescriptor;

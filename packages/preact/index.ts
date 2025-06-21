@@ -43,10 +43,10 @@ function useObserver<T>(rc: () => T, debug = false) {
   store.run = rc;
   useSyncExternalStore(store.subscribe, store.getSnapshot);
   const TR = executor.execute(store);
-  if (TR.error) throw TR.error;
+  // if (TR.error) throw TR.error;
   if (debug) {
     const read: Record<string, Set<string | symbol>> = {};
-    TR.read.forEach((adm) => {
+    TR.read?.forEach((adm) => {
       adm.deps.forEach((list, key) => {
         if (list.has(store)) {
           let keys = read[adm.owner];

@@ -14,6 +14,7 @@ function noop() {}
 export const Observer = defineComponent({
   data: () => ({
     version: 1,
+    debug: false,
     dispose: () => executor.dispose(this),
     run: noop,
     subscriber: noop,
