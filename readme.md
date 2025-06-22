@@ -12,7 +12,7 @@
 4. Works in all runtimes (Node.js, Web, e.t.c);
 5. Well typed;
 6. Framework-agnostic.
-7. Bindings for react, preact and vue
+7. Bindings for React, Preact and Vue
 
 ### Docs – [observable.ru](https://observable.ru/)
 
