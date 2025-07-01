@@ -73,10 +73,7 @@ function maybeMakeObservable(key: Property, value: any, adm: ObservableAdm) {
   return value;
 }
 
-const NON_PROXIED_METHODS = new Set<Property>([
-  ...Object.getOwnPropertyNames(Object.prototype),
-  ...Object.getOwnPropertyNames(Symbol.prototype),
-]);
+const NON_PROXIED_METHODS = new Set<Property>(Object.getOwnPropertyNames(Object.prototype));
 
 const { executor } = lib;
 
@@ -109,10 +106,6 @@ class ObservableProxyHandler {
   }
   set(target: any, property: string, newValue: any) {
     const { adm } = this;
-    if (!adm.deps.has(property)) {
-      adm?.listeners?.forEach((cb) => cb(property, newValue));
-      return Reflect.set(target, property, newValue);
-    }
     const desc = Reflect.getOwnPropertyDescriptor(target, property);
     if (desc?.set) return Reflect.set(target, property, newValue, this.receiver);
     if (desc?.get || (desc && !desc.writable)) return false;
