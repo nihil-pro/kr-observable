@@ -45,25 +45,44 @@ export function transaction(work: () => void) {
   lib.notifier.clear();
 }
 
+
+export function autorun(effect: () => Promise<void>): Promise<() => void>;
+export function autorun(effect: () => void): () => void;
 /** Accepts one function that should run every time anything it observes changes. <br />
  It also runs once when you create the autorun itself.
  Returns a dispose function.
  */
-
-export function autorun(work: () => void | Promise<void>) {
+export function autorun(work: () => void) {
   if (registry.has(work)) return noop;
-  const isAsync = Reflect.getPrototypeOf(work)?.constructor.name === 'AsyncFunction';
+  const isAsync = work.constructor.name === 'AsyncFunction';
   const runnable = {
     run: work,
-    subscriber: () => void lib.executor.execute(runnable),
+    subscriber: () => lib.executor.execute(runnable),
     isAsync,
     disposed: false,
     debug: false,
   };
+
   registry.set(work, runnable);
+  if (isAsync) {
+    let resolver;
+    // @ts-ignore
+    runnable.subscriber = async () => {
+      await lib.executor.execute(runnable);
+    }
+    // @ts-ignore
+    lib.executor.execute(runnable).then(() => {
+      resolver(() => {
+        registry.delete(work);
+        lib.executor.dispose(runnable);
+      })
+    })
+    return new Promise(resolve => resolver = resolve) as Promise<() => void>
+  }
   lib.executor.execute(runnable);
   return () => {
     registry.delete(work);
     lib.executor.dispose(runnable);
   };
 }
+
