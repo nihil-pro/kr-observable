@@ -59,16 +59,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
    * Will be invoked when one of read observable changes
    * */
   subscriber() {
-    // if property will be accessed earlier than below microtask will be executed,
-    // we'll call original getter to get current result
     this.#changed = true;
-    // let shouldCompute = false;
-    // console.log(this.#property, this.#adm.deps.get(this.#property))
-    // this.#adm.deps.get(this.#property)?.forEach(run => {
-    //   if (shouldCompute) return;
-    //   if (!run.disposed) shouldCompute = true;
-    // })
-    // if (!shouldCompute) return;
     if (this.#adm.deps.get(this.#property)?.size === 0) return;
     this.#compute();
   }
@@ -94,7 +85,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
 
   #equal(prev: any, current: any) {
     if (current == null) return prev == null;
-    return current.equal(prev);
+    return current.$equal(prev);
   }
 
   #deps = 0;

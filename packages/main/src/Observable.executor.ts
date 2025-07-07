@@ -56,21 +56,7 @@ export class ObservableExecutor {
       result.deps.forEach((list) => list.delete(runnable));
     }
     this.#stack.push({ runnable, result });
-    if (runnable.isAsync) {
-      return this.asyncExecutor(runnable, result) as unknown as ExecutionResult;
-    }
-    return this.syncExecutor(runnable, result);
-  }
-
-  static syncExecutor(runnable: ObservedRunnable, result: ExecutionResult) {
     result.result = runnable.run();
-    this.#stack.pop();
-    this.current = undefined;
-    return result;
-  }
-
-  static async asyncExecutor(runnable: ObservedRunnable, result: ExecutionResult) {
-    result.result = await runnable.run();
     this.#stack.pop();
     this.current = undefined;
     return result;

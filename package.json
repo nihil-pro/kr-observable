@@ -1,6 +1,6 @@
 {
   "name": "kr-observable",
-  "version": "3.0.10-beta.2",
+  "version": "3.0.10",
   "description": "Adds reactivity power for your JavaScript",
   "type": "module",
   "scripts": {
