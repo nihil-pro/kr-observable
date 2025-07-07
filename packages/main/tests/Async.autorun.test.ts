@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 
 import { autorun, Observable, transaction } from '../index.js';
 
+
+
 describe('async autorun', () => {
   it('tracks basic async dependencies', async () => {
     class Model extends Observable {
