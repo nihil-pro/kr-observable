@@ -19,8 +19,8 @@ if (!getGlobal()[GlobalKey]) {
   Reflect.set(getGlobal(), GlobalKey, Object.seal(lib));
 }
 
-if (!Reflect.has(Object.prototype, 'equal')) {
-  Reflect.defineProperty(Object.prototype, 'equal', { enumerable: false, value: equal });
+if (!Reflect.has(Object.prototype, '$equal')) {
+  Reflect.defineProperty(Object.prototype, '$equal', { enumerable: false, value: equal });
 }
 
 if (!Reflect.has(Array.prototype, 'set')) {

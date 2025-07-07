@@ -45,18 +45,19 @@ export function transaction(work: () => void) {
   lib.notifier.clear();
 }
 
+type Disposer = () => void
+
 /** Accepts one function that should run every time anything it observes changes. <br />
  It also runs once when you create the autorun itself.
  Returns a dispose function.
  */
-
-export function autorun(work: () => void | Promise<void>) {
+export function autorun(work: () => void | Promise<void>): Disposer {
   if (registry.has(work)) return noop;
-  const isAsync = Reflect.getPrototypeOf(work)?.constructor.name === 'AsyncFunction';
   const runnable = {
     run: work,
-    subscriber: () => void lib.executor.execute(runnable),
-    isAsync,
+    subscriber() {
+      lib.executor.execute(this)
+    },
     disposed: false,
     debug: false,
   };
@@ -67,3 +68,4 @@ export function autorun(work: () => void | Promise<void>) {
     lib.executor.dispose(runnable);
   };
 }
+
