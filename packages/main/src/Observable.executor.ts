@@ -67,4 +67,8 @@ export class ObservableExecutor {
     this.#registry.delete(runnable);
     runnable.disposed = true;
   }
+
+  static get(runnable: ObservedRunnable) {
+    return this.#registry.get(runnable);
+  }
 }

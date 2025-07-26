@@ -31,7 +31,20 @@ class Rss {
   getSnapshot = () => this.version;
 
   subscriber(changes?: Set<string | symbol>) {
-    if (this.debug) console.info(`[${this.rc.name}] will re-render. Changes:`, changes);
+    if (this.debug) {
+      const result = executor.get(this);
+      if (result) {
+        const rcDepsChanges = new Set();
+        changes?.forEach((change) => {
+          result.read.forEach(adm => {
+            if (adm.deps.has(change)) rcDepsChanges.add(change);
+          })
+        })
+        console.info(`[${this.rc.name}] will re-render. Changes:`, rcDepsChanges);
+      } else {
+        console.info(`[${this.rc.name}] will re-render. Changes:`, changes);
+      }
+    }
     ++this.version;
     this.onStoreChange();
   }
