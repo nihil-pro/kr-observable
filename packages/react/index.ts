@@ -95,6 +95,11 @@ export function observer<P extends object>(
   debug?: boolean
 ): FunctionComponent<P>;
 
+export function observer<P extends FunctionComponent<any> | ForwardRefRenderFunction<any>>(
+  baseComponent: P,
+  debug?: boolean
+): P
+
 export function observer<A extends object, B = {}>(
   rc:
     | ForwardRefRenderFunction<B, A>
