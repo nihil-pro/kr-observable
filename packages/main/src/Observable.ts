@@ -46,7 +46,7 @@ export function makeObservable<T extends object>(
 
 function maybeMakeObservable(key: Property, value: any, adm: ObservableAdm) {
   if (!value || typeof value !== 'object') return value;
-  if (value[$adm] || adm.ignore.has(key)) return value;
+  if (value[$adm] || adm.ignore.has(key) || value['meta']) return value;
   const ctor = value.constructor;
   if (!ctor || ctor === Object) return makeObservable(value);
 
