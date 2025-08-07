@@ -1,6 +1,7 @@
 import { ObservableAdm } from './Observable.adm.js';
 import { ObservedRunnable, Property } from './types.js';
 
+
 /** Stores ObservedRunnable execution result
  * @see ObservedRunnable */
 class ExecutionResult {
