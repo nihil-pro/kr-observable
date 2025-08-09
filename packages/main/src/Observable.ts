@@ -1,5 +1,5 @@
 import { ObservableComputed } from './Observable.computed.js';
-import { ActionHandler } from './Action.handler.js';
+import { ActionHandler, AsyncActionHandler } from './Action.handler.js';
 import { ObservableAdm } from './Observable.adm.js';
 import { Property, StructureMeta } from './types.js';
 import { lib } from './global.this.js';
@@ -98,8 +98,17 @@ class ObservableProxyHandler {
     if (key === $adm) return this.adm;
     const val = Reflect.get(target, key, ctx);
     if (typeof val === 'function') {
+      // Return the original value for non-proxied methods
       if (NON_PROXIED_METHODS.has(key)) return val;
-      return this.fns[key] || (this.fns[key] = new Proxy(val, new ActionHandler(ctx, this.adm)));
+
+      // Return cached proxy if it exists
+      if (this.fns[key]) return this.fns[key];
+
+      // Create appropriate handler based on function type
+      const Handler = val.constructor.name === 'AsyncFunction' ? AsyncActionHandler : ActionHandler;
+
+      // Create, cache, and return new proxy
+      return this.fns[key] = new Proxy(val, new Handler(ctx, this.adm));
     }
     this.batch(key);
     return val;
@@ -310,9 +319,10 @@ class ObservableMap<K, V> extends Map<K, V> {
     return super.size;
   }
 
-  report() {
+  report(key?: K, value?: V) {
     const meta = this.meta;
     meta.adm.report(meta.key, this);
+    if (key) meta.adm.report(`${meta.key.toString()}.${key.toString()}`, value);
     queueBatch(meta.adm);
     meta.adm.state = 1;
   }
@@ -328,7 +338,7 @@ class ObservableMap<K, V> extends Map<K, V> {
       return super.has(key);
     } finally {
       // is needed to subscribe on a key in map
-      lib.executor.report(meta.adm, `${meta.key.toString()}.${key}`);
+      lib.executor.report(meta.adm, `${meta.key.toString()}.${key.toString()}`);
     }
   }
 
@@ -339,7 +349,7 @@ class ObservableMap<K, V> extends Map<K, V> {
       return super.get(key);
     } finally {
       // is needed to subscribe on a key in map
-      lib.executor.report(meta.adm, `${meta.key.toString()}.${key}`);
+      lib.executor.report(meta.adm, `${meta.key.toString()}.${key.toString()}`);
     }
   }
 
@@ -348,7 +358,7 @@ class ObservableMap<K, V> extends Map<K, V> {
     try {
       return super.set(key, value);
     } finally {
-      this.report();
+      this.report(key, value);
     }
   }
 
@@ -357,7 +367,7 @@ class ObservableMap<K, V> extends Map<K, V> {
     try {
       return super.delete(key);
     } finally {
-      this.report();
+      this.report(key);
     }
   }
 
