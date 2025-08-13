@@ -1,5 +1,5 @@
 import { ObservableComputed } from './Observable.computed.js';
-import { ActionHandler, AsyncActionHandler } from './Action.handler.js';
+import { ActionHandler } from './Action.handler.js';
 import { ObservableAdm } from './Observable.adm.js';
 import { Property, StructureMeta } from './types.js';
 import { lib } from './global.this.js';
@@ -101,14 +101,8 @@ class ObservableProxyHandler {
       // Return the original value for non-proxied methods
       if (NON_PROXIED_METHODS.has(key)) return val;
 
-      // Return cached proxy if it exists
-      if (this.fns[key]) return this.fns[key];
-
-      // Create appropriate handler based on function type
-      const Handler = val.constructor.name === 'AsyncFunction' ? AsyncActionHandler : ActionHandler;
-
       // Create, cache, and return new proxy
-      return this.fns[key] = new Proxy(val, new Handler(ctx, this.adm));
+      return this.fns[key] || (this.fns[key] = new Proxy(val, new ActionHandler(ctx, this.adm, val.constructor.name === 'AsyncFunction')));
     }
     this.batch(key);
     return val;
@@ -372,7 +366,10 @@ class ObservableMap<K, V> extends Map<K, V> {
   }
 
   clear() {
-    this.meta.adm.state = 0;
+    const meta = this.meta;
+    const adm = meta.adm
+    adm.state = 0;
+    for (const key of this.keys()) adm.report(`${meta.key.toString()}.${key.toString()}`, undefined);
     try {
       return super.clear();
     } finally {
