@@ -93,7 +93,11 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
   /** Read getter value in a transaction and subscribes to observables */
   #reader() {
     const { result, deps } = lib.executor.execute(this);
-    this.#value = result;
+    let value = result
+    if (Array.isArray(result)) value = Array.from(result);
+    if (result != null && result instanceof Set) value = new Set(result);
+    if (result != null && result instanceof Map) value = new Map(result);
+    this.#value = value;
     this.#deps = deps.size;
   }
 

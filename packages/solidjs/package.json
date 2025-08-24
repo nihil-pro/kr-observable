@@ -1,0 +1,10 @@
+{
+  "name": "kr-observable/solidjs",
+  "version": "3.0.0",
+  "main": "../dist/esm/solidjs/index.js",
+  "types": "../dist/types/solidjs/index.d.ts",
+  "peerDependencies": {
+    "kr-observable": "^3.0.0",
+    "solid-js": "latest"
+  }
+}

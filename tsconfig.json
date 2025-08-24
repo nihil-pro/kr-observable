@@ -37,7 +37,8 @@
       "kr-observable": ["packages/main/index.ts"],
       "kr-observable/preact": ["packages/preact/index.ts"],
       "kr-observable/react": ["packages/react/index.ts"],
-      "kr-observable/vue": ["packages/vue/index.ts"]
+      "kr-observable/vue": ["packages/vue/index.ts"],
+      "kr-observable/solidjs": ["packages/solidjs/index.ts"]
     }
   }
 }
