@@ -4,7 +4,7 @@
   "main": "../dist/esm/react/index.js",
   "types": "../dist/types/react/index.d.ts",
   "peerDependencies": {
-    "kr-observable": "^3.0.0",
+    "kr-observable": "latest",
     "react": "^18.3.1"
   }
 }

@@ -4,7 +4,7 @@
   "main": "../dist/esm/preact/index.js",
   "types": "../dist/types/preact/index.d.ts",
   "peerDependencies": {
-    "kr-observable": "^3.0.0",
+    "kr-observable": "latest",
     "preact": "*"
   }
 }

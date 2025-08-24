@@ -4,7 +4,7 @@
   "main": "../dist/esm/solidjs/index.js",
   "types": "../dist/types/solidjs/index.d.ts",
   "peerDependencies": {
-    "kr-observable": "^3.0.0",
+    "kr-observable": "latest",
     "solid-js": "latest"
   }
 }
