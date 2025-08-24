@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../dist/esm/vue",
+    "target": "esnext",
+    "module": "ES2022"
+  },
+  "include": ["../packages/vue"]
+}

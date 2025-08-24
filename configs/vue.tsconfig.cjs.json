@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../dist/cjs/vue",
+    "module": "commonjs",
+    "target": "ES2022"
+  },
+  "include": ["../packages/vue"]
+}

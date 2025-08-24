@@ -8,7 +8,7 @@ pnpm-lock.yaml
 eslint.config.*
 .editorconfig
 .gitignore
-lint-staged.config.*
+configs/lint-staged.config.mjs
 /packages/main/test
 
 .nyc_output
