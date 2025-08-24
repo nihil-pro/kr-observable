@@ -7,35 +7,29 @@ export const enableObservable = (debug = false) => {
 
     // Get the component name from the function for debug purposes
     const componentName = fn.name || 'AnonymousComponent';
-
-    const rss = {
+    let rss;
+    rss = {
       run: () => fn(currentArg),
       debug: false,
       version: 1,
       disposed: false,
-      // For debug purposes, we need these properties
-      ...(debug && {
-        rc: fn,
-        debug: true,
-        version: 1,
-        subscriber(changes?: Set<string | symbol>) {
-          if (debug) {
-            const result = executor.get(this);
-            if (result) {
-              const rcDepsChanges = new Set();
-              changes?.forEach((change) => {
-                result.read.forEach(adm => {
-                  if (adm.deps.has(change)) rcDepsChanges.add(change);
-                });
+      subscriber: (changes?: Set<string | symbol>) => {
+        if (debug) {
+          const result = executor.get(rss);
+          if (result) {
+            const rcDepsChanges = new Set();
+            changes?.forEach((change) => {
+              result.read.forEach(adm => {
+                if (adm.deps.has(change)) rcDepsChanges.add(change);
               });
-              console.info(`[${componentName}] will update. Changes:`, rcDepsChanges);
-            } else {
-              console.info(`[${componentName}] will update. Changes:`, changes);
-            }
+            });
+            console.info(`[${componentName}] will update. Changes:`, rcDepsChanges);
+          } else {
+            console.info(`[${componentName}] will update. Changes:`, changes);
           }
-          trigger(); // Notify SolidJS to re-render
         }
-      })
+        trigger(); // Notify SolidJS to re-render
+      }
     };
 
     return {
