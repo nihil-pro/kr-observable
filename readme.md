@@ -14,6 +14,12 @@
 6. Framework-agnostic.
 7. Bindings for React, Preact and Vue
 
+## Built in bindings
+- [React](https://observable.ru/integrations/React.html)
+- [Preact](https://observable.ru/integrations/Preact.html)
+- [Solid-js](https://observable.ru/integrations/Solid.html)
+- [Vue](https://observable.ru/integrations/Vue.html)
+
 ### Docs – [observable.ru](https://observable.ru/)
 
 ## Example with React
