@@ -1,6 +1,6 @@
 {
   "name": "kr-observable",
-  "version": "3.0.15",
+  "version": "3.0.17",
   "description": "Adds reactivity power for your JavaScript",
   "type": "module",
   "scripts": {
@@ -10,8 +10,9 @@
     "build:preact": "tsc -b preact.tsconfig.cjs.json preact.tsconfig.esm.json preact.tsconfig.types.json",
     "build:react": "tsc -b react.tsconfig.cjs.json react.tsconfig.esm.json react.tsconfig.types.json",
     "build:vue": "tsc -b vue.tsconfig.cjs.json vue.tsconfig.esm.json vue.tsconfig.types.json",
+    "build:solidjs": "tsc -b solidjs.tsconfig.cjs.json solidjs.tsconfig.esm.json solidjs.tsconfig.types.json",
     "generate": "node --import tsx ./scripts/genPackageFiles.ts",
-    "build": "npm-run-all clean build:main build:preact build:react generate",
+    "build": "npm-run-all clean build:main build:preact build:react build:vue build:solidjs generate",
     "test": "npm run build && node --test --test-reporter=spec packages/main/test/import*.*js && c8 node --import tsx --test --test-reporter=spec ./test/*.test.* && npm run gen-coverage-badge",
     "test-watch": "npm run build && node --import tsx --test --test-reporter=spec --watch packages/main/test/*.test.*",
     "analyze:js": "eslint ./src",
@@ -22,7 +23,6 @@
     "test-ts": "c8 node --import tsx --test --experimental-strip-types --test-reporter=spec ./packages/**/*.test.ts && npm run gen-coverage-badge",
     "test-main": "c8 node --import tsx --test --experimental-strip-types --test-reporter=spec packages/main/tests/Map.test.* && npm run gen-coverage-badge",
     "test-async": "c8 node --import tsx --test --experimental-strip-types --test-reporter=spec packages/main/tests/Async.autorun.test.*"
-
   },
   "keywords": [
     "proxy",
@@ -32,7 +32,8 @@
     "react",
     "preact",
     "state-manager",
-    "vue"
+    "vue",
+    "solid-js"
   ],
   "author": "Roman Konstantin",
   "license": "MIT",
@@ -48,8 +49,11 @@
     "husky": "9.1.5",
     "lint-staged": "15.2.9",
     "npm-run-all": "^4.1.5",
+    "preact": "^10.27.1",
+    "solid-js": "^1.9.9",
     "tsx": "^4.19.2",
     "typescript": "^4.9.5",
+    "vue": "^3.5.19",
     "xml-splitter": "1.2.1"
   },
   "sideEffect": false,
@@ -73,6 +77,11 @@
       "types": "./dist/types/vue/index.d.ts",
       "require": "./dist/cjs/vue/index.js",
       "import": "./dist/esm/vue/index.js"
+    },
+    "./solidjs": {
+      "types": "./dist/types/solidjs/index.d.ts",
+      "require": "./dist/cjs/solidjs/index.js",
+      "import": "./dist/esm/solidjs/index.js"
     }
   },
   "main": "dist/cjs/index.js",
@@ -81,6 +90,7 @@
   "react": "./dist/cjs/react/index.js",
   "preact": "./dist/cjs/preact/index.js",
   "vue": "./dist/cjs/vue/index.js",
+  "solidjs": "./dist/cjs/solidjs/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/nihil-pro/observable-class.git"
