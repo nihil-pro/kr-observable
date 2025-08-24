@@ -1,5 +1,5 @@
 # [Observable](https://observable.ru/)
-## Adds reactivity power for your JavaScript 😎
+## Adds reactivity power to your JavaScript 😎
 
 [![npm](https://img.shields.io/npm/v/kr-observable)](https://www.npmjs.com/package/kr-observable)
 ![coverage](https://github.com/nihil-pro/observable-class/blob/main/assets/coverage.svg)

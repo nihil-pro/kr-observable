@@ -1,9 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "outDir": "dist/esm/solidjs",
-    "target": "esnext",
-    "module": "ES2022"
-  },
-  "include": ["packages/solidjs"]
-}

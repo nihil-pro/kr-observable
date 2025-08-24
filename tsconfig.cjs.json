@@ -1,9 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "include": ["packages/**/*"],
-  "compilerOptions": {
-    "outDir": "./dist/cjs",
-    "module": "commonjs",
-    "target": "ES2022"
-  }
-}

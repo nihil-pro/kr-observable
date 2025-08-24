@@ -1,9 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "outDir": "dist/cjs/preact",
-    "module": "commonjs",
-    "target": "ES2022"
-  },
-  "include": ["packages/preact"]
-}

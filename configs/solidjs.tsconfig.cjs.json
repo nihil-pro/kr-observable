@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../dist/cjs/solidjs",
+    "module": "commonjs",
+    "target": "ES2022"
+  },
+  "include": ["../packages/solidjs"]
+}
