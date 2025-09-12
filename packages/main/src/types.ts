@@ -10,7 +10,6 @@ export type Listener = (property: string | symbol, value: any) => void;
 export interface ObservedRunnable {
   run: Function;
   subscriber: Subscriber;
-  isAsync?: boolean;
   disposed: boolean;
   debug: boolean;
 }
@@ -32,6 +31,7 @@ declare global {
       action: boolean;
       queue: Set<ObservableAdm>;
       meta: WeakMap<Structure, StructureMeta>;
+      untracked: boolean
     };
   }
 }

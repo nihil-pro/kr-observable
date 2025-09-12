@@ -1,8 +1,9 @@
 import { ObservableAdm } from './Observable.adm.js';
 import { ObservedRunnable, Property } from './types.js';
+import { lib } from './global.this.js';
 
 
-/** Stores ObservedRunnable execution result
+/** Stores Runnable execution result
  * @see ObservedRunnable */
 class ExecutionResult {
   read?: Set<ObservableAdm>;
@@ -23,17 +24,17 @@ export class ObservableExecutor {
   /** The `get` method of ObservableProxyHandler invoque this every time a property is read
    * @see ObservableProxyHandler */
   static report(adm: ObservableAdm, property: Property, set = false) {
-    if (!this.#stack.length) return;
+    if (!this.#stack.length || lib.untracked) return;
     if (adm.ignore.has(property)) return;
     const stackEntry = this.#stack[this.#stack.length - 1];
     const { runnable, result } = stackEntry;
+    let deps = adm.deps.get(property);
     if (set) {
-      const deps = adm.deps.get(property);
       deps?.delete(runnable);
       result.read?.delete(adm);
       return;
     }
-    let deps = adm.deps.get(property);
+
     if (!deps) {
       deps = new Set();
       adm.deps.set(property, deps);
@@ -66,7 +67,6 @@ export class ObservableExecutor {
   /** Unsubscribes from Observables read during passed runnable execution */
   static dispose(runnable: ObservedRunnable) {
     this.#registry.delete(runnable);
-    runnable.disposed = true;
   }
 
   static get(runnable: ObservedRunnable) {

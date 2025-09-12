@@ -75,4 +75,12 @@ export class ObservableAdm {
       }
     });
   }
+
+  static batch(adm: ObservableAdm) {
+    adm.batch()
+  }
+
+  removeRunnable(runnable: ObservedRunnable) {
+    this.deps.forEach(list => list.delete(runnable))
+  }
 }

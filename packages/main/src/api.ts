@@ -11,7 +11,7 @@ export function subscribe(target: Observable, cb: Subscriber, keys: Set<Property
   const adm = Reflect.get(target, $adm) as ObservableAdm | undefined;
   if (!adm) throw error;
   if (registry.has(cb)) return noop;
-  const runnable = { subscriber: cb, disposed: false } as ObservedRunnable;
+  const runnable = { subscriber: cb } as ObservedRunnable;
   keys.forEach((key) => {
     let deps = adm.deps.get(key);
     if (!deps) {
@@ -23,7 +23,7 @@ export function subscribe(target: Observable, cb: Subscriber, keys: Set<Property
   });
   return () => {
     registry.delete(cb);
-    adm.deps.forEach((list) => list.delete(runnable));
+    adm.removeRunnable(runnable);
   };
 }
 
@@ -40,7 +40,7 @@ export function transaction(work: () => void) {
   lib.action = true;
   work();
   lib.action = false;
-  lib.queue.forEach((adm) => adm.batch());
+  lib.queue.forEach(ObservableAdm.batch);
   lib.queue.clear();
   lib.notifier.clear();
 }
@@ -58,8 +58,8 @@ export function autorun(work: () => void | Promise<void>): Disposer {
     subscriber() {
       lib.executor.execute(this)
     },
-    disposed: false,
     debug: false,
+    disposed: false
   };
   registry.set(work, runnable);
   lib.executor.execute(runnable);
@@ -67,5 +67,11 @@ export function autorun(work: () => void | Promise<void>): Disposer {
     registry.delete(work);
     lib.executor.dispose(runnable);
   };
+}
+
+export function untracked(work: () => void) {
+  lib.untracked = true;
+  work();
+  lib.untracked = false;
 }
 
