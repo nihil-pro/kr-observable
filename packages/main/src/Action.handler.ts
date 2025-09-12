@@ -5,30 +5,28 @@ import { lib } from './global.this.js';
 export class ActionHandler {
   receiver: Object;
   adm: ObservableAdm;
-  isAsync: boolean
 
-  constructor(receiver: Object, adm: ObservableAdm, isAsync: boolean) {
+  constructor(receiver: Object, adm: ObservableAdm) {
     this.receiver = receiver;
     this.adm = adm;
-    this.isAsync = isAsync;
   }
 
   apply(target: Function, _: any, argArray: any[]) {
     if (lib.action) return target.apply(this.receiver, argArray);
-    this.adm.state = 0;
     lib.action = true;
+    this.adm.state = 0;
     const result = target.apply(this.receiver, argArray);
-    if (this.isAsync) result?.then(this.batch);
+    const thenable= result instanceof Promise;
+    if (thenable) result.then(this.batch);
     this.adm.state = 1;
     this.batch();
-    lib.action = Boolean(this.isAsync);
+    lib.action = thenable;
     return result;
   }
 
-  batch(result?: any) {
-    lib.queue.forEach((adm) => adm.batch());
+  batch() {
+    lib.queue.forEach(ObservableAdm.batch);
     lib.queue.clear();
     lib.action = false;
-    return result;
   }
 }

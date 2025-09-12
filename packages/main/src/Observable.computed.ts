@@ -1,6 +1,7 @@
 import { ObservableAdm } from './Observable.adm.js';
 import { lib } from './global.this.js';
 import { ObservedRunnable, Property } from './types.js';
+import { $equal } from './shared.js';
 
 /** Custom property descriptor which memoize getters return value */
 export class ObservableComputed implements ObservedRunnable, PropertyDescriptor {
@@ -85,7 +86,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
 
   #equal(prev: any, current: any) {
     if (current == null) return prev == null;
-    return current.$equal(prev);
+    return current[$equal](prev);
   }
 
   #deps = 0;

@@ -1,3 +1,5 @@
+import { $equal } from './shared.js';
+
 export function set(i: number, value: unknown) {
   this[i] = value;
 }
@@ -18,7 +20,7 @@ export function equal(input: any) {
         if ($voi != null) return false;
       } else {
         // eslint-disable-next-line max-depth,no-lonely-if
-        if (!$vot.$equal($voi)) return false;
+        if (!$vot[$equal]($voi)) return false;
       }
     }
     return true;
@@ -43,7 +45,7 @@ declare global {
      * console.log(obj.$equal([])) // false
      * @description Inspired by same method in Java.
      *  */
-    $equal(input: any): boolean;
+    [$equal](input: any): boolean;
   }
 
   /** Same as arr[index] = value */

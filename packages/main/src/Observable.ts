@@ -87,12 +87,9 @@ class ObservableProxyHandler {
   }
 
   batch(property: Property) {
-    if (this.adm.state === 1) {
-      if (!lib.action) {
-        if (this.adm.changes.has(property)) this.adm.batch();
-      }
-    }
     lib.executor.report(this.adm, property);
+    if (lib.action || this.adm.state === 0) return;
+    if (this.adm.changes.has(property)) this.adm.batch();
   }
   get(target: any, key: Property, ctx: any) {
     if (key === $adm) return this.adm;
@@ -102,7 +99,7 @@ class ObservableProxyHandler {
       if (NON_PROXIED_METHODS.has(key)) return val;
 
       // Create, cache, and return new proxy
-      return this.fns[key] || (this.fns[key] = new Proxy(val, new ActionHandler(ctx, this.adm, val.constructor.name === 'AsyncFunction')));
+      return this.fns[key] || (this.fns[key] = new Proxy(val, new ActionHandler(ctx, this.adm)));
     }
     this.batch(key);
     return val;
@@ -154,11 +151,8 @@ class ObservableProxyHandler {
   report(property: Property, value: any) {
     this.adm.report(property, value);
     this.adm.state = 1;
-    if (executor.current) {
-      executor.report(this.adm, property, true);
-    } else {
-      queueBatch(this.adm);
-    }
+    executor.report(this.adm, property, true);
+    queueBatch(this.adm);
   }
 }
 

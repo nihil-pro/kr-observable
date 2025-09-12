@@ -1,6 +1,7 @@
 import { ObservableExecutor } from './Observable.executor.js';
 import { SubscribersNotifier } from './Subscribers.notifier.js';
 import { equal, set } from './extensions.js';
+import { $equal } from './shared.js';
 
 function getGlobal(): WindowOrWorkerGlobalScope {
   if (typeof self !== 'undefined') return self;
@@ -11,6 +12,7 @@ function getGlobal(): WindowOrWorkerGlobalScope {
 export const GlobalKey = Symbol.for('observable');
 if (!getGlobal()[GlobalKey]) {
   const lib = Object.create(null);
+  lib.untracked = false;
   lib.action = false;
   lib.queue = new Set();
   lib.meta = new WeakMap();
@@ -19,8 +21,15 @@ if (!getGlobal()[GlobalKey]) {
   Reflect.set(getGlobal(), GlobalKey, Object.seal(lib));
 }
 
-if (!Reflect.has(Object.prototype, '$equal')) {
-  Reflect.defineProperty(Object.prototype, '$equal', { enumerable: false, value: equal });
+
+if (!Reflect.has(Object.prototype, $equal)) {
+  Reflect.defineProperty(Object.prototype, $equal, {
+    value: equal,
+    configurable: true,
+    writable: true,
+    enumerable: false
+  })
+  // Reflect.set(Object.prototype, $equal, equal);
 }
 
 if (!Reflect.has(Array.prototype, 'set')) {
