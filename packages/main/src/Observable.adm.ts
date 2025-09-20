@@ -9,7 +9,7 @@ export class ObservableAdm {
 
   /** Because `batch` is mostly queued, this flag help to execute batch before the queued task will be executed,
    *  or to ignore queued microtask at all */
-  state = 0;
+  // state = 0;
 
   deps: Map<Property, Set<ObservedRunnable>> = new Map();
 
@@ -37,7 +37,8 @@ export class ObservableAdm {
    * @see proxyHandler
    * */
   batch() {
-    if (this.state === 1) this.#notify();
+    // if (this.state === 1) this.#notify();
+    this.#notify();
   }
 
   /** Is called from `proxyHandler.set`  and `ObservableMap`, `ObservableSet`, `ObservableArray` and `ObservableComputed`.
@@ -57,18 +58,19 @@ export class ObservableAdm {
 
   /** Notify subscribers about changes */
   #notify() {
-    this.state = 0;
+    // this.state = 0;
     if (this.changes.size === 0) return;
     const changes = new Set(this.changes);
+    const notified = new Set;
     this.deps.forEach((list, key) => {
       if (list.size === 0) return;
       if (this.changes.delete(key)) {
         this.current = list;
-        list.forEach((subscriber) => {
+        list.forEach(subscriber => {
           if (subscriber.disposed) {
             list.delete(subscriber);
           } else {
-            lib.notifier.notify(subscriber, changes);
+            lib.notifier.notify(subscriber, changes)
           }
         });
         this.current = null;

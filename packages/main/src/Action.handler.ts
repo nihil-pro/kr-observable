@@ -14,11 +14,18 @@ export class ActionHandler {
   apply(target: Function, _: any, argArray: any[]) {
     if (lib.action) return target.apply(this.receiver, argArray);
     lib.action = true;
-    this.adm.state = 0;
+    // this.adm.state = 0;
     const result = target.apply(this.receiver, argArray);
     const thenable= result instanceof Promise;
-    if (thenable) result.then(this.batch);
-    this.adm.state = 1;
+    if (thenable) result.then(() => {
+      this.batch()
+      // lib.action = true;
+      queueMicrotask(() => {
+        console.log('batch in cation')
+        this.batch()
+      })
+    });
+    // this.adm.state = 1;
     this.batch();
     lib.action = thenable;
     return result;

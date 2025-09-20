@@ -500,4 +500,153 @@ describe('Synchronous batching', () => {
     assert.equal(state.b, 0);
     assert.equal(subscriber.mock.callCount(), 1);
   });
+
+  test.skip('Cursor (Akimov)', (ctx) => {
+    let future = 2;
+    let updateCallCount = 0;
+    class Test2 extends Observable {
+      data: any = [];
+      cursor = -1;
+
+      constructor() {
+        super();
+      }
+
+      n() {
+        this.cursor++;
+      }
+
+      p() {
+        this.cursor--;
+      }
+
+      get next() {
+        return this.data[this.cursor + 1];
+      }
+
+      get current() {
+        return this.data[this.cursor];
+      }
+
+      get prev() {
+        return this.data[this.cursor - 1];
+      }
+
+      async start() {
+        if (this.data.length > 0) return;
+        const result = await new Promise((ok) =>
+          setTimeout(() => {
+            ok(1);
+          }, 100)
+        );
+        this.data = [result];
+        this.cursor = 0;
+      }
+
+      async update() {
+        if (this.current === undefined || this.next !== undefined) return;
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        ctx.diagnostic(`updateCallCount (right before push) ${++updateCallCount}`)
+        this.data.push(future++);
+        if (this.data.length === 2) {
+          this.cursor++;
+        }
+      }
+    }
+
+    const vm = new Test2();
+
+    autorun(vm.start);
+    autorun(vm.update);
+    let current, prev, next;
+    autorun(() => {
+      next = vm.data[vm.cursor + 1];
+      prev = vm.data[vm.cursor - 1];
+      current = vm.data[vm.cursor];
+    })
+    return new Promise(resolve => {
+      setTimeout(() => {
+        assert.equal(current, 2);
+        assert.equal(prev, 1);
+        assert.equal(next !== undefined, true);
+        resolve()
+      }, 2000)
+    })
+  });
+
+  test.skip('Cursor (Akimov) computeds', (ctx) => {
+    let future = 2;
+    let updateCallCount = 0;
+    class Test2 extends Observable {
+      data: any = [];
+      cursor = -1;
+
+      constructor() {
+        super();
+      }
+
+      n() {
+        this.cursor++;
+      }
+
+      p() {
+        this.cursor--;
+      }
+
+      get next() {
+        return this.data[this.cursor + 1];
+      }
+
+      get current() {
+        return this.data[this.cursor];
+      }
+
+      get prev() {
+        return this.data[this.cursor - 1];
+      }
+
+      async start() {
+        if (this.data.length > 0) return;
+        const result = await new Promise((ok) =>
+          setTimeout(() => {
+            ok(1);
+          }, 100)
+        );
+        this.data = [result];
+        this.cursor = 0;
+      }
+
+      async update() {
+        if (this.current === undefined || this.next !== undefined) return;
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        ctx.diagnostic(`updateCallCount (right before push) ${++updateCallCount}`)
+        this.data.push(future++);
+        if (this.data.length === 2) {
+          this.cursor++;
+        }
+      }
+    }
+
+    const vm = new Test2();
+
+    autorun(vm.start);
+    autorun(vm.update);
+    let current, prev, next;
+    autorun(() => {
+      next = vm.next;
+      prev = vm.prev;
+      current = vm.current;
+    })
+    return new Promise(resolve => {
+      setTimeout(() => {
+        assert.equal(current, 2);
+        assert.equal(prev, 1);
+        assert.equal(next !== undefined, true);
+        resolve()
+      }, 2000)
+    })
+  });
+  // cursor
+
+
 });

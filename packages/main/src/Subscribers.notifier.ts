@@ -6,7 +6,7 @@ export class SubscribersNotifier {
   static #queued = false;
 
   static notify(subject: ObservedRunnable, properties?: Set<Property>) {
-    if (lib.executor.current === subject) return;
+    if (lib.executor.current === subject) return true;
     if (this.#notified.size < this.#notified.add(subject).size) {
       subject.subscriber(properties);
       if (!this.#queued) {
@@ -16,7 +16,9 @@ export class SubscribersNotifier {
           this.#queued = false;
         });
       }
+      return true;
     }
+    return false
   }
 
   static clear() {

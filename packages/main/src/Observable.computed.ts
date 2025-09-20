@@ -12,6 +12,8 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
   disposed = false;
   debug = false;
 
+
+
   /** Original descriptor */
   #descriptor: PropertyDescriptor;
 
@@ -80,7 +82,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
 
   #report(value: any) {
     this.#adm.report(this.#property, value);
-    this.#adm.state = 1;
+    // this.#adm.state = 1;
     this.#adm.batch();
   }
 
@@ -101,6 +103,8 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
     this.#value = value;
     this.#deps = deps.size;
   }
+
+
 
   /** A trap for original descriptor getter */
   get = () => {
