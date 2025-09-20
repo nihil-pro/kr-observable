@@ -15,13 +15,32 @@ export class ActionHandler {
     if (lib.action) return target.apply(this.receiver, argArray);
     lib.action = true;
     this.adm.state = 0;
-    const result = target.apply(this.receiver, argArray);
-    const thenable= result instanceof Promise;
-    if (thenable) result.then(this.batch);
-    this.adm.state = 1;
-    this.batch();
-    lib.action = thenable;
-    return result;
+    try {
+      let result = target.apply(this.receiver, argArray);
+      const thenable = result instanceof Promise;
+
+      if (thenable) {
+        result = result
+          .then(
+            (r: any) => {
+              this.adm.state = 1;
+              this.batch();
+              return r
+            },
+            (e: unknown) => {
+              this.batch();
+              throw e;
+            }
+          );
+      }
+      this.adm.state = 1;
+      this.batch();
+      lib.action = thenable;
+      return result;
+    } catch (e) {
+      this.batch();
+      throw e;
+    }
   }
 
   batch() {

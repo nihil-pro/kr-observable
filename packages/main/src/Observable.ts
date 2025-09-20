@@ -112,6 +112,7 @@ class ObservableProxyHandler {
     let res = true;
     if (!desc || desc?.value !== newValue) {
       adm.state = 0;
+      delete this.fns[property];
       const value = maybeMakeObservable(property, newValue, adm);
       res = Reflect.set(target, property, value);
       this.report(property, newValue);
