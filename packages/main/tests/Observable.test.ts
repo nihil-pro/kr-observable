@@ -500,4 +500,6 @@ describe('Synchronous batching', () => {
     assert.equal(state.b, 0);
     assert.equal(subscriber.mock.callCount(), 1);
   });
+
+
 });

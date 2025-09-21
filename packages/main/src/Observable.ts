@@ -88,8 +88,10 @@ class ObservableProxyHandler {
 
   batch(property: Property) {
     lib.executor.report(this.adm, property);
-    if (lib.action || this.adm.state === 0) return;
-    if (this.adm.changes.has(property)) this.adm.batch();
+    if (lib.action) return;
+    if (this.adm.changes.has(property)) {
+      this.adm.batch();
+    }
   }
   get(target: any, key: Property, ctx: any) {
     if (key === $adm) return this.adm;
@@ -99,7 +101,7 @@ class ObservableProxyHandler {
       if (NON_PROXIED_METHODS.has(key)) return val;
 
       // Create, cache, and return new proxy
-      return this.fns[key] || (this.fns[key] = new Proxy(val, new ActionHandler(ctx, this.adm)));
+      return this.fns[key] || (this.fns[key] = new Proxy(val, new ActionHandler(ctx)));
     }
     this.batch(key);
     return val;
@@ -111,9 +113,9 @@ class ObservableProxyHandler {
     if (desc?.get || (desc && !desc.writable)) return false;
     let res = true;
     if (!desc || desc?.value !== newValue) {
-      adm.state = 0;
       const value = maybeMakeObservable(property, newValue, adm);
       res = Reflect.set(target, property, value);
+      delete this.fns[property];
       this.report(property, newValue);
     }
     return res;
@@ -130,7 +132,6 @@ class ObservableProxyHandler {
   deleteProperty(target: any, property: string | symbol): boolean {
     if (!(property in target)) return false;
     delete this.fns[property];
-    this.adm.state = 0;
     const res = Reflect.deleteProperty(target, property);
     this.report(property, undefined);
     return res;
@@ -150,7 +151,6 @@ class ObservableProxyHandler {
   }
   report(property: Property, value: any) {
     this.adm.report(property, value);
-    this.adm.state = 1;
     executor.report(this.adm, property, true);
     queueBatch(this.adm);
   }
@@ -193,7 +193,6 @@ class ObservableArray<T> extends Array<T> {
   report() {
     const meta = this.meta;
     meta.adm.report(meta.key, this);
-    meta.adm.state = 1;
     queueBatch(meta.adm);
   }
 
@@ -213,7 +212,6 @@ class ObservableArray<T> extends Array<T> {
   }
 
   push(...items: any[]): number {
-    this.meta.adm.state = 0;
     try {
       return super.push(...this.prepare(items));
     } finally {
@@ -222,7 +220,6 @@ class ObservableArray<T> extends Array<T> {
   }
 
   unshift(...items: any[]): number {
-    this.meta.adm.state = 0;
     try {
       return super.unshift(...this.prepare(items));
     } finally {
@@ -231,7 +228,6 @@ class ObservableArray<T> extends Array<T> {
   }
 
   splice(start: number, deleteCount?: number, ...items: T[]): T[] {
-    this.meta.adm.state = 0;
     try {
       return super.splice(start, deleteCount, ...this.prepare(items));
     } finally {
@@ -240,7 +236,6 @@ class ObservableArray<T> extends Array<T> {
   }
 
   copyWithin(target: number, start: number, end?: number): this {
-    this.meta.adm.state = 0;
     try {
       return super.copyWithin(target, start, end);
     } finally {
@@ -249,7 +244,6 @@ class ObservableArray<T> extends Array<T> {
   }
 
   pop() {
-    this.meta.adm.state = 0;
     try {
       return super.pop();
     } finally {
@@ -258,7 +252,6 @@ class ObservableArray<T> extends Array<T> {
   }
 
   reverse() {
-    this.meta.adm.state = 0;
     try {
       return super.reverse();
     } finally {
@@ -267,7 +260,6 @@ class ObservableArray<T> extends Array<T> {
   }
 
   shift() {
-    this.meta.adm.state = 0;
     try {
       return super.shift();
     } finally {
@@ -276,7 +268,6 @@ class ObservableArray<T> extends Array<T> {
   }
 
   sort(compareFn?: (a: T, b: T) => number) {
-    this.meta.adm.state = 0;
     try {
       return super.sort(compareFn);
     } finally {
@@ -285,7 +276,6 @@ class ObservableArray<T> extends Array<T> {
   }
 
   set(i: number, v: T) {
-    this.meta.adm.state = 0;
     try {
       this[i] = v;
     } finally {
@@ -312,7 +302,6 @@ class ObservableMap<K, V> extends Map<K, V> {
     meta.adm.report(meta.key, this);
     if (key) meta.adm.report(`${meta.key.toString()}.${key.toString()}`, value);
     queueBatch(meta.adm);
-    meta.adm.state = 1;
   }
 
   [Symbol.iterator]() {
@@ -342,7 +331,6 @@ class ObservableMap<K, V> extends Map<K, V> {
   }
 
   set(key: K, value: V) {
-    this.meta.adm.state = 0;
     try {
       return super.set(key, value);
     } finally {
@@ -351,7 +339,6 @@ class ObservableMap<K, V> extends Map<K, V> {
   }
 
   delete(key: K) {
-    this.meta.adm.state = 0;
     try {
       return super.delete(key);
     } finally {
@@ -362,7 +349,6 @@ class ObservableMap<K, V> extends Map<K, V> {
   clear() {
     const meta = this.meta;
     const adm = meta.adm
-    adm.state = 0;
     for (const key of this.keys()) adm.report(`${meta.key.toString()}.${key.toString()}`, undefined);
     try {
       return super.clear();
@@ -381,7 +367,6 @@ class ObservableSet<T> extends Set<T> {
     const meta = this.meta;
     meta.adm.report(meta.key, this);
     queueBatch(meta.adm);
-    meta.adm.state = 1;
   }
 
   has(key: T): boolean {
@@ -399,7 +384,6 @@ class ObservableSet<T> extends Set<T> {
   }
 
   add(value: T) {
-    this.meta.adm.state = 0;
     try {
       return super.add(value);
     } finally {
@@ -408,7 +392,6 @@ class ObservableSet<T> extends Set<T> {
   }
 
   delete(value: T) {
-    this.meta.adm.state = 0;
     try {
       return super.delete(value);
     } finally {
@@ -417,7 +400,6 @@ class ObservableSet<T> extends Set<T> {
   }
 
   clear() {
-    this.meta.adm.state = 0;
     try {
       return super.clear();
     } finally {

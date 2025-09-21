@@ -1,6 +1,6 @@
 import { ObservableAdm } from './Observable.adm.js';
 import { lib } from './global.this.js';
-import { ObservedRunnable, Property } from './types.js';
+import { Listener, ObservedRunnable, Property } from './types.js';
 import { $equal } from './shared.js';
 
 /** Custom property descriptor which memoize getters return value */
@@ -31,6 +31,8 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
   #first = true;
 
   #isGetter = false;
+
+  #reads = new Map;
 
   set: undefined | any = undefined;
   #setterValue: any | undefined = undefined;
@@ -80,8 +82,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
 
   #report(value: any) {
     this.#adm.report(this.#property, value);
-    this.#adm.state = 1;
-    this.#adm.batch();
+    if (!lib.action) this.#adm.batch();
   }
 
   #equal(prev: any, current: any) {
@@ -93,36 +94,50 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
 
   /** Read getter value in a transaction and subscribes to observables */
   #reader() {
-    const { result, deps } = lib.executor.execute(this);
+    const { result, deps} = lib.executor.execute(this);
+    const prev = this.#value;
     let value = result
     if (Array.isArray(result)) value = Array.from(result);
     if (result != null && result instanceof Set) value = new Set(result);
     if (result != null && result instanceof Map) value = new Map(result);
     this.#value = value;
     this.#deps = deps.size;
+    this.#reads.forEach((set, adm) => {
+      if (!adm.listeners) adm.listeners = new Set<Listener>();
+      adm.listeners.add(this.#listener);
+    })
+    return this.#equal(prev, this.#value)
+  }
+
+  report(adm: ObservableAdm, prop: Property) {
+    let keys = this.#reads.get(adm)
+    if (!keys) {
+      keys = new Set;
+      this.#reads.set(adm, keys);
+    }
+    keys.add(prop);
+  }
+
+  #listener = (key: Property, value: any, adm: ObservableAdm) => {
+    if (this.#reads.get(adm)?.has(key)) {
+      this.#changed = true;
+    }
   }
 
   /** A trap for original descriptor getter */
   get = () => {
-    // enable sync batching
-    this.#adm.batch();
-
-    // Initial value is undefined. Without this, we will report changed on first access
+    if (!lib.action) this.#adm.batch();
     if (this.#first) {
       this.#reader();
       this.#first = false;
       return this.#value;
     }
-
-    // if property was changed, we should compare current value to previous, and report if they are not equal.
     if (this.#changed) {
-      // eslint-disable-next-line no-unused-expressions
       this.#isGetter ? this.#reader() : this.#compute();
+      this.#changed = false;
       return this.#value;
     }
     if (this.#deps === 0) return this.run();
-
-    // cases when dependency was changed, but notifier did not notify computed yet
     if (this.#adm.current?.has(this)) {
       this.#reader();
       this.#adm.report(this.#property, this.#value);

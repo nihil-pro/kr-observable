@@ -69,9 +69,10 @@ export function autorun(work: () => void | Promise<void>): Disposer {
   };
 }
 
-export function untracked(work: () => void) {
+export function untracked(work: () => any) {
   lib.untracked = true;
-  work();
+  const result = work();
   lib.untracked = false;
+  return result;
 }
 

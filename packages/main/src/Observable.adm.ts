@@ -3,23 +3,26 @@ import { lib } from './global.this.js';
 
 /** Observable companion object */
 export class ObservableAdm {
+  /** A set of keys that should be totally ignored */
   ignore: Set<Property>;
+
+  /** A set of keys that should be observed shallow */
   shallow: Set<Property>;
+
+  /** Name of original object. For classes this will be the class name */
   owner: string;
 
-  /** Because `batch` is mostly queued, this flag help to execute batch before the queued task will be executed,
-   *  or to ignore queued microtask at all */
-  state = 0;
-
+  /** Relationship between a property and reactions that depend on it. */
   deps: Map<Property, Set<ObservedRunnable>> = new Map();
 
   /** Set of listeners. */
   listeners: Set<Listener> | undefined;
 
-  /** When proxy `set` is called, the name of the accessed property is stored here.
-   * They will be used during notifying subscribers.
-   * */
+  /** Properties that have been changed during this tick */
   changes: Set<Property> = new Set();
+
+  /** A reference to the list of reactions that depends on changed property we are loop now */
+  current: Set<ObservedRunnable> | null = null;
 
   constructor(owner: string, ignore: Set<Property>, shallow: Set<Property>) {
     this.owner = owner;
@@ -27,48 +30,42 @@ export class ObservableAdm {
     this.shallow = shallow;
   }
 
-  /** Is called from `proxyHandler`  and `ObservableMap`, `ObservableSet`, `ObservableArray` and `ObservableComputed`.
-   * In setters is used to queue itself: `queueMicrotask(adm.batch)`. <br />
-   * In getters is used to notify listeners immediately (don't waiting until queued microtask will be executed).
-   * @see ObservableMap
-   * @see ObservableSet
-   * @see ObservableArray
-   * @see ObservableComputed
-   * @see proxyHandler
+  /** Any mutations should invoke this to notify about changes */
+  report(property: Property, value: any) {
+    this.changes.add(property);
+    // @ts-ignore
+    this.listeners?.forEach((cb) => cb(property, value || undefined, this));
+  }
+
+  /** Invokes reactions
+   * When a property is changed, the changer should:
+   * – If there is no active action, then enqueue call to a microtask
+   * – Otherwise, push changed adm to the queue
+   *
+   * When a property is read (accessed), the getter should:
+   * – If there is an active action, then avoid invoke this
+   * – Otherwise, it should check that accessed property is in changes list,
+   *   and if that is true, then invoke this
    * */
   batch() {
-    if (this.state === 1) this.#notify();
-  }
-
-  /** Is called from `proxyHandler.set`  and `ObservableMap`, `ObservableSet`, `ObservableArray` and `ObservableComputed`.
-   * Signifies about changes.
-   * @see ObservableMap
-   * @see ObservableSet
-   * @see ObservableArray
-   * @see ObservableComputed
-   * @see proxyHandler
-   * */
-  report(property: Property, value: any) {
-    this.listeners?.forEach((cb) => cb(property, value));
-    this.changes.add(property);
-  }
-
-  current: Set<ObservedRunnable> | null = null;
-
-  /** Notify subscribers about changes */
-  #notify() {
-    this.state = 0;
     if (this.changes.size === 0) return;
+
+    // During the loop we'll remove properties from changes list,
+    // but we have to pass changes to listeners, that's why we need a copy
     const changes = new Set(this.changes);
-    this.deps.forEach((list, key) => {
-      if (list.size === 0) return;
+
+    // Can't loop over changes list, as this will lead to an inconsistent state
+    // We have to loop over reactions in order they were created
+    this.deps.forEach((subs, key) => {
+      if (subs.size === 0) return;
+      // if key is in changes list, loop over it dependents
       if (this.changes.delete(key)) {
-        this.current = list;
-        list.forEach((subscriber) => {
-          if (subscriber.disposed) {
-            list.delete(subscriber);
+        this.current = subs;
+        subs.forEach(sub => {
+          if (sub.disposed) {
+            subs.delete(sub);
           } else {
-            lib.notifier.notify(subscriber, changes);
+            lib.notifier.notify(sub, changes);
           }
         });
         this.current = null;
