@@ -1,6 +1,7 @@
 import { ObservableAdm } from './Observable.adm.js';
 import { ObservedRunnable, Property } from './types.js';
 import { lib } from './global.this.js';
+import { ObservableComputed } from './Observable.computed.js';
 
 
 /** Stores Runnable execution result
@@ -28,6 +29,9 @@ export class ObservableExecutor {
     if (adm.ignore.has(property)) return;
     const stackEntry = this.#stack[this.#stack.length - 1];
     const { runnable, result } = stackEntry;
+    if (runnable instanceof ObservableComputed) {
+      runnable.report(adm, property)
+    }
     let deps = adm.deps.get(property);
     if (set) {
       deps?.delete(runnable);
@@ -38,9 +42,9 @@ export class ObservableExecutor {
     if (!deps) {
       deps = new Set();
       adm.deps.set(property, deps);
-      result.read?.add(adm);
     }
     deps.add(runnable);
+    result.read?.add(adm);
     result.deps.add(deps);
   }
 
