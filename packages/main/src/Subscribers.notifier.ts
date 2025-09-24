@@ -1,5 +1,4 @@
 import { ObservedRunnable, Property } from './types.js';
-import { lib } from './global.this.js';
 
 export class SubscribersNotifier {
   // allows to invoke a subscriber once per tick
@@ -9,9 +8,6 @@ export class SubscribersNotifier {
   static #queued = false;
 
   static notify(subject: ObservedRunnable, properties?: Set<Property>) {
-    // allows to avoid infinite loops
-    if (lib.executor.current === subject) return;
-
     // if subscriber wasn't invoke on this tick
     if (this.#notified.size < this.#notified.add(subject).size) {
 

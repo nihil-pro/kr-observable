@@ -1,8 +1,5 @@
 import { ObservableAdm } from './Observable.adm.js';
 import { ObservedRunnable, Property } from './types.js';
-import { lib } from './global.this.js';
-import { ObservableComputed } from './Observable.computed.js';
-
 
 /** Stores Runnable execution result
  * @see ObservedRunnable */
@@ -25,13 +22,12 @@ export class ObservableExecutor {
   /** The `get` method of ObservableProxyHandler invoque this every time a property is read
    * @see ObservableProxyHandler */
   static report(adm: ObservableAdm, property: Property, set = false) {
-    if (!this.#stack.length || lib.untracked) return;
+    if (adm.untrack) return;
+    if (!this.#stack.length) return;
     if (adm.ignore.has(property)) return;
     const stackEntry = this.#stack[this.#stack.length - 1];
     const { runnable, result } = stackEntry;
-    if (runnable instanceof ObservableComputed) {
-      runnable.report(adm, property)
-    }
+
     let deps = adm.deps.get(property);
     if (set) {
       deps?.delete(runnable);
@@ -48,11 +44,9 @@ export class ObservableExecutor {
     result.deps.add(deps);
   }
 
-  static current: ObservedRunnable | undefined;
-
   /** Execute a runnable and store read Observables */
   static execute(runnable: ObservedRunnable): ExecutionResult {
-    this.current = runnable;
+    runnable.active = true;
     let result = this.#registry.get(runnable);
     if (!result) {
       result = new ExecutionResult();
@@ -64,7 +58,7 @@ export class ObservableExecutor {
     this.#stack.push({ runnable, result });
     result.result = runnable.run();
     this.#stack.pop();
-    this.current = undefined;
+    runnable.active = false;
     return result;
   }
 

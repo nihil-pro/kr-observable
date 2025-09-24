@@ -1,6 +1,6 @@
 import { ObservableAdm } from './Observable.adm.js';
 import { lib } from './global.this.js';
-import { Listener, ObservedRunnable, Property } from './types.js';
+import { ObservedRunnable, Property } from './types.js';
 import { $equal } from './shared.js';
 
 /** Custom property descriptor which memoize getters return value */
@@ -11,6 +11,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
 
   disposed = false;
   debug = false;
+  active = false;
 
   /** Original descriptor */
   #descriptor: PropertyDescriptor;
@@ -32,7 +33,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
 
   #isGetter = false;
 
-  #reads = new Map;
+  computed = true;
 
   set: undefined | any = undefined;
   #setterValue: any | undefined = undefined;
@@ -95,34 +96,14 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
   /** Read getter value in a transaction and subscribes to observables */
   #reader() {
     const { result, deps} = lib.executor.execute(this);
-    const prev = this.#value;
     let value = result
     if (Array.isArray(result)) value = Array.from(result);
     if (result != null && result instanceof Set) value = new Set(result);
     if (result != null && result instanceof Map) value = new Map(result);
     this.#value = value;
     this.#deps = deps.size;
-    this.#reads.forEach((set, adm) => {
-      if (!adm.listeners) adm.listeners = new Set<Listener>();
-      adm.listeners.add(this.#listener);
-    })
-    return this.#equal(prev, this.#value)
   }
 
-  report(adm: ObservableAdm, prop: Property) {
-    let keys = this.#reads.get(adm)
-    if (!keys) {
-      keys = new Set;
-      this.#reads.set(adm, keys);
-    }
-    keys.add(prop);
-  }
-
-  #listener = (key: Property, value: any, adm: ObservableAdm) => {
-    if (this.#reads.get(adm)?.has(key)) {
-      this.#changed = true;
-    }
-  }
 
   /** A trap for original descriptor getter */
   get = () => {
@@ -132,17 +113,21 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
       this.#first = false;
       return this.#value;
     }
+    if (this.#deps === 0) return this.run();
     if (this.#changed) {
       this.#isGetter ? this.#reader() : this.#compute();
       this.#changed = false;
       return this.#value;
     }
-    if (this.#deps === 0) return this.run();
     if (this.#adm.current?.has(this)) {
       this.#reader();
       this.#adm.report(this.#property, this.#value);
       return this.#value;
     }
+
     return this.#value;
   };
 }
+
+
+

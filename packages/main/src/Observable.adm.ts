@@ -33,8 +33,7 @@ export class ObservableAdm {
   /** Any mutations should invoke this to notify about changes */
   report(property: Property, value: any) {
     this.changes.add(property);
-    // @ts-ignore
-    this.listeners?.forEach((cb) => cb(property, value || undefined, this));
+    this.listeners?.forEach(cb => cb(property, value));
   }
 
   /** Invokes reactions
@@ -47,9 +46,8 @@ export class ObservableAdm {
    * – Otherwise, it should check that accessed property is in changes list,
    *   and if that is true, then invoke this
    * */
-  batch() {
+  batch(flag = false) {
     if (this.changes.size === 0) return;
-
     // During the loop we'll remove properties from changes list,
     // but we have to pass changes to listeners, that's why we need a copy
     const changes = new Set(this.changes);
@@ -61,13 +59,15 @@ export class ObservableAdm {
       // if key is in changes list, loop over it dependents
       if (this.changes.delete(key)) {
         this.current = subs;
-        subs.forEach(sub => {
-          if (sub.disposed) {
-            subs.delete(sub);
-          } else {
-            lib.notifier.notify(sub, changes);
+        for (const sub of subs) {
+          if (flag && sub.computed) {
+            this.changes.add(key);
+            break;
           }
-        });
+          if (sub.disposed) return subs.delete(sub);
+          if (sub.active) return;
+          lib.notifier.notify(sub, changes);
+        }
         this.current = null;
       }
     });
@@ -79,5 +79,9 @@ export class ObservableAdm {
 
   removeRunnable(runnable: ObservedRunnable) {
     this.deps.forEach(list => list.delete(runnable))
+  }
+
+  get untrack() {
+    return lib.untracked;
   }
 }

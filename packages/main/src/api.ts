@@ -11,7 +11,8 @@ export function subscribe(target: Observable, cb: Subscriber, keys: Set<Property
   const adm = Reflect.get(target, $adm) as ObservableAdm | undefined;
   if (!adm) throw error;
   if (registry.has(cb)) return noop;
-  const runnable = { subscriber: cb } as ObservedRunnable;
+  // @ts-ignore
+  const runnable = { subscriber: cb, active: false } as ObservedRunnable;
   keys.forEach((key) => {
     let deps = adm.deps.get(key);
     if (!deps) {
@@ -59,7 +60,9 @@ export function autorun(work: () => void | Promise<void>): Disposer {
       lib.executor.execute(this)
     },
     debug: false,
-    disposed: false
+    disposed: false,
+    version: 1,
+    active: false
   };
   registry.set(work, runnable);
   lib.executor.execute(runnable);
