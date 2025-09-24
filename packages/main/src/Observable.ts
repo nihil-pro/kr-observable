@@ -90,7 +90,8 @@ class ObservableProxyHandler {
     lib.executor.report(this.adm, property);
     if (lib.action) return;
     if (this.adm.changes.has(property)) {
-      this.adm.batch();
+      // if (!this.adm.computeds.get(property)) this.adm.batch();
+      this.adm.batch(true);
     }
   }
   get(target: any, key: Property, ctx: any) {
@@ -107,13 +108,12 @@ class ObservableProxyHandler {
     return val;
   }
   set(target: any, property: string, newValue: any) {
-    const { adm } = this;
     const desc = Reflect.getOwnPropertyDescriptor(target, property);
     if (desc?.set) return Reflect.set(target, property, newValue, this.receiver);
-    if (desc?.get || (desc && !desc.writable)) return false;
+    if (desc?.get || (desc && !desc?.writable)) return false;
     let res = true;
     if (!desc || desc?.value !== newValue) {
-      const value = maybeMakeObservable(property, newValue, adm);
+      const value = maybeMakeObservable(property, newValue, this.adm);
       res = Reflect.set(target, property, value);
       delete this.fns[property];
       this.report(property, newValue);

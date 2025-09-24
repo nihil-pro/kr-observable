@@ -12,6 +12,9 @@ export interface ObservedRunnable {
   subscriber: Subscriber;
   disposed: boolean;
   debug: boolean;
+  computed?: boolean
+  touched?: boolean
+  active?: boolean
 }
 
 type Structure = Map<any, any> | Set<any> | Array<any>;
