@@ -78,8 +78,7 @@ export class ObservableAdm {
         this.current = subs;
         for (const sub of subs) {
           if (flag && sub.computed) {
-            this.changes.add(key);
-            break;
+            return this.changes.add(key);
           }
           if (sub.disposed) return subs.delete(sub);
           if (sub.active) return;
