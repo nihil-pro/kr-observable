@@ -1,13 +1,15 @@
 import { Observable } from './Observable.js';
 import { ObservableAdm } from './Observable.adm.js';
-import { Property, Subscriber, Listener, ObservedRunnable } from './types.js';
-import { $adm, noop } from './shared.js';
-import { lib } from './global.this.js';
+import { Property, Subscriber, Listener, ObservedRunnable, Disposer } from './types.js';
+import { lib, $adm } from './global.this.js';
+
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+function noop() {}
 
 const registry = new Map<() => void, ObservedRunnable>();
 const error = new TypeError('First argument must be Observable');
 
-export function subscribe(target: Observable, cb: Subscriber, keys: Set<Property>) {
+export function subscribe(target: Observable, cb: Subscriber, keys: Set<Property>): Disposer {
   const adm = Reflect.get(target, $adm) as ObservableAdm | undefined;
   if (!adm) throw error;
   if (registry.has(cb)) return noop;
@@ -29,7 +31,7 @@ export function subscribe(target: Observable, cb: Subscriber, keys: Set<Property
 }
 
 /** Will react on any changes in Observable */
-export function listen(target: Observable, cb: Listener) {
+export function listen(target: Observable, cb: Listener): Disposer {
   const adm = Reflect.get(target, $adm) as ObservableAdm | undefined;
   if (!adm) throw error;
   if (!adm.listeners) adm.listeners = new Set<Listener>();
@@ -45,8 +47,6 @@ export function transaction(work: () => void) {
   lib.queue.clear();
   lib.notifier.clear();
 }
-
-type Disposer = () => void
 
 /** Accepts one function that should run every time anything it observes changes. <br />
  It also runs once when you create the autorun itself.

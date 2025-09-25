@@ -1,8 +1,11 @@
-import { Listener, ObservedRunnable, Property } from './types.js';
-import { lib } from './global.this.js';
+import { Listener, ObservedRunnable, Property, StructureMeta } from './types.js';
+import { lib, emptySet } from './global.this.js';
+
 
 /** Observable companion object */
 export class ObservableAdm {
+  static meta: StructureMeta = { key: '', adm: new ObservableAdm('', emptySet, emptySet) }
+
   /** A set of keys that should be totally ignored */
   ignore: Set<Property>;
 
@@ -30,10 +33,23 @@ export class ObservableAdm {
     this.shallow = shallow;
   }
 
+  #queued = false;
+
   /** Any mutations should invoke this to notify about changes */
   report(property: Property, value: any) {
     this.changes.add(property);
     this.listeners?.forEach(cb => cb(property, value));
+    if (lib.action) {
+      lib.queue.add(this);
+    } else {
+      if (!this.#queued) {
+        this.#queued = true;
+        queueMicrotask(() => {
+          this.batch();
+          this.#queued = false;
+        });
+      }
+    }
   }
 
   /** Invokes reactions
@@ -47,6 +63,7 @@ export class ObservableAdm {
    *   and if that is true, then invoke this
    * */
   batch(flag = false) {
+    // if (lib.action) return;
     if (this.changes.size === 0) return;
     // During the loop we'll remove properties from changes list,
     // but we have to pass changes to listeners, that's why we need a copy
@@ -61,8 +78,7 @@ export class ObservableAdm {
         this.current = subs;
         for (const sub of subs) {
           if (flag && sub.computed) {
-            this.changes.add(key);
-            break;
+            return this.changes.add(key);
           }
           if (sub.disposed) return subs.delete(sub);
           if (sub.active) return;
