@@ -29,6 +29,7 @@ export class ActionHandler {
             }
           );
       }
+
       this.batch();
       lib.action = thenable;
       return result;
@@ -39,6 +40,7 @@ export class ActionHandler {
   }
 
   batch() {
+    // lib.action = false;
     lib.queue.forEach(ObservableAdm.batch);
     lib.queue.clear();
     lib.action = false;

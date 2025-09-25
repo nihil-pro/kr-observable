@@ -1,7 +1,9 @@
 import { ObservableExecutor } from './Observable.executor.js';
 import { SubscribersNotifier } from './Subscribers.notifier.js';
-import { equal, set } from './extensions.js';
-import { $equal } from './shared.js';
+import { Property, Structure, StructureMeta, Admin } from './types.js';
+
+export const emptySet = Object.freeze(new Set()) as Set<Property>;
+export const $adm = Symbol.for('$adm');
 
 function getGlobal(): WindowOrWorkerGlobalScope {
   if (typeof self !== 'undefined') return self;
@@ -9,33 +11,18 @@ function getGlobal(): WindowOrWorkerGlobalScope {
   return {} as WindowOrWorkerGlobalScope;
 }
 
-export const GlobalKey = Symbol.for('observable');
-if (!getGlobal()[GlobalKey]) {
+const $lib = Symbol.for('observable');
+if (!getGlobal()[$lib]) {
   const lib = Object.create(null);
   lib.untracked = false;
   lib.action = false;
-  lib.queue = new Set();
-  lib.meta = new WeakMap();
+  lib.queue = new Set<Admin>();
+  lib.meta = new WeakMap<Structure, StructureMeta>();
   lib.executor = ObservableExecutor;
   lib.notifier = SubscribersNotifier;
-  Reflect.set(getGlobal(), GlobalKey, Object.seal(lib));
-}
-
-
-if (!Reflect.has(Object.prototype, $equal)) {
-  Reflect.defineProperty(Object.prototype, $equal, {
-    value: equal,
-    configurable: true,
-    writable: true,
-    enumerable: false
-  })
-  // Reflect.set(Object.prototype, $equal, equal);
-}
-
-if (!Reflect.has(Array.prototype, 'set')) {
-  Reflect.defineProperty(Array.prototype, 'set', { enumerable: false, value: set });
+  Reflect.set(getGlobal(), $lib, Object.seal(lib));
 }
 
 /** Maybe is not great idea, but it's a reliable way to get a singleton  */
-export const lib = Reflect.get(getGlobal(), GlobalKey);
-export const executor = lib.executor;
+export const lib = Reflect.get(getGlobal(), $lib);
+export const executor: typeof ObservableExecutor = lib.executor;

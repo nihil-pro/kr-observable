@@ -1,7 +1,7 @@
-import { ObservableAdm } from './Observable.adm.js';
-import { lib } from './global.this.js';
 import { ObservedRunnable, Property } from './types.js';
-import { $equal } from './shared.js';
+import { ObservableAdm } from './Observable.adm.js';
+import { comparator } from './comparator.js';
+import { lib } from './global.this.js';
 
 /** Custom property descriptor which memoize getters return value */
 export class ObservableComputed implements ObservedRunnable, PropertyDescriptor {
@@ -53,7 +53,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
         this.#descriptor.set?.call(this.#proxy, value);
         const prevValue = this.#setterValue;
         this.#setterValue = value;
-        if (!this.#equal(prevValue, this.#setterValue)) this.#report(value);
+        if (!comparator(prevValue, this.#setterValue)) this.#report(value);
       };
       this.#isGetter = true;
     }
@@ -78,17 +78,12 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
     const prevValue = this.#value;
     this.#reader();
     this.#changed = false;
-    if (!this.#equal(prevValue, this.#value)) this.#report(this.#value);
+    if (!comparator(prevValue, this.#value)) this.#report(this.#value);
   }
 
   #report(value: any) {
     this.#adm.report(this.#property, value);
     if (!lib.action) this.#adm.batch();
-  }
-
-  #equal(prev: any, current: any) {
-    if (current == null) return prev == null;
-    return current[$equal](prev);
   }
 
   #deps = 0;
@@ -97,6 +92,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
   #reader() {
     const { result, deps} = lib.executor.execute(this);
     let value = result
+    // Don't remember why we should do this...
     if (Array.isArray(result)) value = Array.from(result);
     if (result != null && result instanceof Set) value = new Set(result);
     if (result != null && result instanceof Map) value = new Map(result);
@@ -128,6 +124,3 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
     return this.#value;
   };
 }
-
-
-
