@@ -1,58 +1,95 @@
-import { lib } from './global.this.js';
-import { ObservableAdm } from './Observable.adm.js';
+import { lib } from './global.js';
+import { Admin } from './Admin.js';
+
+function getKey(metaKey: string, key: unknown): any {
+  if (key == undefined) return `${metaKey}.${key}`;
+  if (typeof key === 'object') return key;
+  if (typeof key === 'symbol') return `${metaKey}.${key.description}`;
+  return `${metaKey}.${key}`;
+}
 
 export class ObservableMap<K, V> extends Map<K, V> {
   get meta() {
-    return lib.meta.get(this) || ObservableAdm.meta;
+    return lib.meta.get(this) || Admin.meta;
+  }
+
+  get size() {
+    this.reportRead(`${this.meta.key}.keys`);
+    return super.size;
+  }
+
+  reportRead(key: any) {
+    lib.executor.report(this.meta.adm, key);
   }
 
   report(key: K, value?: V) {
-    this.meta.adm.report(this.meta.key, this);
-    this.meta.adm.report(`${this.meta.key}.${key.toString()}`, value);
+    this.meta.adm.report(getKey(this.meta.key, key), value);
+  }
+
+  keys() {
+    this.reportRead(`${this.meta.key}.keys`);
+    return super.keys();
+  }
+
+  entries() {
+    this.reportRead(`${this.meta.key}.keys`);
+    return super.entries();
+  }
+
+  values() {
+    this.reportRead(`${this.meta.key}.keys`);
+    return super.values();
+  }
+
+  forEach(callback: (value: V, key: K, map: this) => void, thisArg?: any): void {
+    this.reportRead(`${this.meta.key}.keys`);
+    return super.forEach(callback, thisArg);
+  }
+
+  [Symbol.iterator]() {
+    this.reportRead(`${this.meta.key}.keys`);
+    return super[Symbol.iterator]();
   }
 
   has(key: K): boolean {
-    try {
-      return super.has(key);
-    } finally {
-      // is needed to subscribe on a key in map
-      lib.executor.report(this.meta.adm, `${this.meta.key}.${key.toString()}`);
-    }
+    this.reportRead(getKey(this.meta.key, key));
+    return super.has(key);
   }
 
   get(key: K): V | undefined {
-    try {
-      return super.get(key);
-    } finally {
-      lib.executor.report(this.meta.adm, `${this.meta.key}.${key.toString()}`);
-    }
+    this.reportRead(getKey(this.meta.key, key));
+    return super.get(key);
   }
 
   set(key: K, value: V) {
-    try {
-      return super.set(key, value);
-    } finally {
-      this.report(key, value);
+    let newValue = value;
+    if (this.meta.factory && !this.meta.adm.shallow.has(this.meta.key)) {
+      newValue = this.meta.factory(this.meta.key, value, this.meta.adm);
     }
+    const hasKey = super.has(key);
+    const prevValue = super.get(key);
+    const result = super.set(key, newValue);
+    if (!hasKey) this.meta.adm.report(`${this.meta.key}.keys`, this);
+    if (prevValue !== newValue) this.report(key, value);
+    return result;
   }
 
   delete(key: K) {
-    try {
-      return super.delete(key);
-    } finally {
+    const result = super.delete(key);
+    if (result) {
       this.report(key);
+      this.meta.adm.report(`${this.meta.key}.keys`, this)
     }
+    return result;
   }
 
   clear() {
+    if (super.size === 0) return;
     const key = this.meta.key;
     for (const _key of this.keys()) {
-      this.meta.adm.report(`${key}.${_key.toString()}`, undefined)
+      this.meta.adm.report(getKey(key, _key), undefined);
     }
-    try {
-      return super.clear();
-    } finally {
-      this.meta.adm.report(key, this);
-    }
+    super.clear();
+    this.meta.adm.report(`${this.meta.key}.keys`, this)
   }
 }

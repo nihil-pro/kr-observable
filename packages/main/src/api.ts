@@ -1,24 +1,28 @@
+import { Admin } from './Admin.js';
 import { Observable } from './Observable.js';
-import { ObservableAdm } from './Observable.adm.js';
-import { Property, Subscriber, Listener, ObservedRunnable, Disposer } from './types.js';
-import { lib, $adm } from './global.this.js';
+import { Property, Subscriber, Listener, Runnable, Disposer } from './types.js';
+import { lib, $adm } from './global.js';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 function noop() {}
 
-const registry = new Map<() => void, ObservedRunnable>();
+const registry = new Map<() => void, Runnable>();
 const error = new TypeError('First argument must be Observable');
 
 export function subscribe(target: Observable, cb: Subscriber, keys: Set<Property>): Disposer {
-  const adm = Reflect.get(target, $adm) as ObservableAdm | undefined;
+  const adm = Reflect.get(target, $adm) as Admin | undefined;
   if (!adm) throw error;
   if (registry.has(cb)) return noop;
   // @ts-ignore
-  const runnable = { subscriber: cb, active: false } as ObservedRunnable;
+  const runnable = {
+    subscriber: cb,
+    active: false,
+    deps: new Set
+  } as Runnable;
   keys.forEach((key) => {
     let deps = adm.deps.get(key);
     if (!deps) {
-      deps = new Set<ObservedRunnable>();
+      deps = new Set<Runnable>();
       adm.deps.set(key, deps);
     }
     deps.add(runnable);
@@ -32,7 +36,7 @@ export function subscribe(target: Observable, cb: Subscriber, keys: Set<Property
 
 /** Will react on any changes in Observable */
 export function listen(target: Observable, cb: Listener): Disposer {
-  const adm = Reflect.get(target, $adm) as ObservableAdm | undefined;
+  const adm = Reflect.get(target, $adm) as Admin | undefined;
   if (!adm) throw error;
   if (!adm.listeners) adm.listeners = new Set<Listener>();
   adm.listeners.add(cb);
@@ -43,7 +47,7 @@ export function transaction(work: () => void) {
   lib.action = true;
   work();
   lib.action = false;
-  lib.queue.forEach(ObservableAdm.batch);
+  lib.queue.forEach(Admin.batch);
   lib.queue.clear();
   lib.notifier.clear();
 }
@@ -62,13 +66,13 @@ export function autorun(work: () => void | Promise<void>): Disposer {
     debug: false,
     disposed: false,
     version: 1,
-    active: false
+    active: false,
   };
   registry.set(work, runnable);
   lib.executor.execute(runnable);
   return () => {
     registry.delete(work);
-    lib.executor.dispose(runnable);
+    runnable.disposed = true;
   };
 }
 

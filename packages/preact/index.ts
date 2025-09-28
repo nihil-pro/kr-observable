@@ -1,4 +1,4 @@
-import { executor } from 'kr-observable';
+import { executor, Runnable, ObservableAdmin } from 'kr-observable';
 import { useRef } from 'preact/hooks';
 import { useSyncExternalStore, memo, forwardRef } from 'preact/compat';
 import { VNode, Ref, ComponentType } from 'preact';
@@ -6,10 +6,12 @@ import { VNode, Ref, ComponentType } from 'preact';
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 function noop() {}
 
-class Rss {
+class Rss implements Runnable {
   version = 1;
   debug = false;
   disposed = false;
+  read?: Set<ObservableAdmin>;
+
   rc: Function;
   onStoreChange = noop;
   run = noop;
@@ -22,7 +24,9 @@ class Rss {
   getSnapshot = () => this.version;
 
   subscriber(changes?: Set<string | symbol>) {
-    if (this.debug) console.info(`[${this.rc.name}] will re-render. Changes:`, changes);
+    if (this.debug) {
+      console.info(`[${this.rc.name}] will re-render. Changes:`, changes);
+    }
     ++this.version;
     this.onStoreChange();
   }
@@ -30,8 +34,10 @@ class Rss {
   subscribe = (onStoreChange: () => void) => {
     this.onStoreChange = onStoreChange;
     return () => {
-      executor.dispose(this);
-      if (this.debug) console.info(`[${this.rc.name}] was unmounted`);
+      this.disposed = true;
+      if (this.debug) {
+        console.info(`[${this.rc.name}] was unmounted`);
+      }
     };
   };
 }
@@ -42,11 +48,10 @@ function useObserver<T>(rc: () => T, debug = false) {
   const store = ref.current!;
   store.run = rc;
   useSyncExternalStore(store.subscribe, store.getSnapshot);
-  const TR = executor.execute(store);
-  // if (TR.error) throw TR.error;
+  const result = executor.execute(store);
   if (debug) {
     const read: Record<string, Set<string | symbol>> = {};
-    TR.read?.forEach((adm) => {
+    store.read?.forEach((adm) => {
       adm.deps.forEach((list, key) => {
         if (list.has(store)) {
           let keys = read[adm.owner];
@@ -60,7 +65,7 @@ function useObserver<T>(rc: () => T, debug = false) {
     });
     console.info(`[${rc.name}] was rendered. Read: `, read);
   }
-  return TR.result;
+  return result;
 }
 
 // type _Ref<T> = Ref<T>;

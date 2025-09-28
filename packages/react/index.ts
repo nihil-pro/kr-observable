@@ -10,15 +10,16 @@ import {
   useRef,
   useSyncExternalStore,
 } from 'react';
-import { executor } from 'kr-observable';
+import { executor, ObservableAdmin, Runnable } from 'kr-observable';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 function noop() {}
 
-class Rss {
+class Rss implements Runnable {
   version = 1;
   debug = false;
   disposed = false;
+  read?: Set<ObservableAdmin>;
   rc: Function;
   onStoreChange = noop;
   run = noop;
@@ -32,18 +33,7 @@ class Rss {
 
   subscriber(changes?: Set<string | symbol>) {
     if (this.debug) {
-      const result = executor.get(this);
-      if (result) {
-        const rcDepsChanges = new Set();
-        changes?.forEach((change) => {
-          result.read.forEach(adm => {
-            if (adm.deps.has(change)) rcDepsChanges.add(change);
-          })
-        })
-        console.info(`[${this.rc.name}] will re-render. Changes:`, rcDepsChanges);
-      } else {
-        console.info(`[${this.rc.name}] will re-render. Changes:`, changes);
-      }
+      console.info(`[${this.rc.name}] will re-render. Changes:`, changes);
     }
     ++this.version;
     this.onStoreChange();
@@ -52,8 +42,10 @@ class Rss {
   subscribe = (onStoreChange: () => void) => {
     this.onStoreChange = onStoreChange;
     return () => {
-      executor.dispose(this);
-      if (this.debug) console.info(`[${this.rc.name}] was unmounted`);
+      this.disposed = true;
+      if (this.debug) {
+        console.info(`[${this.rc.name}] was unmounted`);
+      }
     };
   };
 }
@@ -64,11 +56,10 @@ function useObserver<T>(rc: () => T, debug = false) {
   const store = ref.current!;
   store.run = rc;
   useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
-  const TR = executor.execute(store);
-  // if (TR.error) throw TR.error;
+  const result = executor.execute(store);
   if (debug) {
     const read: Record<string, Set<string | symbol>> = {};
-    TR.read?.forEach((adm) => {
+    store.read?.forEach(adm => {
       adm.deps.forEach((list, key) => {
         if (list.has(store)) {
           let keys = read[adm.owner];
@@ -82,7 +73,7 @@ function useObserver<T>(rc: () => T, debug = false) {
     });
     console.info(`[${rc.name}] was rendered. Read: `, read);
   }
-  return TR.result;
+  return result;
 }
 
 export function observer<P extends object, TRef = {}>(

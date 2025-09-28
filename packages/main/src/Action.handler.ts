@@ -1,5 +1,5 @@
-import { ObservableAdm } from './Observable.adm.js';
-import { lib } from './global.this.js';
+import { Admin } from './Admin.js';
+import { lib } from './global.js';
 
 /** Proxy handler for observable objects methods */
 export class ActionHandler {
@@ -40,8 +40,7 @@ export class ActionHandler {
   }
 
   batch() {
-    // lib.action = false;
-    lib.queue.forEach(ObservableAdm.batch);
+    lib.queue.forEach(Admin.batch);
     lib.queue.clear();
     lib.action = false;
   }
