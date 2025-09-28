@@ -1,6 +1,7 @@
+export { executor } from './src/global.js';
 export * from './src/Observable.js';
 export * from './src/api.js';
-export { executor } from './src/global.this.js';
+export type { Runnable, ObservableAdmin } from './src/types.js'
 
 declare global {
   interface Array<T> {

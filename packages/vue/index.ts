@@ -15,7 +15,6 @@ export const Observer = defineComponent({
   data: () => ({
     version: 1,
     debug: false,
-    dispose: () => executor.dispose(this),
     run: noop,
     subscriber: noop,
     render: noop,
@@ -24,13 +23,13 @@ export const Observer = defineComponent({
   beforeMount() {
     this.run = this.$slots?.default;
     this.subscriber = () => ++this.version;
-    this.render = () => executor.execute(this)?.result;
+    this.render = () => executor.execute(this);
   },
   render() {
     return h(this.render, { ObservableKey: this.version });
   },
   unmounted() {
-    this.dispose();
+    this.disposed = true;
   },
 });
 

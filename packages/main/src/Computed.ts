@@ -1,10 +1,10 @@
-import { ObservedRunnable, Property } from './types.js';
-import { ObservableAdm } from './Observable.adm.js';
-import { comparator } from './comparator.js';
-import { lib } from './global.this.js';
+import { Runnable, Property } from './types.js';
+import { Admin } from './Admin.js';
+import { comparator } from './utils/comparator.js';
+import { lib } from './global.js';
 
 /** Custom property descriptor which memoize getters return value */
-export class ObservableComputed implements ObservedRunnable, PropertyDescriptor {
+export class Computed implements Runnable, PropertyDescriptor {
   /** Ref to original target proxy.
    * Can't use target because properties access won't be tracked, and access to private properties won't work. */
   #proxy: object;
@@ -13,10 +13,12 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
   debug = false;
   active = false;
 
+  deps?: Set<Set<Runnable>>;
+
   /** Original descriptor */
   #descriptor: PropertyDescriptor;
 
-  #adm: ObservableAdm;
+  #adm: Admin;
   enumerable = false;
   configurable = true;
 
@@ -41,7 +43,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
   constructor(
     property: Property,
     descriptor: PropertyDescriptor,
-    adm: ObservableAdm,
+    adm: Admin,
     proxy: object
   ) {
     this.#property = property;
@@ -86,18 +88,14 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
     if (!lib.action) this.#adm.batch();
   }
 
-  #deps = 0;
-
   /** Read getter value in a transaction and subscribes to observables */
   #reader() {
-    const { result, deps} = lib.executor.execute(this);
-    let value = result
     // Don't remember why we should do this...
-    if (Array.isArray(result)) value = Array.from(result);
-    if (result != null && result instanceof Set) value = new Set(result);
-    if (result != null && result instanceof Map) value = new Map(result);
-    this.#value = value;
-    this.#deps = deps.size;
+    // let value = result
+    // if (Array.isArray(result)) value = Array.from(result);
+    // if (result != null && result instanceof Set) value = new Set(result);
+    // if (result != null && result instanceof Map) value = new Map(result);
+    this.#value = lib.executor.execute(this);
   }
 
 
@@ -109,7 +107,7 @@ export class ObservableComputed implements ObservedRunnable, PropertyDescriptor 
       this.#first = false;
       return this.#value;
     }
-    if (this.#deps === 0) return this.run();
+    if (this.deps?.size === 0) return this.run();
     if (this.#changed) {
       this.#isGetter ? this.#reader() : this.#compute();
       this.#changed = false;

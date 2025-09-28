@@ -778,7 +778,7 @@ describe('Big test', () => {
     let access = 0;
     const result = makeObservable({
       a: 1,
-      get b() {
+      get biaca() {
         access++;
         return 2;
       },
@@ -786,14 +786,14 @@ describe('Big test', () => {
 
     try {
       // @ts-ignore
-      result.b = 0;
+      result.biaca = 0;
     } catch (error) {
       assert.equal(error instanceof Error, true);
     }
 
     assert.equal(access, 0);
     assert.equal('a' in result, true);
-    assert.equal('b' in result, true);
+    assert.equal('biaca' in result, true);
     assert.equal(access, 0);
   });
 
@@ -1393,8 +1393,7 @@ describe('Big test', () => {
     assert.equal(subscriber.mock.callCount(), 2);
   });
 
-  // somnitelno, no okay
-  test.skip(`returns unproxied "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString", "toSource", "toString", "valueOf", properties`, () => {
+  test(`returns unproxied "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable", "toLocaleString", "toSource", "toString", "valueOf", properties`, () => {
     const o = makeObservable({});
 
     const subscriber = mock.fn();
@@ -1500,6 +1499,7 @@ describe('Big test', () => {
     assert.equal(o.value.lala, 3);
   });
 
+  // conflict with other test
   test.skip(`supports reacting to deleting a shallow property`, (ctx) => {
     const o = makeObservable({ value: 123 });
     const subscriber = mock.fn();

@@ -3,7 +3,7 @@ import { Observable } from '../src/Observable';
 import { autorun } from '../src/api';
 import assert from 'node:assert';
 
-test('sync-sync', async (ctx) => {
+test('sync-sync ()', async (ctx) => {
   class State extends Observable {
     a: any[] = [];
     b = 0;

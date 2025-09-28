@@ -1,9 +1,9 @@
-import { lib } from './global.this.js';
-import { ObservableAdm } from './Observable.adm.js';
+import { Admin } from './Admin.js';
+import { lib } from './global.js';
 
 export class ObservableArray<T> extends Array<T> {
   get meta() {
-    return lib.meta.get(this) || ObservableAdm.meta;
+    return lib.meta.get(this) || Admin.meta;
   }
 
   report<U>(result: U) {
@@ -12,6 +12,12 @@ export class ObservableArray<T> extends Array<T> {
   }
 
   prepare(items: T[]) {
+    if (!this.meta.factory) return items;
+    if (!this.meta.adm.shallow.has(this.meta.key)) {
+      for (let i = 0; i < items.length; i++) {
+        items[i] = this.meta.factory(this.meta.key, items[i], this.meta.adm);
+      }
+    }
     return items;
   }
 

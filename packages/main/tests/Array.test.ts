@@ -701,7 +701,9 @@ describe('Array ', () => {
   test(`array: should observe iteration`, () => {
     let dummy;
     const list = makeObservable({ arr: ['Hello'] });
-    autorun(() => (dummy = list.arr.join(' ')));
+    autorun(() => {
+      dummy = list.arr.join(' ')
+    });
     assert.equal(dummy, 'Hello');
 
     transaction(() => list.arr.push('World!'));
@@ -714,7 +716,9 @@ describe('Array ', () => {
   test(`array: should observe implicit array length changes`, () => {
     let dummy;
     const list = makeObservable({ arr: ['Hello'] });
-    autorun(() => (dummy = list.arr.join(' ')));
+    autorun(() => {
+      dummy = list.arr.join(' ')
+    });
 
     assert.equal(dummy, 'Hello');
 
@@ -729,7 +733,9 @@ describe('Array ', () => {
     let dummy;
     const list = makeObservable({ arr: [] });
     list.arr.set(1, 'World!');
-    autorun(() => (dummy = list.arr.join(' ')));
+    autorun(() => {
+      dummy = list.arr.join(' ')
+    });
     assert.equal(dummy, ' World!');
 
     transaction(() => list.arr.set(0, 'Hello'));

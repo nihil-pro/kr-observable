@@ -1,5 +1,5 @@
 import { enableExternalSource } from "solid-js";
-import { executor } from "kr-observable";
+import { executor, Runnable, ObservableAdmin } from "kr-observable";
 
 export const enableObservable = (debug = false) => {
   enableExternalSource((fn, trigger) => {
@@ -7,7 +7,7 @@ export const enableObservable = (debug = false) => {
 
     // Get the component name from the function for debug purposes
     const componentName = fn.name || 'AnonymousComponent';
-    let rss;
+    let rss: any & Runnable;
     rss = {
       run: () => fn(currentArg),
       debug: false,
@@ -15,18 +15,7 @@ export const enableObservable = (debug = false) => {
       disposed: false,
       subscriber: (changes?: Set<string | symbol>) => {
         if (debug) {
-          const result = executor.get(rss);
-          if (result) {
-            const rcDepsChanges = new Set();
-            changes?.forEach((change) => {
-              result.read.forEach(adm => {
-                if (adm.deps.has(change)) rcDepsChanges.add(change);
-              });
-            });
-            console.info(`[${componentName}] will update. Changes:`, rcDepsChanges);
-          } else {
-            console.info(`[${componentName}] will update. Changes:`, changes);
-          }
+          console.info(`[${componentName}] will update. Changes:`, changes);
         }
         trigger(); // Notify SolidJS to re-render
       }
@@ -36,11 +25,11 @@ export const enableObservable = (debug = false) => {
       track: (x: any) => {
         currentArg = x;
 
-        const TR = executor.execute(rss);
+        const result = executor.execute(rss);
 
-        if (debug && TR.read) {
+        if (debug) {
           const read: Record<string, Set<string | symbol>> = {};
-          TR.read.forEach((adm) => {
+          rss?.read.forEach((adm) => {
             adm.deps.forEach((list, key) => {
               if (list.has(rss)) {
                 let keys = read[adm.owner];
@@ -55,11 +44,10 @@ export const enableObservable = (debug = false) => {
           console.info(`[${componentName}] was rendered. Read: `, read);
         }
 
-        return TR.result;
+        return result;
       },
 
       dispose: () => {
-        executor.dispose(rss);
         rss.disposed = true;
         if (debug) {
           console.info(`[${componentName}] was disposed`);
