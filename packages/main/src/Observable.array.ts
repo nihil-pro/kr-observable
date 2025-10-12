@@ -12,10 +12,14 @@ export class ObservableArray<T> extends Array<T> {
   }
 
   prepare(items: T[]) {
-    if (!this.meta.factory) return items;
-    if (!this.meta.adm.shallow.has(this.meta.key)) {
+    const factory = this.meta.factory;
+    if (!factory) return items;
+    const adm = this.meta.adm;
+    const key = this.meta.key;
+    if (key === '') return items;
+    if (!adm.shallow.has(key)) {
       for (let i = 0; i < items.length; i++) {
-        items[i] = this.meta.factory(this.meta.key, items[i], this.meta.adm);
+        items[i] = factory(key, items[i], adm);
       }
     }
     return items;

@@ -223,20 +223,20 @@ describe('Array ', () => {
     assert.equal(calls, 2);
   });
 
-  // test(`array: makeObservable identity nested`, (ctx) => {
-  //   const raw = [];
-  //   const obj1 = makeObservable({ value: raw });
-  //   const obj2 = makeObservable({ value: raw });
-  //   const obj3 = makeObservable({ value: obj1 });
-  //   const obj4 = makeObservable({ value: obj2 });
-  //
-  //   assert.equal(obj1.value === obj2.value, true);
-  //   assert.equal(obj2.value === obj3.value.value, true);
-  //   assert.equal(obj3.value === obj1, true);
-  //   assert.equal(obj3.value.value === obj4.value.value, true);
-  // });
+  test(`array: makeObservable identity nested`, (ctx) => {
+    const raw = [];
+    const obj1 = makeObservable({ value: raw });
+    const obj2 = makeObservable({ value: raw });
+    const obj3 = makeObservable({ value: obj1 });
+    const obj4 = makeObservable({ value: obj2 });
 
-  // test(`array: reading length and pusing doesnt loop`, (ctx) => {
+    assert.equal(obj1.value === obj2.value, true);
+    assert.equal(obj2.value === obj3.value.value, true);
+    assert.equal(obj3.value === obj1, true);
+    assert.equal(obj3.value.value === obj4.value.value, true);
+  });
+
+  // test(`array: reading length and pushing doesn't loop`, (ctx) => {
   //   const result = makeObservable([]);
   //
   //   let read = 0;
@@ -593,23 +593,23 @@ describe('Array ', () => {
     assert.equal(calls, 1);
   });
 
-  // test(`array: shift on Array should trigger dependency once`, (ctx) => {
-  //   const arr = makeObservable([1, 2, 3]);
-  //
-  //   let calls = 0;
-  //   autorun(() => {
-  //     calls++;
-  //     for (let i = 0; i < arr.length; i++) {
-  //       arr[i];
-  //     }
-  //   });
-  //   execute();
-  //   assert.equal(calls, 1);
-  //
-  //   arr.shift();
-  //   execute();
-  //   assert.equal(calls, 2);
-  // });
+  test(`array: shift on Array should trigger dependency once`, (ctx) => {
+    const state = makeObservable({ arr: [1, 2, 3] });
+
+    let calls = 0;
+    autorun(() => {
+      calls++;
+      for (let i = 0; i < state.arr.length; i++) {
+        state.arr[i];
+      }
+    });
+
+    assert.equal(calls, 1);
+
+    transaction(() => state.arr.shift());
+
+    assert.equal(calls, 2);
+  });
 
   // // #6018
   test(`array: edge case: avoid trigger effect in deleteProperty when array length-decrease mutation methods called`, () => {
@@ -1312,3 +1312,5 @@ describe('Array ', () => {
   //   assert.equal(isProxy(firstItem)).toBe(true);
   // });
 });
+
+

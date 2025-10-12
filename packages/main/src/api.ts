@@ -1,7 +1,7 @@
 import { Admin } from './Admin.js';
 import { Observable } from './Observable.js';
 import { Property, Subscriber, Listener, Runnable, Disposer } from './types.js';
-import { lib, $adm } from './global.js';
+import { lib, executor, $adm } from './global.js';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 function noop() {}
@@ -10,24 +10,12 @@ const registry = new Map<() => void, Runnable>();
 const error = new TypeError('First argument must be Observable');
 
 export function subscribe(target: Observable, cb: Subscriber, keys: Set<Property>): Disposer {
-  const adm = Reflect.get(target, $adm) as Admin | undefined;
+  const adm = target[$adm];
   if (!adm) throw error;
   if (registry.has(cb)) return noop;
-  // @ts-ignore
-  const runnable = {
-    subscriber: cb,
-    active: false,
-    deps: new Set
-  } as Runnable;
-  keys.forEach((key) => {
-    let deps = adm.deps.get(key);
-    if (!deps) {
-      deps = new Set<Runnable>();
-      adm.deps.set(key, deps);
-    }
-    deps.add(runnable);
-    registry.set(cb, runnable);
-  });
+  const runnable = { subscriber: cb, active: false } as Runnable;
+  keys.forEach(key => adm.subscribe(key, runnable));
+  registry.set(cb, runnable);
   return () => {
     registry.delete(cb);
     adm.removeRunnable(runnable);
@@ -36,7 +24,7 @@ export function subscribe(target: Observable, cb: Subscriber, keys: Set<Property
 
 /** Will react on any changes in Observable */
 export function listen(target: Observable, cb: Listener): Disposer {
-  const adm = Reflect.get(target, $adm) as Admin | undefined;
+  const adm = target[$adm];
   if (!adm) throw error;
   if (!adm.listeners) adm.listeners = new Set<Listener>();
   adm.listeners.add(cb);
@@ -64,15 +52,13 @@ export function autorun(work: () => void | Promise<void>): Disposer {
       lib.executor.execute(this)
     },
     debug: false,
-    disposed: false,
-    version: 1,
-    active: false,
+    active: false
   };
   registry.set(work, runnable);
   lib.executor.execute(runnable);
   return () => {
     registry.delete(work);
-    runnable.disposed = true;
+    executor.dispose(runnable);
   };
 }
 

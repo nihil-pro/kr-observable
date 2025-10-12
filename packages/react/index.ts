@@ -6,7 +6,6 @@ import {
   MemoExoticComponent,
   PropsWithoutRef,
   RefAttributes,
-  Ref,
   useRef,
   useSyncExternalStore,
 } from 'react';
@@ -17,23 +16,24 @@ function noop() {}
 
 class Rss implements Runnable {
   version = 1;
+  active = false;
   debug = false;
-  disposed = false;
   read?: Set<ObservableAdmin>;
-  rc: Function;
+  name: string;
   onStoreChange = noop;
-  run = noop;
+  run: Function;
 
   constructor(rc: Function, debug: boolean) {
-    this.rc = rc;
+    this.name = rc.name;
     this.debug = debug;
+    this.run = rc;
   }
 
   getSnapshot = () => this.version;
 
   subscriber(changes?: Set<string | symbol>) {
     if (this.debug) {
-      console.info(`[${this.rc.name}] will re-render. Changes:`, changes);
+      console.info(`[${this.name}] will re-render. Changes:`, changes);
     }
     ++this.version;
     this.onStoreChange();
@@ -42,38 +42,12 @@ class Rss implements Runnable {
   subscribe = (onStoreChange: () => void) => {
     this.onStoreChange = onStoreChange;
     return () => {
-      this.disposed = true;
+      executor.dispose(this);
       if (this.debug) {
-        console.info(`[${this.rc.name}] was unmounted`);
+        console.info(`[${this.name}] was unmounted`);
       }
     };
   };
-}
-
-function useObserver<T>(rc: () => T, debug = false) {
-  const ref = useRef<Rss | null>(null);
-  if (!ref.current) ref.current = new Rss(rc, debug);
-  const store = ref.current!;
-  store.run = rc;
-  useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
-  const result = executor.execute(store);
-  if (debug) {
-    const read: Record<string, Set<string | symbol>> = {};
-    store.read?.forEach(adm => {
-      adm.deps.forEach((list, key) => {
-        if (list.has(store)) {
-          let keys = read[adm.owner];
-          if (!keys) {
-            keys = new Set();
-            read[adm.owner] = keys;
-          }
-          keys.add(key);
-        }
-      });
-    });
-    console.info(`[${rc.name}] was rendered. Read: `, read);
-  }
-  return result;
 }
 
 export function observer<P extends object, TRef = {}>(
@@ -98,6 +72,30 @@ export function observer<A extends object, B = {}>(
     | ForwardRefExoticComponent<PropsWithoutRef<A> & RefAttributes<B>>,
   debug = false
 ) {
-  const observedComponent = (props: any, ref: Ref<B>) => useObserver(() => rc(props, ref), debug);
-  return memo(observedComponent);
+  return memo(function render(props, _ref) {
+    const ref = useRef<Rss>(null);
+    if (!ref.current) ref.current = new Rss(rc, debug);
+    const store = ref.current;
+    useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+    const result = executor.execute(store, props, _ref);
+    if (debug) {
+      const read = {};
+      store.read?.forEach(adm => {
+        adm.deps.forEach((list, key) => {
+          if (list.has(store)) {
+            let keys = read[adm.owner];
+            if (!keys) {
+              keys = new Set();
+              read[adm.owner] = keys;
+            }
+            keys.add(key);
+          }
+        });
+      });
+      console.info(`[${rc.name}] was rendered. Read: `, read);
+    }
+    return result;
+  });
 }
+
+

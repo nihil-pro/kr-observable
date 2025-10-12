@@ -1,15 +1,14 @@
-import { Runnable, Property } from './types.js';
 import { Admin } from './Admin.js';
+import { Runnable, Property, StatefulHandler } from './types.js';
 import { comparator } from './utils/comparator.js';
 import { lib } from './global.js';
 
-/** Custom property descriptor which memoize getters return value */
+/** Custom property descriptor which memoize getter return value */
 export class Computed implements Runnable, PropertyDescriptor {
   /** Ref to original target proxy.
    * Can't use target because properties access won't be tracked, and access to private properties won't work. */
   #proxy: object;
 
-  disposed = false;
   debug = false;
   active = false;
 
@@ -33,23 +32,24 @@ export class Computed implements Runnable, PropertyDescriptor {
   /** Indicates that getter wasn't accessed yet  */
   #first = true;
 
-  #isGetter = false;
+  // #isGetter = false;
 
   computed = true;
 
   set: undefined | any = undefined;
   #setterValue: any | undefined = undefined;
 
+  name: Property
   constructor(
     property: Property,
     descriptor: PropertyDescriptor,
-    adm: Admin,
-    proxy: object
+    handler: StatefulHandler
   ) {
+    this.name = property
     this.#property = property;
     this.#descriptor = descriptor;
-    this.#adm = adm;
-    this.#proxy = proxy;
+    this.#adm = handler.adm;
+    this.#proxy = handler.receiver;
     if (descriptor.set) {
       this.set = (value: any) => {
         this.#descriptor.set?.call(this.#proxy, value);
@@ -57,7 +57,7 @@ export class Computed implements Runnable, PropertyDescriptor {
         this.#setterValue = value;
         if (!comparator(prevValue, this.#setterValue)) this.#report(value);
       };
-      this.#isGetter = true;
+      // this.#isGetter = true;
     }
   }
 
@@ -76,7 +76,7 @@ export class Computed implements Runnable, PropertyDescriptor {
 
   #compute() {
     // means that microtask was queued, but getter was accessed before microtask start execution
-    if (!this.#changed) return;
+    // if (!this.#changed) return;
     const prevValue = this.#value;
     this.#reader();
     this.#changed = false;
@@ -101,6 +101,7 @@ export class Computed implements Runnable, PropertyDescriptor {
 
   /** A trap for original descriptor getter */
   get = () => {
+    // console.log(args)
     if (!lib.action) this.#adm.batch();
     if (this.#first) {
       this.#reader();
@@ -108,11 +109,15 @@ export class Computed implements Runnable, PropertyDescriptor {
       return this.#value;
     }
     if (this.deps?.size === 0) return this.run();
+
     if (this.#changed) {
-      this.#isGetter ? this.#reader() : this.#compute();
-      this.#changed = false;
+      // console.log('this.#changed === true', this.#isGetter, this.#property)
+      // this.#isGetter ? this.#reader() : this.#compute();
+      // this.#changed = false;
+      this.#compute();
       return this.#value;
     }
+
     if (this.#adm.current?.has(this)) {
       this.#reader();
       this.#adm.report(this.#property, this.#value);

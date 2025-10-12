@@ -65,8 +65,10 @@ test('Karlovskiy reactivity test', async (ctx) => {
   diagnostic = true;
   transaction(foo.change1);
   ctx.diagnostic(`First round: ${text}`); // H
+  assert.equal(text, 'H');
   text = '';
   transaction(foo.change2);
   ctx.diagnostic(`Second round: ${text}`); // EH
+  assert.equal(text, 'EH');
   assert.equal(res.toString(), toBe.toString());
 });
