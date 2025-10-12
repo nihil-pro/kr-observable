@@ -12,7 +12,6 @@ export const enableObservable = (debug = false) => {
       run: () => fn(currentArg),
       debug: false,
       version: 1,
-      disposed: false,
       subscriber: (changes?: Set<string | symbol>) => {
         if (debug) {
           console.info(`[${componentName}] will update. Changes:`, changes);
@@ -48,7 +47,7 @@ export const enableObservable = (debug = false) => {
       },
 
       dispose: () => {
-        rss.disposed = true;
+        executor.dispose(rss);
         if (debug) {
           console.info(`[${componentName}] was disposed`);
         }

@@ -10,7 +10,7 @@ describe('Map tests', () => {
 
       async init() {
         this.map.clear()
-        const x = await fetch('https://jsonplaceholder.typicode.com/posts')
+        await new Promise(resolve => setTimeout(resolve, 200))
         this.map.set(1, { name: 1 })
         this.map.set(2, { name: 2 })
         this.map.set(3, { name: 3 })
@@ -233,6 +233,7 @@ describe('ObservableMap (via makeObservable wrapper)', () => {
     const state = makeObservable({
       map: new Map([['a', 1]]),
       mutate() {
+        console.log(this)
         this.map.set('b', 2);
       }
     });
@@ -413,8 +414,25 @@ describe('ObservableMap (via makeObservable wrapper)', () => {
     assert.strictEqual(runs, 2); // must react
   });
 
+  // should be fixed
+  test.skip('map.forEach is tracked as structural read (replace value)', () => {
+    const state = makeObservable({
+      map: new Map([['a', 1]])
+    });
 
-  // The scenario is virtually nonexistent in practice
+    let runs = 0;
+    autorun(() => {
+      state.map.forEach((v, k) => void k);
+      runs++;
+    });
+
+    assert.strictEqual(runs, 1);
+    transaction(() => state.map.set('a', 2));
+    assert.strictEqual(runs, 2); // must react
+  });
+
+
+  // The scenario is virtually, probably nonexistent in practice
   test.skip('same object key in two maps does not cause cross-notification', () => {
     const sharedKey = { id: 1 };
     const state = makeObservable({

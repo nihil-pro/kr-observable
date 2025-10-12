@@ -1,6 +1,7 @@
 import { Listener, Runnable, Property, StructureMeta } from './types.js';
 import { lib, emptySet } from './global.js';
 
+const queue = lib.queue;
 
 /** Observable companion object */
 export class Admin {
@@ -36,20 +37,32 @@ export class Admin {
     this.shallow = shallow;
   }
 
+  subscribe(property: Property, runnable: Runnable) {
+    if (lib.untracked) return;
+    if (this.ignore.has(property)) return;
+    let list = this.deps.get(property);
+    if (!list) {
+      list = new Set<Runnable>([runnable]);
+      this.deps.set(property, list);
+      return list;
+    }
+    if (!list.has(runnable)) {
+      return list.add(runnable);
+    }
+  }
+
   /** Any mutations should invoke this to notify about changes */
   report(property: Property, value: any) {
     this.changes.add(property);
     this.listeners?.forEach(cb => cb(property, value));
     if (lib.action) {
-      lib.queue.add(this);
-    } else {
-      if (!this.#queued) {
-        this.#queued = true;
-        queueMicrotask(() => {
-          this.batch();
-          this.#queued = false;
-        });
-      }
+      queue.add(this);
+    } else if (!this.#queued) {
+      this.#queued = true;
+      queueMicrotask(() => {
+        this.batch();
+        this.#queued = false;
+      });
     }
   }
 
@@ -73,54 +86,21 @@ export class Admin {
     // for example, when changes were made after await.
     let unused: Set<Property> | undefined;
 
-    this.changes.forEach(key => {
-      this.changes.delete(key);
-      if (!(this.current = this.deps.get(key))) return;
-      for (const sub of this.current) {
-        // this is also for uncontrolled flow. Example:
-        // We have a computed that depend on property b,
-        // somewhere after await (i.e. uncontrolled flow) we change b,
-        // and then (almost immediately, in the same tick) we read b.
-        // This will start batch, and we'll invoke reactions,
-        // but if reaction depend on both computed and b,
-        // then we deffer it's execution until computed will be re-evaluated
+    for (const change of this.changes) {
+      this.changes.delete(change);
+      this.current = this.deps.get(change);
+      this.current?.forEach(sub => {
         if (flag && sub.computed) {
-          if (!unused) unused = new Set<Property>();
-          return unused.add(key);
+          if (!unused) unused = new Set();
+          return unused.add(change);
         }
-        if (sub.disposed) return this.current.delete(sub);
-        // Means that runnable is currently in stack.
-        // This can happen, for example, when an autorun is executing,
-        // but an observable which it depends on, will trigger subscriber during execution.
         if (sub.active) return;
         lib.notifier.notify(sub, changes);
-      }
+      });
       this.current = null;
-    })
+    }
+
     if (unused) this.changes = unused;
-
-    // Currently all tests passes, which means that even when loop over changes,
-    // we invoke reactions in order they were added, due to subscriptions mechanism.
-    // If nothing will break in real apps, then code bellow will be removed.
-
-    // Can't loop over changes list, as this will lead to an inconsistent state
-    // We have to loop over reactions in order they were created
-    // this.deps.forEach((subs, key) => {
-    //   if (subs.size === 0) return;
-    //   // if key is in changes list, loop over it dependents
-    //   if (this.changes.delete(key)) {
-    //     this.current = subs;
-    //     for (const sub of subs) {
-    //       if (flag && sub.computed) {
-    //         return this.changes.add(key);
-    //       }
-    //       if (sub.disposed) return subs.delete(sub);
-    //       if (sub.active) return;
-    //       lib.notifier.notify(sub, changes);
-    //     }
-    //     this.current = null;
-    //   }
-    // });
   }
 
   static batch(adm: Admin) {
@@ -129,9 +109,5 @@ export class Admin {
 
   removeRunnable(runnable: Runnable) {
     this.deps.forEach(list => list.delete(runnable))
-  }
-
-  get untrack() {
-    return lib.untracked;
   }
 }

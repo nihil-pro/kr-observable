@@ -3140,6 +3140,7 @@ describe('Big test', () => {
 
     class a extends b {
       get value() {
+        console.log('----------', this)
         return 2;
       }
     }
@@ -3165,6 +3166,7 @@ describe('Big test', () => {
 
     class a1 extends b1 {
       get value() {
+
         return 2;
       }
     }
