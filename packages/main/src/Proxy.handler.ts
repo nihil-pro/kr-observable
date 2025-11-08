@@ -1,69 +1,91 @@
+import { Utils } from './Utils.js'
 import { Property, Factory, ObservableAdmin } from './types.js';
-import { $adm, executor, lib } from './global.js';
+import { Global } from './global.js';
+
+const executor = Global.executor;
 
 export class ProxyHandler {
   adm: ObservableAdmin;
-  types: Record<Property, number> = {};
+  types: Record<Property, number | undefined> = {};
   receiver: Object;
-  #factory: Factory;
+  factory: Factory;
 
   constructor(adm: ObservableAdmin, factory: Factory) {
     this.adm = adm;
-    this.#factory = factory;
+    this.factory = factory;
   }
 
   #report(property: Property, value: any) {
-    // if property was changed during effect execution, this will remove it from deps
+    // if property was changed during effect execution, this will remove it from deps.
+    // It allows to avoid infinite reactions loop
     executor.report(this.adm, property, true);
     this.adm.report(property, value);
   }
 
   #batch(property: Property) {
-    executor.report(this.adm, property);
-    if (lib.action) return;
-    // This is needed for uncontrolled flow.
-    // If property was changed, then subscribers will be notified before next tick
-    // but if this property was accessed before that, we should notify subscribers before return
-    if (this.adm.changes.has(property)) this.adm.batch(true);
+    if (this.types[property] !== Utils.IGNORED) {
+      executor.report(this.adm, property);
+    }
+    if (Global.action) return;
+    if (!this.adm.changes.size) return;
+    if (this.adm.changes.has(property)) {
+      this.adm.batch(true);
+    }
   }
 
   get(target: object, property: Property) {
-    if (property === $adm) return this.adm;
+    if (property === Utils.AdmKey) return this.adm;
     this.#batch(property);
     return target[property];
   }
 
-  set(target: object, property: Property, newValue: any) {
-    if (this.types[property] === this.#factory.types.ACCESSOR) {
-      return Reflect.set(target, property, newValue);
+  set(target: object, property: Property, value: any) {
+    /// Handle dynamically added properties (object.prop = value)
+    if (!(property in this.types)) {
+      // New properties are writable by default
+      this.types[property] = Utils.WRITABLE;
+      // Report the change for new properties even if value is undefined,
+      // since the property itself is being added
+      this.#report(property, value);
     }
 
-    if (target[property] !== newValue) {
-      this.#report(property, newValue);
-    } else {
-      if (newValue === undefined && !(property in target)) {
-        this.#report(property, newValue);
-      }
+    if (this.types[property] === Utils.ACCESSOR) {
+      // Non-writable data property or accessor
+      // If is non-writable, then Reflect.set will return false
+      // If is accessor, Reflect.set will call original setter
+      // If property is Computed (with setter), then `set` will be handled by computed,
+      // otherwise, original setter will change a data property behind it
+      return Reflect.set(target, property, value);
     }
-    target[property] = this.#factory.value(property, newValue, this);
+
+    // Only report changes if value actually changed
+    if (target[property] !== value) {
+      this.#report(property, value);
+    }
+
+    if (Utils.isPrimitive(value)) {
+      target[property] = value;
+    } else {
+      // maybe convert to observable
+      target[property] = this.factory.object(property, value, this);
+    }
     return true;
   }
 
   defineProperty(target: object, property: Property, desc: PropertyDescriptor) {
-    return Reflect.defineProperty(target, property, this.#factory.descriptor(property, desc, this));
+    return Reflect.defineProperty(target, property, this.factory.descriptor(property, desc, this));
   }
 
   deleteProperty(target: object, property: Property): boolean {
     if (!(property in target)) return false;
-    delete this.types[property];
     const res = Reflect.deleteProperty(target, property);
     this.#report(property, undefined);
     return res;
   }
 
   setPrototypeOf(target: object, proto: any) {
-    const protoAdm = proto[$adm];
-    if (protoAdm) Object.assign(protoAdm, this.adm);
+    const adm = Utils.getAdm(proto);
+    if (adm) Object.assign(adm, this.adm);
     return Reflect.setPrototypeOf(target, proto);
   }
 

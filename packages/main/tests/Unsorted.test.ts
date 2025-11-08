@@ -990,7 +990,7 @@ describe('Big test', () => {
     });
 
     assert.equal(subscriber.mock.callCount(), 1);
-
+    console.log('!!!!!!!!result', result[Symbol.for('$adm')])
     // @ts-ignore
     transaction(() => (result.data = {}));
     // @ts-ignore

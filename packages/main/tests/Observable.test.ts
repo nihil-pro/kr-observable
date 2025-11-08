@@ -275,7 +275,8 @@ describe('Synchronous batching', () => {
       }, 50);
     });
 
-    foo.b = 1;
+    // transaction(() => foo.b = 1);
+    foo.b = 1
     assert.equal(foo.b, 1);
     assert.equal(foo.c, false);
     assert.equal(subscriber.mock.callCount(), 2, 'Should be called twice');

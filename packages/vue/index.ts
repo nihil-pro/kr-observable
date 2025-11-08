@@ -13,7 +13,7 @@ function noop() {}
  * */
 export const Observer = defineComponent({
   data: () => ({
-    version: 1,
+    runId: undefined,
     debug: false,
     run: noop,
     subscriber: noop,
@@ -22,11 +22,11 @@ export const Observer = defineComponent({
   }),
   beforeMount() {
     this.run = this.$slots?.default;
-    this.subscriber = () => ++this.version;
+    // this.subscriber = () => ++this.version;
     this.render = () => executor.execute(this);
   },
   render() {
-    return h(this.render, { ObservableKey: this.version });
+    return h(this.render, { ObservableKey: this.runId });
   },
   unmounted() {
     this.disposed = true;

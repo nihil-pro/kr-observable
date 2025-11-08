@@ -1,30 +1,58 @@
 import { Admin } from './Admin.js';
 import { Observable } from './Observable.js';
-import { Property, Subscriber, Listener, Runnable, Disposer } from './types.js';
-import { lib, executor, $adm } from './global.js';
+import { Property, Subscriber, Listener, Disposer, Runnable } from './types.js';
+import { Utils } from './Utils.js'
+import { Global } from './global.js';
 
-// eslint-disable-next-line @typescript-eslint/no-empty-function
-function noop() {}
-
-const registry = new Map<() => void, Runnable>();
+const registry = new Map<Function, Disposer>();
 const error = new TypeError('First argument must be Observable');
 
 export function subscribe(target: Observable, cb: Subscriber, keys: Set<Property>): Disposer {
-  const adm = target[$adm];
+  const adm = Utils.getAdm(target);
   if (!adm) throw error;
-  if (registry.has(cb)) return noop;
-  const runnable = { subscriber: cb, active: false } as Runnable;
+  let disposer = registry.get(cb);
+  if (disposer) return disposer;
+  const runnable = { subscriber: cb, runId: 1, active: false, deps: new Set } as Runnable;
   keys.forEach(key => adm.subscribe(key, runnable));
-  registry.set(cb, runnable);
-  return () => {
+  disposer = () => {
     registry.delete(cb);
-    adm.removeRunnable(runnable);
+    Global.executor.dispose(runnable);
+  }
+  registry.set(cb, disposer);
+  return disposer;
+}
+
+
+/** Accepts one function that should run every time anything it observes changes. <br />
+ It also runs once when you create the autorun itself.
+ Returns a dispose function.
+ */
+export function autorun(work: () => void | Promise<void>): Disposer {
+  let disposer = registry.get(work);
+  if (disposer) return disposer;
+
+  const runnable = {
+    run: work,
+    subscriber() {
+      Global.executor.execute(this);
+    },
+    debug: false,
+    runId: 1,
+    active: false,
+    deps: undefined
   };
+  disposer = () => {
+    registry.delete(work);
+    Global.executor.dispose(runnable);
+  }
+  registry.set(work, disposer);
+  Global.executor.execute(runnable);
+  return disposer;
 }
 
 /** Will react on any changes in Observable */
 export function listen(target: Observable, cb: Listener): Disposer {
-  const adm = target[$adm];
+  const adm = Utils.getAdm(target);
   if (!adm) throw error;
   if (!adm.listeners) adm.listeners = new Set<Listener>();
   adm.listeners.add(cb);
@@ -32,40 +60,19 @@ export function listen(target: Observable, cb: Listener): Disposer {
 }
 
 export function transaction(work: () => void) {
-  lib.action = true;
+  Global.action = true;
   work();
-  lib.action = false;
-  lib.queue.forEach(Admin.batch);
-  lib.queue.clear();
-  lib.notifier.clear();
+  Global.action = false;
+  Global.queue.forEach(Admin.batch);
+  Global.queue.clear();
+  Global.notifier.flush();
 }
 
-/** Accepts one function that should run every time anything it observes changes. <br />
- It also runs once when you create the autorun itself.
- Returns a dispose function.
- */
-export function autorun(work: () => void | Promise<void>): Disposer {
-  if (registry.has(work)) return noop;
-  const runnable = {
-    run: work,
-    subscriber() {
-      lib.executor.execute(this)
-    },
-    debug: false,
-    active: false
-  };
-  registry.set(work, runnable);
-  lib.executor.execute(runnable);
-  return () => {
-    registry.delete(work);
-    executor.dispose(runnable);
-  };
-}
 
 export function untracked(work: () => any) {
-  lib.untracked = true;
+  Global.untracked = true;
   const result = work();
-  lib.untracked = false;
+  Global.untracked = false;
   return result;
 }
 

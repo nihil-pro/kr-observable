@@ -1,5 +1,6 @@
-import { lib } from './global.js';
 import { Admin } from './Admin.js';
+import { Global } from './global.js';
+import { Utils } from './Utils.js';
 
 function getKey(metaKey: string, key: unknown): any {
   if (key == undefined) return `${metaKey}.${key}`;
@@ -10,7 +11,7 @@ function getKey(metaKey: string, key: unknown): any {
 
 export class ObservableMap<K, V> extends Map<K, V> {
   get meta() {
-    return lib.meta.get(this) || Admin.meta;
+    return Global.meta.get(this) || Admin.meta;
   }
 
   get size() {
@@ -19,7 +20,7 @@ export class ObservableMap<K, V> extends Map<K, V> {
   }
 
   reportRead(key: any) {
-    lib.executor.report(this.meta.adm, key);
+    Global.executor.report(this.meta.adm, key);
   }
 
   report(key: K, value?: V) {
@@ -63,8 +64,10 @@ export class ObservableMap<K, V> extends Map<K, V> {
 
   set(key: K, value: V) {
     let newValue = value;
-    if (this.meta.factory && !this.meta.adm.shallow.has(this.meta.key)) {
-      newValue = this.meta.factory(this.meta.key, value, this.meta.adm);
+    if (this.meta.factory) {
+      if (!Utils.isPrimitive(newValue)) {
+        newValue = this.meta.factory(this.meta.key, value, this.meta.handler);
+      }
     }
     const hasKey = super.has(key);
     const prevValue = super.get(key);

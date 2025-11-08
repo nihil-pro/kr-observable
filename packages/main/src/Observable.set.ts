@@ -1,9 +1,9 @@
-import { lib } from './global.js';
 import { Admin } from './Admin.js';
+import { Global } from './global.js';
 
 export class ObservableSet<T> extends Set<T> {
   get meta() {
-    return lib.meta.get(this) || Admin.meta;
+    return Global.meta.get(this) || Admin.meta;
   }
 
   report<U>(result: U) {

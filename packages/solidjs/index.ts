@@ -1,5 +1,5 @@
 import { enableExternalSource } from "solid-js";
-import { executor, Runnable, ObservableAdmin } from "kr-observable";
+import { executor, Runnable } from "kr-observable";
 
 export const enableObservable = (debug = false) => {
   enableExternalSource((fn, trigger) => {
@@ -11,7 +11,7 @@ export const enableObservable = (debug = false) => {
     rss = {
       run: () => fn(currentArg),
       debug: false,
-      version: 1,
+      runId: undefined,
       subscriber: (changes?: Set<string | symbol>) => {
         if (debug) {
           console.info(`[${componentName}] will update. Changes:`, changes);

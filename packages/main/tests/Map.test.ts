@@ -33,7 +33,7 @@ describe('Map tests', () => {
       ctx.diagnostic(`Count: ${count}` + JSON.stringify(foo.array))
     })
 
-    foo.init()
+    await foo.init()
 
     await new Promise(r => setTimeout(r, 1000));
     assert.deepStrictEqual(result, [{ name: 1 }, { name: 2 }, { name: 3 }]);
@@ -79,7 +79,6 @@ describe('Map tests', () => {
     assert.equal(sb.mock.callCount(), 3);
   })
 
-  test('')
 })
 
 
@@ -161,6 +160,8 @@ describe('ObservableMap (via makeObservable wrapper)', () => {
       const val = state.map.get('data');
       if (val) sum += val.count;
     });
+
+    console.log('!!!!!!', state)
 
     assert.strictEqual(sum, 0);
     transaction(() => obj.count = 1);
