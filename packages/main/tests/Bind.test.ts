@@ -4,7 +4,7 @@ import assert from 'node:assert';
 import { makeObservable, Observable } from '../index.js';
 
 
-describe.skip('Bind [extends Observable]',() => {
+describe('Bind [extends Observable]',() => {
   test('bound methods maintain correct `this` for prototype methods', async () => {
 
     const counter = mock.fn()
@@ -289,6 +289,26 @@ describe.skip('Bind [extends Observable]',() => {
     assert.equal(test.private, 2)
   })
 
+  test('accessors can access ignored private fields [#private]', () => {
+    class Test extends Observable {
+      static ignore = new Set(['private'])
+      #private = 1;
+
+      get private() {
+        return this.#private;
+      }
+
+      set private(value: any) {
+        this.#private = value;
+      }
+    }
+
+    const test = new Test();
+    assert.equal(test.private, 1);
+    test.private = 2;
+    assert.equal(test.private, 2)
+  })
+
   test('accessors can access private accessors [get/set #property]', () => {
     class Test extends Observable {
       #count = 1;
@@ -409,7 +429,8 @@ describe.skip('Bind [extends Observable]',() => {
       value: function () {
         assert.equal(this.field, 1)
       },
-      configurable: true
+      configurable: true,
+      writable: true
     })
 
     // @ts-ignore
@@ -419,7 +440,7 @@ describe.skip('Bind [extends Observable]',() => {
 })
 
 describe('Bind [makeObservable]', () => {
-  test.skip('bound methods maintain correct `this` [Method Definition]', async () => {
+  test('bound methods maintain correct `this` [Method Definition]', async () => {
     const counter = mock.fn()
     const test = makeObservable({
       field: 1,
@@ -440,7 +461,7 @@ describe('Bind [makeObservable]', () => {
     assert.equal(counter.mock.callCount(), 3)
   })
 
-  test.skip('bound methods maintain correct `this` [Function Expression Property]', async () => {
+  test('bound methods maintain correct `this` [Function Expression Property]', async () => {
     const counter = mock.fn()
     const test = makeObservable({
       field: 1,

@@ -1,13 +1,13 @@
-import {
+import React, {
   ForwardRefExoticComponent,
   ForwardRefRenderFunction,
   FunctionComponent,
-  memo,
   MemoExoticComponent,
   PropsWithoutRef,
   RefAttributes,
+  memo,
   useRef,
-  useSyncExternalStore,
+  useSyncExternalStore
 } from 'react';
 import { executor, ObservableAdmin, Runnable } from 'kr-observable';
 
@@ -15,11 +15,12 @@ import { executor, ObservableAdmin, Runnable } from 'kr-observable';
 function noop() {}
 
 class Rss implements Runnable {
-  version = 1;
   active = false;
   debug = false;
   read?: Set<ObservableAdmin>;
+  deps?: Set<Set<Runnable>>
   name: string;
+  runId = 1;
   onStoreChange = noop;
   run: Function;
 
@@ -29,19 +30,19 @@ class Rss implements Runnable {
     this.run = rc;
   }
 
-  getSnapshot = () => this.version;
+  getSnapshot = () => this.runId;
 
   subscriber(changes?: Set<string | symbol>) {
     if (this.debug) {
       console.info(`[${this.name}] will re-render. Changes:`, changes);
     }
-    ++this.version;
     this.onStoreChange();
   }
 
   subscribe = (onStoreChange: () => void) => {
     this.onStoreChange = onStoreChange;
     return () => {
+      // @ts-ignore
       executor.dispose(this);
       if (this.debug) {
         console.info(`[${this.name}] was unmounted`);
@@ -77,11 +78,13 @@ export function observer<A extends object, B = {}>(
     if (!ref.current) ref.current = new Rss(rc, debug);
     const store = ref.current;
     useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+    // @ts-ignore
     const result = executor.execute(store, props, _ref);
     if (debug) {
       const read = {};
       store.read?.forEach(adm => {
         adm.deps.forEach((list, key) => {
+          // @ts-ignore
           if (list.has(store)) {
             let keys = read[adm.owner];
             if (!keys) {

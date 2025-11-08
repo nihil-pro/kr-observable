@@ -1,9 +1,10 @@
 import { Admin } from './Admin.js';
-import { lib } from './global.js';
+import { Global } from './global.js';
+import { Utils } from './Utils.js';
 
 export class ObservableArray<T> extends Array<T> {
   get meta() {
-    return lib.meta.get(this) || Admin.meta;
+    return Global.meta.get(this) || Admin.meta;
   }
 
   report<U>(result: U) {
@@ -16,10 +17,11 @@ export class ObservableArray<T> extends Array<T> {
     if (!factory) return items;
     const adm = this.meta.adm;
     const key = this.meta.key;
+    const handler = this.meta.handler
     if (key === '') return items;
-    if (!adm.shallow.has(key)) {
-      for (let i = 0; i < items.length; i++) {
-        items[i] = factory(key, items[i], adm);
+    for (let i = 0; i < items.length; i++) {
+      if (!Utils.isPrimitive(items[i])) {
+        items[i] = factory(key, items[i], handler);
       }
     }
     return items;

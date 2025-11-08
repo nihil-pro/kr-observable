@@ -1,113 +1,169 @@
 import { Listener, Runnable, Property, StructureMeta } from './types.js';
-import { lib, emptySet } from './global.js';
+import { Global } from './global.js';
 
-const queue = lib.queue;
+const queue = Global.queue;
+const notifier = Global.notifier;
 
-/** Observable companion object */
 export class Admin {
-  static meta: StructureMeta = { key: '', adm: new Admin('', emptySet, emptySet) }
-
-  /** A set of keys that should be totally ignored */
-  ignore: Set<Property>;
-
-  /** A set of keys that should be observed shallow */
-  shallow: Set<Property>;
+  /** Used by shallow collections (Observable Array, Map, Set)
+   * @see Global */
+  static meta: StructureMeta = { key: '', adm: new Admin('') }
 
   /** Name of original object. For classes this will be the class name */
   owner: string;
 
   /** Relationship between a property and reactions that depend on it. */
-  deps: Map<Property, Set<Runnable>> = new Map();
+  deps: Map<Property, Set<Runnable>> = new Map;
 
   /** Set of listeners. */
   listeners: Set<Listener> | undefined;
 
-  /** Properties that have been changed during this tick */
-  changes: Set<Property> = new Set();
+  /** Properties that have been changed after last batch */
+  changes: Set<Property> = new Set;
 
-  /** A reference to the list of reactions that depends on changed property we are loop now */
+  /** A reference to the list of reactions that depends on changed property we are looping through now */
   current: Set<Runnable> | null | undefined = null;
 
   /** Allows to enqueue microtask once for changes made at the same time */
-  #queued = false;
+  queued = false;
 
-  constructor(owner: string, ignore: Set<Property>, shallow: Set<Property>) {
+  constructor(owner: string) {
     this.owner = owner;
-    this.ignore = ignore;
-    this.shallow = shallow;
   }
 
+  /** Add reaction to the property subscribers list */
   subscribe(property: Property, runnable: Runnable) {
-    if (lib.untracked) return;
-    if (this.ignore.has(property)) return;
     let list = this.deps.get(property);
     if (!list) {
-      list = new Set<Runnable>([runnable]);
+      list = new Set;
       this.deps.set(property, list);
-      return list;
     }
+
     if (!list.has(runnable)) {
-      return list.add(runnable);
+      list.add(runnable);
+      // The main bottleneck due to circular references,
+      // but is necessary, and in fact is much faster than doubly linked list.
+      // Currently, I didn't find a better way.
+      // It works like a back-pointer. We just put the list itself to runnable deps,
+      // and runnable can easily unsubscribe (remove itself) from property dependencies.
+      if (!runnable.deps?.has(list)) {
+        runnable.deps?.add(list)
+      }
     }
+  }
+
+  /** Remove reaction from the property subscribers list */
+  unsubscribe(property: Property, runnable: Runnable) {
+    this.deps.get(property)?.delete(runnable);
   }
 
   /** Any mutations should invoke this to notify about changes */
   report(property: Property, value: any) {
-    this.changes.add(property);
+    // Invoke registered listeners
     this.listeners?.forEach(cb => cb(property, value));
-    if (lib.action) {
+
+    // Early return if property isn't observed
+    if (!this.deps.has(property)) return;
+
+    // Add property to changes
+    this.changes.add(property);
+
+    // If there is an active action, register self to global queue,
+    // action handler will invoke registered admins before return
+    if (Global.action) {
       queue.add(this);
-    } else if (!this.#queued) {
-      this.#queued = true;
-      queueMicrotask(() => {
-        this.batch();
-        this.#queued = false;
-      });
+    } else {
+      // We are in uncontrolled flow (property was changed outside of action)
+      // Early return if this.batch was already enqueued
+      if (this.queued) return;
+      // Mark as queued
+      this.queued = true;
+      // Enqueue this.batch
+      // It will be invoked before next tick, or earlier,
+      // if someone accesses this property through proxy before microtask executes
+      queueMicrotask(this.enqueueBatch);
     }
   }
 
-  /** Invokes reactions
+  /** Microtask callback that processes batch and resets queued flag */
+  enqueueBatch = () => {
+    this.batch();
+    this.queued = false;
+  }
+
+  /**
+   * Invokes reactions for changed properties
+   *
    * When a property is changed, the changer should:
    * – If there is no active action, then enqueue call to a microtask
-   * – Otherwise, push changed adm to the queue
+   * – Otherwise, push changed admin to the queue
    *
    * When a property is read (accessed), the getter should:
-   * – If there is an active action, then avoid invoke this
+   * – If there is an active action, then avoid invoking this
    * – Otherwise, it should check that accessed property is in changes list,
    *   and if that is true, then invoke this
-   * */
+   */
   batch(flag = false) {
     if (this.changes.size === 0) return;
-    // During the loop we'll remove properties from changes list,
-    // but we have to pass changes to listeners, that's why we need a copy
-    const changes = new Set(this.changes);
 
-    // this is for uncontrolled flow,
-    // for example, when changes were made after await.
-    let unused: Set<Property> | undefined;
+    const changes = this.changes;
 
-    for (const change of this.changes) {
-      this.changes.delete(change);
-      this.current = this.deps.get(change);
-      this.current?.forEach(sub => {
-        if (flag && sub.computed) {
-          if (!unused) unused = new Set();
-          return unused.add(change);
-        }
-        if (sub.active) return;
-        lib.notifier.notify(sub, changes);
-      });
-      this.current = null;
+    // This is required since changes can be made in different order,
+    // but we have to notify subscribers in the order they were registered
+    if (changes.size > 1) {
+      const copy = new Set<Property>();
+      for (const key of this.deps.keys()) {
+        if (changes.has(key)) copy.add(key);
+      }
+      this.changes = copy;
     }
 
-    if (unused) this.changes = unused;
+    for (const change of this.changes) {
+      // Remove change immediately to ensure nested `batch` calls
+      // won't invoke subscriber accidentally
+      this.changes.delete(change);
+
+      // Hold subscribers of changed property.
+      // This is used by computed properties in cases when:
+      // 1) We have a Reaction that depends on both data property and computed property;
+      // 2) Changed property subscriptions look like: prop => Reaction, Computed
+      // 3) During loop below will invoke Reaction before Computed,
+      //    but since Reaction also depends on Computed, it will access it.
+      // 4) When Computed property is read by Reaction it will check its presence in this list,
+      //    and invalidate itself.
+      this.current = this.deps.get(change);
+      for (const sub of this.current) {
+        // Since a Reaction can be in subscription lists of different changed properties,
+        // we check if it was already notified during this tick.
+        if (sub.runId !== notifier.runId) {
+          // Rare, but sometimes changes may happen during reaction execution (in React, for example)
+          // So we just ignore it at this time
+          if (sub.active) {
+            return;
+          }
+
+          // Rare case!
+          // We are in an async uncontrolled flow.
+          // For more info see the update method in Akimov.test.ts
+          if (flag && sub.computed) {
+            return this.changes.add(change);
+          }
+
+          notifier.notify(sub, changes);
+        }
+      }
+
+      this.current = null;
+    }
   }
 
+  /**
+   * Invoke admin batch method
+   * @see transaction
+   * @see ActionHandler
+   */
   static batch(adm: Admin) {
-    adm.batch()
-  }
-
-  removeRunnable(runnable: Runnable) {
-    this.deps.forEach(list => list.delete(runnable))
+    // Used by transaction API and ActionHandler
+    adm.batch();
   }
 }

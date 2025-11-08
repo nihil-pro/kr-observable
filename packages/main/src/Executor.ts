@@ -5,49 +5,77 @@ export class Executor {
   /** `LiFo` stack. Allows to track nested runnable execution. */
   static #stack: Runnable[] = [];
 
-  /** All read methods of ProxyHandler should invoke it to report read.
-   * The third "set" argument when is true, means that property was changed in an effect.
-   * This allows to unsubscribe that property from reaction and avoid infinite loops.
+  /** Subscribes Runnable to property changes.
+   *
+   * When an Observable property is accessed through a ProxyHandle trap,
+   * it should invoke this method.
+   *
+   * The third, `set` param, should be true, only if property is accessed from Proxy `set` trap.
+   *
    * @see ProxyHandler */
   static report(adm: Admin, property: Property, set = false) {
     if (!this.#stack.length) return;
     const runnable = this.#stack[this.#stack.length - 1];
-    const deps = adm.subscribe(property, runnable);
-    if (!deps) return;
+
     if (set) {
-      deps?.delete(runnable);
-      runnable.read?.delete(adm);
-      return;
+      // Simple trick which allows to avoid infinite reaction loop
+      // If property was read during runnable execution, we will subscribe to its changes,
+      // but if it was then changed, we just unsubscribe.
+      // Example:
+      // const obs = makeObservable({ a: true, b: false })
+      // autorun( () => obs.a = obs.b )
+      // In code above, autorun will subscribe only to property "b".
+      adm.unsubscribe(property, runnable);
+    } else {
+      adm.subscribe(property, runnable);
     }
-    // save a reference to the property subscribers,
-    // that will allow runnable to remove itself from that list
-    if (!runnable.deps.has(deps)) runnable.deps.add(deps);
-    // for debug reasons
-    runnable.read?.add(adm);
   }
 
   /** Execute a runnable and store read Observables */
   static execute(runnable: Runnable, ...rest: any[]) {
     // Mark as active. This allows to ignore effect execution during it's execution
     runnable.active = true;
-    if (runnable.debug) runnable.read = new Set;
+
+    // TODO
+    // We should keep properties read during executions and their owner name
+    // if (runnable.debug) runnable.read = new Set;
+
+    // First execution.
     if (!runnable.deps) {
       runnable.deps = new Set;
     } else {
-      // Clear deps before execution. This allows to run only on what actually reaction depends on
+      // Another bottleneck, but is really necessary.
+      // 1) We can't mark runnable as stalled or something like that,
+      //    because a runnable can depends on different observables
+      //    and different properties in those observables.
+      // 2) We can't mark the property itself as stalled, due to unexpected behaviour,
+      //    at least in current implementation.
+      // The only way it works predictable, is to totally remove runnable from all list of subscribers,
+      // where it is presented, before re-execution.
+      // That way we are sure, that reaction is invoked only when necessary.
+      // See also Admin.subscribe and Karlovskiy.test.ts
       this.dispose(runnable);
     }
     this.#stack.push(runnable);
+
+    // Currently, the only reason to use ...rest is observable HOC for preact/react.
+    // This allows to pass props/ref to the component.
+    // It makes other reactions a little-bit slower, but is negligible.
     const result = runnable.run(...rest);
     this.#stack.pop();
     runnable.active = false;
     return result;
   }
 
+  /** Unsubscribe from all subscriptions */
   static dispose(runnable: Runnable) {
+    // runnable will be used as `this` argument for unsubscribe callback
     runnable.deps.forEach(this.unsubscribe, runnable);
   }
 
+  /** Remove this runnable from a dependency list
+   * Used as callback for forEach with runnable bound as `this`
+   * */
   static unsubscribe(list: Set<Runnable>) {
     list.delete(this as unknown as Runnable)
   }
