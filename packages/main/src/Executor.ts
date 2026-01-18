@@ -18,6 +18,7 @@ export class Executor {
     const runnable = this.#stack[this.#stack.length - 1];
 
     if (set) {
+      // if (!runnable.ignored) runnable.ignored = new Set;
       // Simple trick which allows to avoid infinite reaction loop
       // If property was read during runnable execution, we will subscribe to its changes,
       // but if it was then changed, we just unsubscribe.
@@ -26,7 +27,9 @@ export class Executor {
       // autorun( () => obs.a = obs.b )
       // In code above, autorun will subscribe only to property "b".
       adm.unsubscribe(property, runnable);
+      // runnable.ignored.add(property);
     } else {
+      // if (runnable.ignored?.has(property)) return;
       adm.subscribe(property, runnable);
     }
   }
@@ -64,6 +67,7 @@ export class Executor {
     const result = runnable.run(...rest);
     this.#stack.pop();
     runnable.active = false;
+    // runnable.ignored?.clear();
     return result;
   }
 

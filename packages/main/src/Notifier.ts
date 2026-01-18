@@ -17,7 +17,7 @@ export class Notifier {
    */
   static notify(runnable: Runnable, changes?: Set<Property>) {
     // Mark runnable as notified for the current tick
-    runnable.runId = this.runId;
+    runnable.runId = Notifier.runId;
 
     // Execute the subscriber callback
     runnable.subscriber(changes);
@@ -25,10 +25,10 @@ export class Notifier {
     // Once invoked, this subscriber will be ignored until next tick in normal flow,
     // or until transaction API is used, which is rare case.
     // Currently, transaction API is used in tests only.
-    if (this.queued) return;
+    if (Notifier.queued) return;
 
-    this.queued = true;
-    queueMicrotask(this.flush);
+    Notifier.queued = true;
+    queueMicrotask(Notifier.flush);
   }
 
   /**
