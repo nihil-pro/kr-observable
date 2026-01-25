@@ -46,9 +46,10 @@ export class Admin {
       // Currently, I didn't find a better way.
       // It works like a back-pointer. We just put the list itself to runnable deps,
       // and runnable can easily unsubscribe (remove itself) from property dependencies.
-      if (!runnable.deps?.has(list)) {
-        runnable.deps?.add(list)
-      }
+
+    }
+    if (!runnable.deps?.has(list)) {
+      runnable.deps?.add(list)
     }
   }
 
@@ -132,6 +133,7 @@ export class Admin {
       // 4) When Computed property is read by Reaction it will check its presence in this list,
       //    and invalidate itself.
       this.current = this.deps.get(change);
+
       for (const sub of this.current) {
         // Since a Reaction can be in subscription lists of different changed properties,
         // we check if it was already notified during this tick.

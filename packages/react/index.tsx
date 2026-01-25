@@ -1,4 +1,4 @@
-import React, {
+import {
   ForwardRefExoticComponent,
   ForwardRefRenderFunction,
   FunctionComponent,
@@ -7,7 +7,7 @@ import React, {
   RefAttributes,
   memo,
   useRef,
-  useSyncExternalStore
+  useSyncExternalStore,
 } from 'react';
 import { executor, ObservableAdmin, Runnable } from 'kr-observable';
 
@@ -51,6 +51,7 @@ class Rss implements Runnable {
   };
 }
 
+// @ts-ignore
 export function observer<P extends object, TRef = {}>(
   rc: ForwardRefExoticComponent<PropsWithoutRef<P> & RefAttributes<TRef>>,
   debug?: boolean
@@ -78,7 +79,6 @@ export function observer<A extends object, B = {}>(
     if (!ref.current) ref.current = new Rss(rc, debug);
     const store = ref.current;
     useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
-    // @ts-ignore
     const result = executor.execute(store, props, _ref);
     if (debug) {
       const read = {};

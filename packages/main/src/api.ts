@@ -7,18 +7,39 @@ import { Global } from './global.js';
 const registry = new Map<Function, Disposer>();
 const error = new TypeError('First argument must be Observable');
 
+/** this allows to use same subscriber callback for different observable objects */
+const subscribersRegistry = new Map<Function, {
+  disposer: Disposer,
+  adms: Set<Admin>,
+  runnable: Runnable
+}>();
+
 export function subscribe(target: Observable, cb: Subscriber, keys: Set<Property>): Disposer {
   const adm = Utils.getAdm(target);
   if (!adm) throw error;
-  let disposer = registry.get(cb);
-  if (disposer) return disposer;
+
+  let registered = subscribersRegistry.get(cb);
+
+  // if callback already registered
+  if (registered) {
+    // if callback isn't registered for current admin, register it
+    if (!registered.adms.has(adm)) {
+      keys.forEach(key => adm.subscribe(key, registered.runnable));
+    }
+    return registered.disposer;
+  }
+  // create runnable
   const runnable = { subscriber: cb, runId: 1, active: false, deps: new Set } as Runnable;
+  // subscribe to current admin
   keys.forEach(key => adm.subscribe(key, runnable));
-  disposer = () => {
-    registry.delete(cb);
+  // create disposer
+  const disposer = () => {
+    subscribersRegistry.delete(cb);
     Global.executor.dispose(runnable);
   }
-  registry.set(cb, disposer);
+  // create registration meta
+  registered = { runnable, disposer, adms: new Set([adm]) };
+  subscribersRegistry.set(cb, registered);
   return disposer;
 }
 

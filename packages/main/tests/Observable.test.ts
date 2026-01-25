@@ -503,4 +503,112 @@ describe('Synchronous batching', () => {
   });
 
 
+  test('should allow to use subscribe with same callback for different observables', () => {
+    const subscriber = mock.fn();
+
+    class A extends Observable {
+      value = 1;
+      increase() {
+        ++this.value;
+      }
+    }
+
+    class B extends Observable {
+      value = 1;
+      increase() {
+        ++this.value;
+      }
+    }
+
+    class Foo extends Observable {
+      a = new A;
+      b = new B;
+    }
+
+    const state = new Foo();
+    const observedKeys = new Set(['value']);
+
+    subscribe(state.a, subscriber, observedKeys);
+    subscribe(state.b, subscriber, observedKeys);
+
+    assert.equal(subscriber.mock.callCount(), 0);
+    transaction(state.a.increase)
+    assert.equal(state.a.value, 2);
+    assert.equal(state.b.value, 1);
+    assert.equal(subscriber.mock.callCount(), 1);
+    transaction(state.b.increase)
+    assert.equal(state.a.value, 2);
+    assert.equal(state.b.value, 2);
+    assert.equal(subscriber.mock.callCount(), 2);
+  });
+
+  test.skip('should avoid subscriptions to properties changed in a reaction when they are read after change', (ctx) => {
+    const subscriber = mock.fn();
+
+    class A extends Observable {
+      value = 1;
+      increase() {
+        ++this.value;
+      }
+    }
+
+    class B extends Observable {
+      value = 1;
+      increase() {
+        ++this.value;
+      }
+    }
+
+    class C extends Observable {
+      page = 1;
+      increase() {
+        ++this.page;
+        ctx.diagnostic('page increased');
+      }
+    }
+
+    class Service {
+      static submit(data: Query) {
+        ctx.diagnostic(data.a.value.toString() + data.b.value.toString() + data.c.page.toString())
+      }
+    }
+
+    class Query extends Observable {
+      a = new A;
+      b = new B;
+      c = new C;
+    }
+
+    class Foo extends Observable {
+      query = new Query;
+
+      constructor() {
+        super();
+        autorun(this.onChange);
+      }
+
+      onChange() {
+        subscriber()
+        ctx.diagnostic('onChange')
+        Reflect.get(this.query.a, 'value')
+        Reflect.get(this.query.b, 'value')
+        this.query.c.increase();
+        Service.submit(this.query)
+      }
+    }
+
+
+    const state = new Foo();
+
+    assert.equal(subscriber.mock.callCount(), 1);
+    transaction(state.query.a.increase)
+    assert.equal(state.query.a.value, 2);
+    assert.equal(state.query.b.value, 1);
+    assert.equal(subscriber.mock.callCount(), 2);
+    transaction(state.query.c.increase)
+    assert.equal(state.query.a.value, 2);
+    assert.equal(state.query.b.value, 1);
+    assert.equal(subscriber.mock.callCount(), 2);
+  });
+
 });

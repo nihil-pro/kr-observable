@@ -19,6 +19,7 @@ export interface Runnable {
   read?: Set<Admin>;
   /** Is changed only by notifier */
   runId?: number
+  ignored?: Set<Property>
 }
 
 export type Structure = Map<any, any> | Set<any> | Array<any>;
