@@ -8,11 +8,19 @@ import {
   memo,
   useRef,
   useSyncExternalStore,
+  Component,
+  PureComponent
 } from 'react';
 import { executor, ObservableAdmin, Runnable } from 'kr-observable';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 function noop() {}
+
+function shallowDiffers(a: Object, b: Object) {
+  for (let i in a) if (!(i in b)) return true;
+  for (let i in b) if (a[i] !== b[i]) return true;
+  return false;
+}
 
 class Rss implements Runnable {
   active = false;
@@ -57,23 +65,52 @@ export function observer<P extends object, TRef = {}>(
   debug?: boolean
 ): MemoExoticComponent<ForwardRefExoticComponent<PropsWithoutRef<P> & RefAttributes<TRef>>>;
 
-export function observer<P extends object>(
-  rc: FunctionComponent<P>,
+export function observer<A extends object, B = {}>(
+  rc: FunctionComponent<A>,
   debug?: boolean
-): FunctionComponent<P>;
+): FunctionComponent<A>;
 
-export function observer<P extends FunctionComponent<any> | ForwardRefRenderFunction<any>>(
-  baseComponent: P,
+export function observer<T extends new (...args: any[]) => Component<any, any>>(
+  rc: T,
   debug?: boolean
-): P
+): T;
+
 
 export function observer<A extends object, B = {}>(
   rc:
     | ForwardRefRenderFunction<B, A>
     | FunctionComponent<A>
-    | ForwardRefExoticComponent<PropsWithoutRef<A> & RefAttributes<B>>,
+    | ForwardRefExoticComponent<PropsWithoutRef<A> & RefAttributes<B>>
+    | (new (...args: any[]) => Component<any, any>),
   debug = false
-) {
+): any {
+
+  const proto = Reflect.getPrototypeOf(rc);
+  if (proto === Component || proto === PureComponent) {
+    const ClassComponent = rc as new (...args: any[]) => Component<any, any>;
+    return class extends ClassComponent implements Runnable {
+      active = false;
+      debug = debug;
+      read?: Set<ObservableAdmin>;
+      deps?: Set<Set<Runnable>>
+      runId = 1;
+      run: Function;
+      subscriber: (changes?: Set<string | symbol>) => void;
+
+      constructor(props: any, state: any) {
+        super(props, state);
+        this.run = this.render;
+        this.render = () => executor.execute(this, this.props)
+        this.subscriber = () => this.forceUpdate();
+
+        // PureComponent can't define shouldComponentUpdate
+        if (proto === Component) {
+          this.shouldComponentUpdate = nextProps => shallowDiffers(this.props, nextProps);
+        }
+      }
+    }
+  }
+
   return memo(function render(props, _ref) {
     const ref = useRef<Rss>(null);
     if (!ref.current) ref.current = new Rss(rc, debug);
