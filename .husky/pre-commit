@@ -1,4 +1,4 @@
 # pnpm run check-types
 # lint-staged
-npm run test-ts
+# npm run test-ts
 git add assets

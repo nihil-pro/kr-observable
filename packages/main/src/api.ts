@@ -84,6 +84,7 @@ export function transaction(work: () => void) {
   Global.action = true;
   work();
   Global.action = false;
+  Global.notifier.flush();
   Global.queue.forEach(Admin.batch);
   Global.queue.clear();
   Global.notifier.flush();

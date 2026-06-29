@@ -87,7 +87,7 @@ class Factory {
     // Like we can skip convert this collection to observable counterpart when is needed.
     // It was added because Autocomplete of Material UI, infinitely and recursively,
     // recreates observables
-    if (value['meta']?.key === '') return value;
+    if (value['meta']?.key !== undefined && value['meta']?.key !== '') return value;
 
     // Plain object with or without prototype
     if (Utils.isPlainObject(value)) {
