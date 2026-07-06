@@ -68,7 +68,6 @@ export class Executor {
       const result = runnable.run(...rest);
       this.#stack.pop();
       runnable.active = false;
-      // runnable.ignored?.clear();
       return result;
     } catch (error) {
       Executor.dispose(runnable);
