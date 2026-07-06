@@ -72,7 +72,7 @@ describe('Map tests', () => {
       ctx.diagnostic(`Count: ${count} ${String(foo.loading)}` + JSON.stringify(foo.array))
     })
 
-    foo.init()
+    foo.init().catch(console.error);
 
     await new Promise(r => setTimeout(r, 1000));
     assert.deepStrictEqual(result, [{ name: 1 }, { name: 2 }, { name: 3 }]);

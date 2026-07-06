@@ -64,11 +64,15 @@ export class Executor {
     // Currently, the only reason to use ...rest is observable HOC for preact/react.
     // This allows to pass props/ref to the component.
     // It makes other reactions a little-bit slower, but is negligible.
-    const result = runnable.run(...rest);
-    this.#stack.pop();
-    runnable.active = false;
-    // runnable.ignored?.clear();
-    return result;
+    try {
+      const result = runnable.run(...rest);
+      this.#stack.pop();
+      runnable.active = false;
+      return result;
+    } catch (error) {
+      Executor.dispose(runnable);
+      throw error;
+    }
   }
 
   /** Unsubscribe from all subscriptions */

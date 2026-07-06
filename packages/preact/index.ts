@@ -1,5 +1,5 @@
 import { executor, ObservableAdmin, Runnable } from 'kr-observable';
-import { VNode, Component } from 'preact';
+import { VNode, Component, JSX } from 'preact';
 
 function shallowDiffers(a: Object, b: Object) {
   for (let i in a) if (!(i in b)) return true;
@@ -11,6 +11,11 @@ export function observer<P>(
   rc: (props: P) => VNode<any>,
   debug: boolean
 ): VNode<any>;
+
+export function observer<P>(
+  rc: (props?: P) => JSX.Element,
+  debug: boolean
+): JSX.Element;
 
 export function observer<T extends new (...args: any[]) => Component<any, any>>(
   rc: T,
@@ -29,7 +34,7 @@ export function observer<P>(
   // to check with instanceof we need to import PureComponent from /compat,
   // which may include it into bundle, but we want to avoid this.
   // That why we check it in this way
-  if (typeof rc.prototype.render === 'function') {
+  if (typeof rc.prototype?.render === 'function') {
     const ClassComponent = rc as new (...args: any[]) => Component<any, any>;
 
     // @ts-ignore
