@@ -65,19 +65,18 @@ export class Executor {
     // This allows to pass props/ref to the component.
     // It makes other reactions a little-bit slower, but is negligible.
     try {
-      const result = runnable.run(...rest);
-      this.#stack.pop();
-      runnable.active = false;
-      return result;
+      return runnable.run(...rest);
     } catch (error) {
       Executor.dispose(runnable);
       throw error;
+    } finally {
+      this.#stack.pop();
+      runnable.active = false;
     }
   }
 
   /** Unsubscribe from all subscriptions */
   static dispose(runnable: Runnable) {
-    // runnable will be used as `this` argument for unsubscribe callback
     runnable.deps.forEach(this.unsubscribe, runnable);
   }
 
