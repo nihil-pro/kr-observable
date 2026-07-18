@@ -8,14 +8,9 @@ function shallowDiffers(a: Object, b: Object) {
 }
 
 export function observer<P>(
-  rc: (props: P) => VNode<any>,
-  debug: boolean
-): VNode<any>;
-
-export function observer<P>(
-  rc: (props?: P) => JSX.Element,
-  debug: boolean
-): JSX.Element;
+  rc: (props: P) => JSX.Element | null,
+  debug?: boolean
+): (props: P) => JSX.Element | null;
 
 export function observer<T extends new (...args: any[]) => Component<any, any>>(
   rc: T,
@@ -24,7 +19,7 @@ export function observer<T extends new (...args: any[]) => Component<any, any>>(
 
 export function observer<P>(
   rc:
-    | ((props: P) => VNode<any>)
+    | ((props: P) => VNode<any> | null)   // ← added `| null` here too
     | (new (...args: any[]) => Component<any, any>),
   debug = false
 ): any {
