@@ -1,8 +1,8 @@
-import { enableExternalSource } from "solid-js";
-import { executor, Runnable } from "kr-observable";
+import { enableExternalSource } from 'solid-js';
+import { executor, Runnable, untracked } from "kr-observable";
 
 export const enableObservable = (debug = false) => {
-  enableExternalSource((fn, trigger) => {
+  function hoc(fn: Function, trigger: () => void) {
     let currentArg: any;
 
     // Get the component name from the function for debug purposes
@@ -10,7 +10,7 @@ export const enableObservable = (debug = false) => {
     let rss: any & Runnable;
     rss = {
       run: () => fn(currentArg),
-      debug: false,
+      debug,
       runId: undefined,
       subscriber: (changes?: Set<string | symbol>) => {
         if (debug) {
@@ -53,5 +53,9 @@ export const enableObservable = (debug = false) => {
         }
       }
     };
-  });
+  }
+  Reflect.set(hoc, 'factory', hoc);
+  Reflect.set(hoc, 'untrack', untracked);
+
+  enableExternalSource.apply(null, [hoc, untracked]);
 };
